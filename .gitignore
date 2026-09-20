@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# CI y configuración local
+.env
+.env.*
+!.env.example
+coverage/
+reports/
+.vitest/
+.scannerwork/
