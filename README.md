@@ -1,36 +1,51 @@
-# React + TypeScript + Vite
+# Eventger Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + TypeScript + Vite, con React Compiler y Oxlint. Actualmente muestra
+la pantalla inicial «Eventger / Frontend en construcción»; todavía no implementa
+las historias de usuario ni integración con Backend.
 
-Currently, two official plugins are available:
+## Desarrollo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Node 24.18.0 (ver `.nvmrc`). Si usas nvm, ejecuta `nvm install` y `nvm use`.
 
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
-# frontend
+## Antes de abrir un PR
+
+```bash
+npm run validate
+```
+
+Ejecuta lint, tipos, pruebas con cobertura y build. No requiere Backend, Supabase
+ni secretos. Para instalar el hook opcional de mensajes:
+
+```bash
+npm run hooks:install
+```
+
+Consulta [la guía de contribución y CI](docs/validacion-frontend.md) para el flujo
+trunk-based, resultados, Sonar, protección de main y Vercel. Las verificaciones
+locales y límites están en [el informe de verificación](docs/verificacion-ci.md).
+
+## Comandos
+
+| Comando | Uso |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo |
+| `npm run lint` | Oxlint existente |
+| `npm run typecheck` | TypeScript de aplicación, configuración y pruebas |
+| `npm test` | Suite completa una vez |
+| `npm run test:watch` | Pruebas durante desarrollo |
+| `npm run test:coverage` | JUnit, LCOV y HTML de cobertura |
+| `npm run build` | Build original: TypeScript + Vite, salida dist/ |
+| `npm run preview` | Previsualización local del build |
+
+## Despliegue
+
+El historial del repositorio menciona Vercel. No hay configuración de despliegue
+versionada y no se ha inspeccionado el panel. Se mantienen `build`, `dev` y `preview`;
+Actions no despliega ni modifica proyectos remotos. Confirmar en Vercel repositorio,
+rama de producción, directorio raíz, runtime y comportamiento de previews/checks.
