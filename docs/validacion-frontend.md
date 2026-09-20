@@ -22,10 +22,14 @@ no configura reglas remotas ni elimina ramas existentes.
 
 ## Dependencias y validación local
 
-Usar Node 24.18.0 y `npm ci`. package-lock.json fija el árbol completo y sus integridades;
+Usar Node 24.18.0 y `npm ci --ignore-scripts`. package-lock.json fija el árbol completo y sus integridades;
 las nuevas herramientas llevan versiones exactas. Los rangos existentes de React,
 Vite, TypeScript y Oxlint se conservan. Versionar package.json y package-lock.json juntos
-al añadir dependencias. No instalar herramientas globalmente para ejecutar CI.
+al añadir dependencias. No instalar herramientas globalmente para ejecutar CI. La instalación usa
+`--ignore-scripts` para impedir scripts de ciclo de vida de las dependencias. Los
+comandos explícitos `npm run build` y `npm test` se ejecutan normalmente. Si una
+futura dependencia requiere un script de instalación, revisar su necesidad y alcance
+antes de habilitarlo; no quitar esta protección sin comprobar el impacto.
 
 `npm run validate` ejecuta toda la validación y se detiene ante fallos. Comandos
 individuales disponibles en README. No existe un mínimo de cobertura arbitrario.

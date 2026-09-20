@@ -9,7 +9,7 @@ las historias de usuario ni integración con Backend.
 Node 24.18.0 (ver `.nvmrc`). Si usas nvm, ejecuta `nvm install` y `nvm use`.
 
 ```bash
-npm ci
+npm ci --ignore-scripts
 npm run dev
 ```
 
