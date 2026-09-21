@@ -14,7 +14,7 @@ export default mergeConfig(viteConfig, defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.d.ts'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.d.ts', 'src/components/ui/**'],
       reporter: ['text', 'lcov', 'html'],
       reportsDirectory: 'coverage',
       reportOnFailure: true,
