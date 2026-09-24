@@ -1,23 +1,28 @@
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 import type { Subtask } from '@/features/events/types/subtask.types'
 
 type EventTaskCardProps = {
   subtask: Subtask
+  onEdit: (subtask: Subtask) => void
+  onDelete: (subtask: Subtask) => void
 }
 
 type VisualTaskStatus =
   | 'completed'
-  | 'pending'
+  | 'overdue'
   | 'today'
+  | 'upcoming'
 
 const STATUS_LABELS: Record<
   VisualTaskStatus,
   string
 > = {
   completed: 'Completada',
-  pending: 'Pendiente',
+  overdue: 'Vencida',
   today: 'Hoy',
+  upcoming: 'Próxima',
 }
 
 const STATUS_STYLES: Record<
@@ -25,8 +30,9 @@ const STATUS_STYLES: Record<
   string
 > = {
   completed: 'bg-[#ecfdf3] text-[#027a48]',
-  pending: 'bg-[#eff8ff] text-[#175cd3]',
+  overdue: 'bg-[#feeeec] text-[#b42318]',
   today: 'bg-[#fffaeb] text-[#b54708]',
+  upcoming: 'bg-[#eff8ff] text-[#175cd3]',
 }
 
 function formatTaskDate(date: string) {
@@ -36,15 +42,12 @@ function formatTaskDate(date: string) {
   }).format(new Date(date))
 }
 
-function isToday(date: string) {
-  const taskDate = new Date(date)
-  const today = new Date()
-
-  return (
-    taskDate.getFullYear() === today.getFullYear() &&
-    taskDate.getMonth() === today.getMonth() &&
-    taskDate.getDate() === today.getDate()
-  )
+function getDateOnly(date: Date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  ).getTime()
 }
 
 function getVisualStatus(
@@ -54,47 +57,89 @@ function getVisualStatus(
     return 'completed'
   }
 
-  if (isToday(subtask.targetDate)) {
+  const targetDate =
+    getDateOnly(
+      new Date(subtask.targetDate),
+    )
+
+  const today =
+    getDateOnly(new Date())
+
+  if (targetDate < today) {
+    return 'overdue'
+  }
+
+  if (targetDate === today) {
     return 'today'
   }
 
-  return 'pending'
+  return 'upcoming'
 }
 
 export function EventTaskCard({
   subtask,
+  onEdit,
+  onDelete,
 }: EventTaskCardProps) {
   const visualStatus =
     getVisualStatus(subtask)
 
   return (
-    <article className="flex min-h-[92px] items-start justify-between gap-4 rounded-xl border border-[#dde2ea] bg-white p-4">
+    <article className="flex min-h-[92px] flex-col justify-between gap-4 rounded-[12px] border border-[#d9dee7] bg-white p-[18px] sm:flex-row sm:items-start">
       <div>
-        <h3 className="text-base font-semibold text-[#17212b]">
+        <h3 className="text-[18px] font-semibold leading-[22px] text-[#17212b]">
           {subtask.name}
         </h3>
 
-        <p className="mt-2 text-[13px] text-[#667085]">
-          {formatTaskDate(subtask.targetDate)}
+        <p className="mt-2 text-[14px] text-[#667085]">
+          {formatTaskDate(
+            subtask.targetDate,
+          )}
           {' · '}
           {subtask.estimatedHours} h
         </p>
-
-        {subtask.details && (
-          <p className="mt-2 text-sm text-[#667085]">
-            {subtask.details}
-          </p>
-        )}
       </div>
 
-      <span
-        className={cn(
-          'shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold',
-          STATUS_STYLES[visualStatus],
-        )}
-      >
-        {STATUS_LABELS[visualStatus]}
-      </span>
+      <div className="flex flex-col items-start gap-2 sm:items-end">
+        <span
+          className={cn(
+            'rounded-full px-3 py-1.5 text-[12px] font-semibold',
+            STATUS_STYLES[
+              visualStatus
+            ],
+          )}
+        >
+          {
+            STATUS_LABELS[
+              visualStatus
+            ]
+          }
+        </span>
+
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              onEdit(subtask)
+            }
+            className="h-[30px] rounded-[8px] bg-[#f8fafc] px-[11px] text-[12px] font-semibold text-[#17212b]"
+          >
+            Editar
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              onDelete(subtask)
+            }
+            className="h-[30px] rounded-[8px] border-[#b42318] bg-white px-[11px] text-[12px] font-semibold text-[#b42318] hover:bg-[#feeeec] hover:text-[#b42318]"
+          >
+            Eliminar
+          </Button>
+        </div>
+      </div>
     </article>
   )
 }

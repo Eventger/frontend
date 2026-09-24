@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -9,12 +9,18 @@ describe('EventDetailContent', () => {
   it('muestra el estado vacío y permite agregar una tarea', async () => {
     const user = userEvent.setup()
     const onAddTask = vi.fn()
+    const onEditTask = vi.fn()
+    const onDeleteTask = vi.fn()
+    const onEditEvent = vi.fn()
 
     render(
       <EventDetailContent
         event={eventFixture}
         subtasks={[]}
         onAddTask={onAddTask}
+        onEditTask={onEditTask}
+        onDeleteTask={onDeleteTask}
+        onEditEvent={onEditEvent}
       />,
     )
 
@@ -26,11 +32,17 @@ describe('EventDetailContent', () => {
 
     await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
     expect(onAddTask).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'Editar evento' }))
+    expect(onEditEvent).toHaveBeenCalledOnce()
   })
 
   it('renderiza una tarjeta por subtarea y el progreso real', async () => {
     const user = userEvent.setup()
     const onAddTask = vi.fn()
+    const onEditTask = vi.fn()
+    const onDeleteTask = vi.fn()
+    const onEditEvent = vi.fn()
     const subtasks = [
       {
         ...subtaskFixture,
@@ -51,6 +63,9 @@ describe('EventDetailContent', () => {
         event={eventFixture}
         subtasks={subtasks}
         onAddTask={onAddTask}
+        onEditTask={onEditTask}
+        onDeleteTask={onDeleteTask}
+        onEditEvent={onEditEvent}
       />,
     )
 
@@ -65,5 +80,27 @@ describe('EventDetailContent', () => {
 
     await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
     expect(onAddTask).toHaveBeenCalledOnce()
+
+    const firstTaskCard = screen
+      .getByRole('heading', { name: subtasks[0].name })
+      .closest('article')
+    const secondTaskCard = screen
+      .getByRole('heading', { name: subtasks[1].name })
+      .closest('article')
+
+    expect(firstTaskCard).not.toBeNull()
+    expect(secondTaskCard).not.toBeNull()
+
+    await user.click(
+      within(firstTaskCard!).getByRole('button', { name: 'Editar' }),
+    )
+    await user.click(
+      within(secondTaskCard!).getByRole('button', { name: 'Eliminar' }),
+    )
+
+    expect(onEditTask).toHaveBeenCalledOnce()
+    expect(onEditTask).toHaveBeenCalledWith(subtasks[0])
+    expect(onDeleteTask).toHaveBeenCalledOnce()
+    expect(onDeleteTask).toHaveBeenCalledWith(subtasks[1])
   })
 })

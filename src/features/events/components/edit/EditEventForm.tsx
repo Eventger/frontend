@@ -5,7 +5,6 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
 import {
   Select,
   SelectContent,
@@ -14,82 +13,59 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { useEventTypes } from '@/features/events/hooks/useEventTypes'
-
 import type {
-  CreateEventInput,
+  Event,
+  EventType,
+  UpdateEventInput,
 } from '@/features/events/types/event.types'
 
-type EventFormProps = {
-  initialValues?: CreateEventInput
+type EditEventFormProps = {
+  event: Event
+  eventTypes: EventType[]
+  isSubmitting: boolean
   onSubmit: (
-    data: CreateEventInput,
+    data: UpdateEventInput,
   ) => Promise<void>
   onCancel: () => void
-  isSubmitting?: boolean
 }
 
-type EventFormErrors = Partial<
-  Record<
-    keyof CreateEventInput,
-    string
-  >
+type FormValues = {
+  name: string
+  typeId: number | null
+  eventDate: string
+  location: string
+  contact: string
+}
+
+type FormErrors = Partial<
+  Record<keyof FormValues, string>
 >
 
-const emptyValues: CreateEventInput = {
-  name: '',
-  typeId: null,
-  eventDate: '',
-  location: '',
-  contact: '',
-}
-
-function getLocalDateInputValue() {
-  const today = new Date()
-
-  const year =
-    today.getFullYear()
-
-  const month = String(
-    today.getMonth() + 1,
-  ).padStart(2, '0')
-
-  const day = String(
-    today.getDate(),
-  ).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
-export function EventForm({
-  initialValues = emptyValues,
+export function EditEventForm({
+  event,
+  eventTypes,
+  isSubmitting,
   onSubmit,
   onCancel,
-  isSubmitting = false,
-}: EventFormProps) {
-  const minimumEventDate =
-    getLocalDateInputValue()
-
-  const {
-    eventTypes,
-    isLoading:
-      isLoadingEventTypes,
-    error: eventTypesError,
-  } = useEventTypes()
-
+}: EditEventFormProps) {
   const [values, setValues] =
-    useState<CreateEventInput>(
-      initialValues,
-    )
+    useState<FormValues>({
+      name: event.name,
+      typeId: event.typeId,
+      eventDate:
+        event.eventDate.slice(0, 10),
+      location: event.location,
+      contact: event.contact,
+    })
 
   const [errors, setErrors] =
-    useState<EventFormErrors>({})
+    useState<FormErrors>({})
 
   const updateField = <
-    K extends keyof CreateEventInput,
+    K extends keyof FormValues,
   >(
     field: K,
-    value: CreateEventInput[K],
+    value: FormValues[K],
   ) => {
     setValues((current) => ({
       ...current,
@@ -103,8 +79,7 @@ export function EventForm({
   }
 
   const validate = () => {
-    const nextErrors:
-      EventFormErrors = {}
+    const nextErrors: FormErrors = {}
 
     if (!values.name.trim()) {
       nextErrors.name =
@@ -119,12 +94,6 @@ export function EventForm({
     if (!values.eventDate) {
       nextErrors.eventDate =
         'Selecciona la fecha del evento.'
-    } else if (
-      values.eventDate <
-      getLocalDateInputValue()
-    ) {
-      nextErrors.eventDate =
-        'La fecha del evento no puede estar en el pasado.'
     }
 
     if (!values.location.trim()) {
@@ -146,18 +115,20 @@ export function EventForm({
   }
 
   const handleSubmit = async (
-    event:
+    submitEvent:
       FormEvent<HTMLFormElement>,
   ) => {
-    event.preventDefault()
+    submitEvent.preventDefault()
 
     if (!validate()) {
       return
     }
 
     await onSubmit({
-      ...values,
       name: values.name.trim(),
+      typeId: values.typeId,
+      eventDate:
+        values.eventDate,
       location:
         values.location.trim(),
       contact:
@@ -168,20 +139,19 @@ export function EventForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[18px] border border-[#dde2ea] bg-white p-5 sm:p-7 md:min-h-[720px]"
       noValidate
+      className="w-full max-w-[820px] rounded-[18px] border border-[#dde2ea] bg-white p-6 md:min-h-[650px] md:p-7"
     >
-      <h2 className="text-xl font-semibold text-[#17212b] sm:text-[22px]">
+      <h2 className="text-[22px] font-semibold text-[#17212b]">
         Datos del evento
       </h2>
 
-      {/* Información general */}
-      <section className="mt-6">
+      <section className="mt-5">
         <h3 className="text-[13px] font-semibold text-[#17212b]">
-          ¿Qué vas a organizar?
+          Información general
         </h3>
 
-        <div className="mt-4 grid gap-5 md:grid-cols-2 md:gap-10">
+        <div className="mt-4 grid gap-6 md:grid-cols-2 md:gap-10">
           <div className="space-y-2">
             <label
               htmlFor="event-name"
@@ -192,58 +162,44 @@ export function EventForm({
 
             <Input
               id="event-name"
-              type="text"
               value={values.name}
-              placeholder="Boda Laura & Daniel"
               disabled={
                 isSubmitting
               }
               aria-invalid={Boolean(
                 errors.name,
               )}
-              aria-describedby={
-                errors.name
-                  ? 'event-name-error'
-                  : undefined
-              }
-              onChange={(event) =>
+              onChange={(e) =>
                 updateField(
                   'name',
-                  event.target.value,
+                  e.target.value,
                 )
               }
               className="h-11 rounded-[9px]"
             />
 
             {errors.name && (
-              <p
-                id="event-name-error"
-                className="text-xs text-destructive"
-              >
+              <p className="text-xs text-[#b42318]">
                 {errors.name}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="event-type"
-              className="text-[13px] font-medium text-[#17212b]"
-            >
+            <label className="text-[13px] font-medium text-[#17212b]">
               Tipo de evento *
             </label>
 
             <Select
               value={
-                values.typeId !== null
-                  ? String(
+                values.typeId === null
+                  ? undefined
+                  : String(
                       values.typeId,
                     )
-                  : ''
               }
               disabled={
-                isSubmitting ||
-                isLoadingEventTypes
+                isSubmitting
               }
               onValueChange={(value) =>
                 updateField(
@@ -253,19 +209,12 @@ export function EventForm({
               }
             >
               <SelectTrigger
-                id="event-type"
-                className="h-11! w-full rounded-[9px]"
+                className="h-11 w-full rounded-[9px]"
                 aria-invalid={Boolean(
                   errors.typeId,
                 )}
               >
-                <SelectValue
-                  placeholder={
-                    isLoadingEventTypes
-                      ? 'Cargando tipos...'
-                      : 'Selecciona un tipo de evento'
-                  }
-                />
+                <SelectValue placeholder="Selecciona un tipo de evento" />
               </SelectTrigger>
 
               <SelectContent>
@@ -289,27 +238,20 @@ export function EventForm({
             </Select>
 
             {errors.typeId && (
-              <p className="text-xs text-destructive">
+              <p className="text-xs text-[#b42318]">
                 {errors.typeId}
-              </p>
-            )}
-
-            {eventTypesError && (
-              <p className="text-xs text-destructive">
-                {eventTypesError}
               </p>
             )}
           </div>
         </div>
       </section>
 
-      {/* Fecha y lugar */}
       <section className="mt-8">
         <h3 className="text-[13px] font-semibold text-[#17212b]">
-          ¿Cuándo y dónde será?
+          Fecha y ubicación
         </h3>
 
-        <div className="mt-4 grid gap-5 md:grid-cols-2 md:gap-10">
+        <div className="mt-4 grid gap-6 md:grid-cols-2 md:gap-10">
           <div className="space-y-2">
             <label
               htmlFor="event-date"
@@ -321,9 +263,6 @@ export function EventForm({
             <Input
               id="event-date"
               type="date"
-              min={
-                minimumEventDate
-              }
               value={
                 values.eventDate
               }
@@ -333,25 +272,17 @@ export function EventForm({
               aria-invalid={Boolean(
                 errors.eventDate,
               )}
-              aria-describedby={
-                errors.eventDate
-                  ? 'event-date-error'
-                  : undefined
-              }
-              onChange={(event) =>
+              onChange={(e) =>
                 updateField(
                   'eventDate',
-                  event.target.value,
+                  e.target.value,
                 )
               }
               className="h-11 rounded-[9px]"
             />
 
             {errors.eventDate && (
-              <p
-                id="event-date-error"
-                className="text-xs text-destructive"
-              >
+              <p className="text-xs text-[#b42318]">
                 {errors.eventDate}
               </p>
             )}
@@ -367,36 +298,26 @@ export function EventForm({
 
             <Input
               id="event-location"
-              type="text"
               value={
                 values.location
               }
-              placeholder="Hacienda Las Palmas, Cali"
               disabled={
                 isSubmitting
               }
               aria-invalid={Boolean(
                 errors.location,
               )}
-              aria-describedby={
-                errors.location
-                  ? 'event-location-error'
-                  : undefined
-              }
-              onChange={(event) =>
+              onChange={(e) =>
                 updateField(
                   'location',
-                  event.target.value,
+                  e.target.value,
                 )
               }
               className="h-11 rounded-[9px]"
             />
 
             {errors.location && (
-              <p
-                id="event-location-error"
-                className="text-xs text-destructive"
-              >
+              <p className="text-xs text-[#b42318]">
                 {errors.location}
               </p>
             )}
@@ -404,7 +325,6 @@ export function EventForm({
         </div>
       </section>
 
-      {/* Contacto */}
       <section className="mt-8">
         <h3 className="text-[13px] font-semibold text-[#17212b]">
           ¿A quién podemos contactar?
@@ -420,12 +340,9 @@ export function EventForm({
 
           <Input
             id="event-contact"
-            type="text"
             value={values.contact}
             placeholder="Nombre o teléfono de contacto"
-            disabled={
-              isSubmitting
-            }
+            disabled={isSubmitting}
             aria-invalid={Boolean(
               errors.contact,
             )}
@@ -446,7 +363,7 @@ export function EventForm({
           {errors.contact && (
             <p
               id="event-contact-error"
-              className="text-xs text-[#f04438]"
+              className="text-xs text-[#b42318]"
             >
               {errors.contact}
             </p>
@@ -454,30 +371,27 @@ export function EventForm({
         </div>
       </section>
 
-      <p className="mt-4 text-xs text-[#667085]">
+      <p className="mt-4 text-[12px] text-[#667085]">
         * Campos obligatorios
       </p>
 
-      <aside className="mt-5 rounded-[10px] border border-[#c7d2fe] bg-[#eef2ff] p-4">
+      <div className="mt-16 rounded-[10px] border border-[#c7d2fe] bg-[#eef2ff] px-4 py-3">
         <p className="text-[13px] font-semibold text-[#4f46e5]">
           Capacidad de trabajo
         </p>
 
-        <p className="mt-1 text-xs leading-5 text-[#17212b]">
-          El límite diario se
-          configura una sola vez
-          desde tu cuenta y se aplica
-          a todos tus eventos.
+        <p className="mt-1 text-[12px] text-[#17212b]">
+          La capacidad de trabajo
+          pertenece a tu cuenta y no
+          cambia al editar este evento.
         </p>
-      </aside>
+      </div>
 
-      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button
           type="button"
           variant="outline"
-          disabled={
-            isSubmitting
-          }
+          disabled={isSubmitting}
           onClick={onCancel}
           className="h-11 rounded-[10px] sm:w-[130px]"
         >
@@ -486,14 +400,12 @@ export function EventForm({
 
         <Button
           type="submit"
-          disabled={
-            isSubmitting
-          }
-          className="h-11 rounded-[10px] bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[142px]"
+          disabled={isSubmitting}
+          className="h-11 rounded-[10px] bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[170px]"
         >
           {isSubmitting
             ? 'Guardando...'
-            : 'Crear evento'}
+            : 'Guardar cambios'}
         </Button>
       </div>
     </form>

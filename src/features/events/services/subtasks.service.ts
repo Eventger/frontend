@@ -7,6 +7,9 @@ import type {
   EventSubtasksApiResponse,
   Subtask,
   SubtaskApiData,
+  UpdateSubtaskApiRequest,
+  UpdateSubtaskApiResponse,
+  UpdateSubtaskInput,
 } from '@/features/events/types/subtask.types'
 
 function mapSubtaskResponse(
@@ -21,6 +24,16 @@ function mapSubtaskResponse(
     estimatedHours: Number(subtask.estimated_hours),
     details: subtask.details,
   }
+}
+
+function toDeadlineDateTime(
+  date: string,
+) {
+  const localEndOfDay = new Date(
+    `${date}T23:59:59`,
+  )
+
+  return localEndOfDay.toISOString()
 }
 
 export async function getEventSubtasks(
@@ -70,12 +83,45 @@ export async function createSubtask(
   return mapSubtaskResponse(response.data)
 }
 
-function toDeadlineDateTime(
-  date: string,
-) {
-  const localEndOfDay = new Date(
-    `${date}T23:59:59`,
-  )
+export async function updateSubtask(
+  subtaskId: number,
+  data: UpdateSubtaskInput,
+): Promise<Subtask> {
+  const request: UpdateSubtaskApiRequest = {
+    name: data.name,
+    target_date: toDeadlineDateTime(
+      data.targetDate,
+    ),
+    estimated_hours:
+      data.estimatedHours.toFixed(2),
+    details: data.details,
+  }
 
-  return localEndOfDay.toISOString()
+  const response =
+    await apiRequest<UpdateSubtaskApiResponse>(
+      `/subtasks/${subtaskId}/`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(request),
+      },
+    )
+
+  if (!response.success) {
+    throw new Error(response.message)
+  }
+
+  return mapSubtaskResponse(
+    response.data,
+  )
+}
+
+export async function deleteSubtask(
+  subtaskId: number,
+): Promise<void> {
+  await apiRequest<void>(
+    `/subtasks/${subtaskId}/`,
+    {
+      method: 'DELETE',
+    },
+  )
 }

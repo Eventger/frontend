@@ -10,6 +10,9 @@ import type {
   CreateEventApiResponse,
   EventsApiResponse,
   EventApiResponse,
+  UpdateEventApiResponse,
+  UpdateEventApiRequest,
+  UpdateEventInput,
 } from '@/features/events/types/event.types'
 
 function mapEventResponse(
@@ -21,6 +24,7 @@ function mapEventResponse(
     typeId: event.type,
     eventDate: event.date,
     location: event.location,
+    contact: event.contact,
   }
 }
 
@@ -49,10 +53,12 @@ export async function createEvent(
   const request: CreateEventApiRequest = {
     name: data.name,
     type: data.typeId,
-    date: `${data.eventDate}T00:00:00.000Z`,
+    date: toEventDateTime(
+      data.eventDate,
+    ),
     location: data.location,
+    contact: data.contact,
   }
-
   const response =
     await apiRequest<CreateEventApiResponse>(
       '/events/',
@@ -96,4 +102,63 @@ export async function getEventById(
   }
 
   return mapEventResponse(response.data)
+}
+
+
+export async function updateEvent(
+  eventId: number,
+  data: UpdateEventInput,
+): Promise<Event> {
+  if (data.typeId === null) {
+    throw new Error(
+      'Event type is required',
+    )
+  }
+
+  const request: UpdateEventApiRequest = {
+    name: data.name,
+    type: data.typeId,
+    date: toEventDateTime(
+      data.eventDate,
+    ),
+    location: data.location,
+    contact: data.contact,
+  }
+
+  const response =
+    await apiRequest<UpdateEventApiResponse>(
+      `/events/${eventId}/`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(request),
+      },
+    )
+
+  if (!response.success) {
+    throw new Error(
+      response.message,
+    )
+  }
+
+  return mapEventResponse(
+    response.data,
+  )
+}
+
+export async function deleteEvent(
+  eventId: number,
+): Promise<void> {
+  await apiRequest<void>(
+    `/events/${eventId}/`,
+    {
+      method: 'DELETE',
+    },
+  )
+}
+
+
+function toEventDateTime(
+  date: string,
+) {
+  return `${date}T00:00:00.000Z`
 }

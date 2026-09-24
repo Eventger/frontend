@@ -16,6 +16,7 @@ const submittedInput: CreateEventInput = {
   typeId: 0,
   eventDate: '2099-12-31',
   location: 'Cali',
+  contact: 'Laura 3001234567',
 }
 
 vi.mock('@/features/events/services/event.service', () => ({
@@ -64,6 +65,7 @@ describe('CreateEventPage', () => {
       typeId: 0,
       eventDate: '2099-12-31T00:00:00.000Z',
       location: 'Cali',
+      contact: submittedInput.contact,
     }
     vi.mocked(createEvent).mockResolvedValue(createdEvent)
 

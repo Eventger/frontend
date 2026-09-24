@@ -11,6 +11,7 @@ export const eventFixture: Event = {
   typeId: 0,
   eventDate: '2026-10-24T00:00:00.000Z',
   location: 'Cali',
+  contact: 'Laura 3001234567',
 }
 
 export const createSubtaskInputFixture: CreateSubtaskInput = {

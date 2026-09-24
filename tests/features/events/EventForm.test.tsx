@@ -21,6 +21,7 @@ const validInput: CreateEventInput = {
   typeId: 0,
   eventDate: '2099-12-31',
   location: 'Hacienda Las Palmas',
+  contact: 'Laura 3001234567',
 }
 
 describe('EventForm', () => {
@@ -29,6 +30,7 @@ describe('EventForm', () => {
       eventTypes: [eventType],
       isLoading: false,
       error: null,
+      retry: vi.fn(),
     })
   })
 
@@ -51,6 +53,9 @@ describe('EventForm', () => {
     expect(screen.getByText('Selecciona un tipo de evento.')).toBeTruthy()
     expect(screen.getByText('Selecciona la fecha del evento.')).toBeTruthy()
     expect(screen.getByText('Ingresa el lugar del evento.')).toBeTruthy()
+    expect(
+      screen.getByText('Ingresa un contacto para el evento.'),
+    ).toBeTruthy()
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
@@ -82,6 +87,10 @@ describe('EventForm', () => {
     await user.type(
       screen.getByLabelText('Lugar *'),
       validInput.location,
+    )
+    await user.type(
+      screen.getByLabelText('Contacto *'),
+      validInput.contact,
     )
     await user.click(
       screen.getByRole('button', { name: 'Crear evento' }),

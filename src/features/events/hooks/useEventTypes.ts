@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 
 import { getEventTypes } from '@/features/events/services/event.service'
+
 import type { EventType } from '@/features/events/types/event.types'
 
 export function useEventTypes() {
@@ -13,13 +18,14 @@ export function useEventTypes() {
   const [error, setError] =
     useState<string | null>(null)
 
-  useEffect(() => {
-    async function loadEventTypes() {
+  const loadEventTypes =
+    useCallback(async () => {
       try {
         setIsLoading(true)
         setError(null)
 
-        const data = await getEventTypes()
+        const data =
+          await getEventTypes()
 
         setEventTypes(data)
       } catch {
@@ -29,14 +35,16 @@ export function useEventTypes() {
       } finally {
         setIsLoading(false)
       }
-    }
+    }, [])
 
+  useEffect(() => {
     void loadEventTypes()
-  }, [])
+  }, [loadEventTypes])
 
   return {
     eventTypes,
     isLoading,
     error,
+    retry: loadEventTypes,
   }
 }

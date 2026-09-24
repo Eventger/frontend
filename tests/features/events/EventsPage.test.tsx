@@ -29,6 +29,7 @@ const event: Event = {
   typeId: 0,
   eventDate: '2099-12-31T00:00:00.000Z',
   location: 'Cali',
+  contact: 'Laura 3001234567',
 }
 
 function renderPage() {

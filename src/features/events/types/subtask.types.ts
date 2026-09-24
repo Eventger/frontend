@@ -46,3 +46,15 @@ export interface CreateSubtaskApiResponse {
   message: string
   data: SubtaskApiData
 }
+
+export type UpdateSubtaskInput =
+  CreateSubtaskInput
+
+export type UpdateSubtaskApiRequest =
+  CreateSubtaskApiRequest
+
+export interface UpdateSubtaskApiResponse {
+  success: boolean
+  message: string
+  data: SubtaskApiData
+}
