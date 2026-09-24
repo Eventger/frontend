@@ -4,6 +4,7 @@ import { expect, test, vi } from 'vitest'
 import type { Root } from 'react-dom/client'
 
 let mountedRoot: Root | undefined
+
 vi.mock('react-dom/client', async (importOriginal) => {
   const original = await importOriginal<typeof import('react-dom/client')>()
   return {
@@ -15,11 +16,33 @@ vi.mock('react-dom/client', async (importOriginal) => {
   }
 })
 
+vi.mock('@/features/events/services/event.service', () => ({
+  createEvent: vi.fn(),
+  getEvents: vi.fn(),
+  getEventTypes: vi.fn(),
+}))
+
+vi.mock('@/features/events/hooks/useEventTypes', () => ({
+  useEventTypes: () => ({
+    eventTypes: [],
+    isLoading: false,
+    error: null,
+  }),
+}))
+
 test('el entrypoint monta la aplicación en el root del HTML real', async () => {
-  document.body.innerHTML = new DOMParser().parseFromString(html, 'text/html').body.innerHTML
+  document.body.innerHTML = new DOMParser()
+    .parseFromString(html, 'text/html')
+    .body.innerHTML
+  window.history.pushState({}, '', '/crear')
+
   try {
-    await act(async () => { await import('../src/main') })
-    expect(screen.getByRole('heading', { name: 'Eventger' })).toBeTruthy()
+    await act(async () => {
+      await import('../src/main')
+    })
+    expect(
+      screen.getByRole('heading', { name: 'Crear evento' }),
+    ).toBeTruthy()
   } finally {
     await act(async () => { mountedRoot?.unmount() })
     document.body.innerHTML = ''
