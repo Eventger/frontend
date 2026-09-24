@@ -21,16 +21,26 @@ vi.mock('@/features/events/hooks/useEventTypes', () => ({
   }),
 }))
 
-test('muestra la pantalla de creación en la ruta correspondiente', async () => {
-  window.history.pushState({}, '', '/crear')
+vi.mock('@/features/events/hooks/useEvents', () => ({
+  useEvents: () => ({
+    events: [],
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+  }),
+}))
+
+test('redirige la raíz a la lista de eventos', async () => {
+  window.history.pushState({}, '', '/')
   const { default: App } = await import('../src/app/App.tsx')
 
   render(<App />)
 
   expect(
-    screen.getByRole('heading', { level: 1, name: 'Crear evento' }),
+    await screen.findByRole('heading', { level: 1, name: 'Eventos' }),
   ).toBeTruthy()
   expect(
-    screen.getByRole('heading', { level: 2, name: 'Datos del evento' }),
+    screen.getByRole('heading', { level: 2, name: 'Aún no tienes eventos' }),
   ).toBeTruthy()
+  expect(window.location.pathname).toBe('/eventos')
 })
