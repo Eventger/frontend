@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createSubtask,
+  deleteSubtask,
   getEventSubtasks,
+  updateSubtask,
 } from '@/features/events/services/subtasks.service'
 import type {
   CreateSubtaskApiResponse,
   EventSubtasksApiResponse,
+  UpdateSubtaskApiResponse,
 } from '@/features/events/types/subtask.types'
 import { apiRequest } from '@/lib/api'
 import {
@@ -143,5 +146,69 @@ describe('createSubtask', () => {
     await expect(
       createSubtask(eventFixture.id, createSubtaskInputFixture),
     ).rejects.toThrow('No se pudo crear la subtarea')
+  })
+})
+
+describe('updateSubtask', () => {
+  it('actualiza la subtarea y transforma la respuesta', async () => {
+    const input = {
+      ...createSubtaskInputFixture,
+      name: 'Coordinar transporte actualizado',
+      estimatedHours: 3.5,
+    }
+    const response: UpdateSubtaskApiResponse = {
+      success: true,
+      message: 'Subtarea actualizada',
+      data: {
+        ...subtaskApiFixture,
+        name: input.name,
+        estimated_hours: '3.50',
+      },
+    }
+    vi.mocked(apiRequest).mockResolvedValue(response)
+
+    const result = await updateSubtask(subtaskApiFixture.id, input)
+    const expectedTargetDate = new Date(
+      `${input.targetDate}T23:59:59`,
+    ).toISOString()
+
+    expect(apiRequest).toHaveBeenCalledOnce()
+    expect(apiRequest).toHaveBeenCalledWith(
+      `/subtasks/${subtaskApiFixture.id}/`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: input.name,
+          target_date: expectedTargetDate,
+          estimated_hours: '3.50',
+          details: input.details,
+        }),
+      },
+    )
+    expect(result).toEqual({
+      id: response.data.id,
+      eventId: response.data.event,
+      state: response.data.state,
+      name: response.data.name,
+      targetDate: response.data.target_date,
+      estimatedHours: 3.5,
+      details: response.data.details,
+    })
+  })
+})
+
+describe('deleteSubtask', () => {
+  it('elimina la subtarea mediante su endpoint', async () => {
+    vi.mocked(apiRequest).mockResolvedValue(undefined)
+
+    await expect(
+      deleteSubtask(subtaskApiFixture.id),
+    ).resolves.toBeUndefined()
+
+    expect(apiRequest).toHaveBeenCalledOnce()
+    expect(apiRequest).toHaveBeenCalledWith(
+      `/subtasks/${subtaskApiFixture.id}/`,
+      { method: 'DELETE' },
+    )
   })
 })

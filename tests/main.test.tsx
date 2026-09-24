@@ -21,11 +21,15 @@ vi.mock('@/features/events/services/event.service', () => ({
   getEventById: vi.fn(),
   getEvents: vi.fn(),
   getEventTypes: vi.fn(),
+  updateEvent: vi.fn(),
+  deleteEvent: vi.fn(),
 }))
 
 vi.mock('@/features/events/services/subtasks.service', () => ({
   createSubtask: vi.fn(),
   getEventSubtasks: vi.fn(),
+  updateSubtask: vi.fn(),
+  deleteSubtask: vi.fn(),
 }))
 
 vi.mock('@/features/events/hooks/useEventTypes', () => ({
@@ -33,6 +37,7 @@ vi.mock('@/features/events/hooks/useEventTypes', () => ({
     eventTypes: [],
     isLoading: false,
     error: null,
+    retry: vi.fn(),
   }),
 }))
 

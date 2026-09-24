@@ -14,6 +14,7 @@ export interface CreateEventInput {
   typeId: number | null
   eventDate: string
   location: string
+  contact: string
 }
 
 export interface CreateEventApiRequest {
@@ -21,6 +22,7 @@ export interface CreateEventApiRequest {
   type: number
   date: string
   location: string
+  contact: string
 }
 
 export interface EventApiData {
@@ -30,6 +32,7 @@ export interface EventApiData {
   type: number
   date: string
   location: string
+  contact: string
   created_at: string
   updated_at: string
 }
@@ -56,4 +59,17 @@ export interface Event {
   typeId: number
   eventDate: string
   location: string
+  contact: string
+}
+
+export type UpdateEventInput =
+  CreateEventInput
+
+export type UpdateEventApiRequest =
+  CreateEventApiRequest
+
+export interface UpdateEventApiResponse {
+  success: boolean
+  message: string
+  data: EventApiData
 }

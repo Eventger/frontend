@@ -12,6 +12,15 @@ type EventDetailContentProps = {
   event: Event
   subtasks: Subtask[]
   onAddTask: () => void
+  onEditTask: (
+    subtask: Subtask,
+  ) => void
+  onDeleteTask: (
+    subtask: Subtask,
+  ) => void
+
+  onEditEvent: () => void
+  onDeleteEvent?: () => void
 }
 
 function formatEventDate(date: string) {
@@ -27,21 +36,48 @@ export function EventDetailContent({
   event,
   subtasks,
   onAddTask,
+  onEditTask,
+  onDeleteTask,
+  onEditEvent,
+  onDeleteEvent,
 }: EventDetailContentProps) {
   const hasTasks = subtasks.length > 0
 
   return (
     <>
-      <header>
-        <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
-          {event.name}
-        </h1>
+      <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
+            {event.name}
+          </h1>
 
-        <p className="mt-2 text-sm text-[#667085] md:text-[15px]">
-          {formatEventDate(event.eventDate)}
-          {' · '}
-          {event.location}
-        </p>
+          <p className="mt-2 text-sm text-[#667085] md:text-[15px]">
+            {formatEventDate(
+              event.eventDate,
+            )}
+            {' · '}
+            {event.location}
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onEditEvent}
+            className="h-11 rounded-[10px] sm:w-[140px]"
+          >
+            Editar evento
+          </Button>
+
+          <Button
+            type="button"
+            onClick={onDeleteEvent}
+            className="h-11 rounded-[10px] bg-[#b42318] text-white hover:bg-[#912018] sm:w-[120px]"
+          >
+            Eliminar
+          </Button>
+        </div>
       </header>
 
       <div className="mt-8 max-w-[460px]">
@@ -51,7 +87,7 @@ export function EventDetailContent({
       </div>
 
       <section className="mt-10">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex max-w-[820px] items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-[#17212b]">
             Plan logístico
           </h2>
@@ -59,8 +95,8 @@ export function EventDetailContent({
           {hasTasks && (
             <Button
               type="button"
-              variant="outline"
               onClick={onAddTask}
+              className="h-11 w-40 rounded-[10px] bg-[#4f46e5] text-[14px] font-semibold text-white hover:bg-[#4338ca]"
             >
               <Plus />
               Agregar tarea
@@ -80,6 +116,8 @@ export function EventDetailContent({
                 <EventTaskCard
                   key={subtask.id}
                   subtask={subtask}
+                  onEdit={onEditTask}
+                  onDelete={onDeleteTask}
                 />
               ))}
             </div>
