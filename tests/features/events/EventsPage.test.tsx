@@ -5,11 +5,16 @@ import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useEvents } from '@/features/events/hooks/useEvents'
+import { useEventSubtasks } from '@/features/events/hooks/useEventSubtasks'
 import { EventsPage } from '@/features/events/pages/EventsPage'
 import type { Event } from '@/features/events/types/event.types'
 
 vi.mock('@/features/events/hooks/useEvents', () => ({
   useEvents: vi.fn(),
+}))
+
+vi.mock('@/features/events/hooks/useEventSubtasks', () => ({
+  useEventSubtasks: vi.fn(),
 }))
 
 vi.mock('@/components/layout/AppLayout', () => ({
@@ -37,6 +42,12 @@ function renderPage() {
 describe('EventsPage', () => {
   beforeEach(() => {
     vi.mocked(useEvents).mockReset()
+    vi.mocked(useEventSubtasks).mockReturnValue({
+      subtasks: [],
+      isLoading: false,
+      error: null,
+      refresh: vi.fn(),
+    })
   })
 
   it('muestra el estado de carga', () => {
@@ -86,7 +97,7 @@ describe('EventsPage', () => {
     ).toBeTruthy()
   })
 
-  it('muestra únicamente información real de los eventos', () => {
+  it('muestra los eventos con su progreso y acceso al detalle', () => {
     vi.mocked(useEvents).mockReturnValue({
       events: [event],
       isLoading: false,
@@ -97,10 +108,12 @@ describe('EventsPage', () => {
     renderPage()
 
     expect(screen.getByRole('heading', { name: event.name })).toBeTruthy()
-    expect(screen.getByText(event.location)).toBeTruthy()
-    expect(screen.queryByRole('progressbar')).toBeNull()
     expect(
-      screen.queryByRole('link', { name: /Ver evento/i }),
-    ).toBeNull()
+      screen.getByText('0 % · 0/0 tareas'),
+    ).toBeTruthy()
+    const eventLink = screen.getByRole('link', {
+      name: new RegExp(event.name),
+    })
+    expect(eventLink.getAttribute('href')).toBe(`/evento/${event.id}`)
   })
 })

@@ -39,6 +39,11 @@ export interface EventsApiResponse {
   data: EventApiData[]
 }
 
+export interface EventApiResponse {
+  success: boolean
+  data: EventApiData
+}
+
 export interface CreateEventApiResponse {
   success: boolean
   message: string

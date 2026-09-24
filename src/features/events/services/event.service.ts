@@ -9,6 +9,7 @@ import type {
   EventApiData,
   CreateEventApiResponse,
   EventsApiResponse,
+  EventApiResponse,
 } from '@/features/events/types/event.types'
 
 function mapEventResponse(
@@ -77,4 +78,22 @@ export async function getEvents(): Promise<Event[]> {
   }
 
   return response.data.map(mapEventResponse)
+}
+
+
+export async function getEventById(
+  eventId: number,
+): Promise<Event> {
+  const response =
+    await apiRequest<EventApiResponse>(
+      `/events/${eventId}/`,
+    )
+
+  if (!response.success) {
+    throw new Error(
+      'No se pudo cargar el evento',
+    )
+  }
+
+  return mapEventResponse(response.data)
 }
