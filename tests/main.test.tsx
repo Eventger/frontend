@@ -18,8 +18,14 @@ vi.mock('react-dom/client', async (importOriginal) => {
 
 vi.mock('@/features/events/services/event.service', () => ({
   createEvent: vi.fn(),
+  getEventById: vi.fn(),
   getEvents: vi.fn(),
   getEventTypes: vi.fn(),
+}))
+
+vi.mock('@/features/events/services/subtasks.service', () => ({
+  createSubtask: vi.fn(),
+  getEventSubtasks: vi.fn(),
 }))
 
 vi.mock('@/features/events/hooks/useEventTypes', () => ({
