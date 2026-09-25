@@ -166,4 +166,20 @@ describe('getToday', () => {
     expect(result.today.map((task) => task.id)).toEqual([4, 5])
     expect(result.upcoming.map((task) => task.id)).toEqual([6, 7, 8])
   })
+
+  it('usa un nombre vacío cuando el evento de la tarea no existe', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({
+      success: true,
+      data: {
+        overdue: [],
+        today: [buildTodayApiTask({ event: 999 })],
+        upcoming: [],
+        completed: [],
+      },
+    } satisfies TodayApiResponse)
+
+    const result = await getToday()
+
+    expect(result.today[0].eventName).toBe('')
+  })
 })

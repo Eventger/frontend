@@ -9,7 +9,9 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    babel({ presets: [reactCompilerPreset()] })
+    ...(process.env.VITEST === 'true'
+      ? []
+      : [babel({ presets: [reactCompilerPreset()] })]),
   ],
 
   resolve: {
