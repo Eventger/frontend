@@ -13,6 +13,10 @@ import { cn } from '@/lib/utils'
 
 const navigationItems = [
   {
+    label: 'Hoy',
+    to: '/hoy',
+  },
+  {
     label: 'Eventos',
     to: '/eventos',
   },

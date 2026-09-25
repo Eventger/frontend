@@ -41,6 +41,19 @@ vi.mock('@/features/events/hooks/useEventTypes', () => ({
   }),
 }))
 
+vi.mock('@/features/today/hooks/useToday', () => ({
+  useToday: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+  }),
+}))
+
+vi.mock('@/features/today/pages/TodayPage', () => ({
+  TodayPage: () => null,
+}))
+
 test('el entrypoint monta la aplicación en el root del HTML real', async () => {
   document.body.innerHTML = new DOMParser()
     .parseFromString(html, 'text/html')

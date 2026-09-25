@@ -35,6 +35,19 @@ vi.mock('@/features/events/hooks/useEvents', () => ({
   }),
 }))
 
+vi.mock('@/features/today/hooks/useToday', () => ({
+  useToday: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+  }),
+}))
+
+vi.mock('@/features/today/pages/TodayPage', () => ({
+  TodayPage: () => null,
+}))
+
 test('redirige la raíz a la lista de eventos', async () => {
   window.history.pushState({}, '', '/')
   const { default: App } = await import('../src/app/App.tsx')
