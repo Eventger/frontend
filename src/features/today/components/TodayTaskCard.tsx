@@ -63,7 +63,7 @@ function formatHours(
 
   return hours
     .toFixed(2)
-    .replace(/\.?0+$/, '')
+    .replace(/\.?0{1,2}$/, '')
 }
 
 export function TodayTaskCard({
