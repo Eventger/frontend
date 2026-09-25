@@ -86,7 +86,7 @@ export function EventTaskCard({
 
   return (
     <article className="flex min-h-[92px] flex-col justify-between gap-4 rounded-[12px] border border-[#d9dee7] bg-white p-[18px] sm:flex-row sm:items-start">
-      <div>
+      <div className="min-w-0 flex-1">
         <h3 className="text-[18px] font-semibold leading-[22px] text-[#17212b]">
           {subtask.name}
         </h3>
@@ -98,9 +98,13 @@ export function EventTaskCard({
           {' · '}
           {subtask.estimatedHours} h
         </p>
+
+        <p className="mt-2 h-5 max-w-full truncate text-[13px] leading-5 text-[#475467]">
+          {subtask.details}
+        </p>
       </div>
 
-      <div className="flex flex-col items-start gap-2 sm:items-end">
+      <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
         <span
           className={cn(
             'rounded-full px-3 py-1.5 text-[12px] font-semibold',

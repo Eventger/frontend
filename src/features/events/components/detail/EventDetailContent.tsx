@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { EmptyTasksState } from '@/features/events/components/detail/EmptyTasksState'
+import { EventInfoCard } from '@/features/events/components/detail/EventInfoCard'
 import { EventProgressCard } from '@/features/events/components/detail/EventProgressCard'
 import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard'
 
@@ -11,6 +12,10 @@ import type { Subtask } from '@/features/events/types/subtask.types'
 type EventDetailContentProps = {
   event: Event
   subtasks: Subtask[]
+
+  eventTypeName?: string
+  eventDescription?: string
+
   onAddTask: () => void
   onEditTask: (
     subtask: Subtask,
@@ -23,42 +28,26 @@ type EventDetailContentProps = {
   onDeleteEvent?: () => void
 }
 
-function formatEventDate(date: string) {
-  return new Intl.DateTimeFormat('es-CO', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(date))
-}
-
 export function EventDetailContent({
   event,
   subtasks,
+  eventTypeName,
+  eventDescription,
   onAddTask,
   onEditTask,
   onDeleteTask,
   onEditEvent,
   onDeleteEvent,
 }: EventDetailContentProps) {
-  const hasTasks = subtasks.length > 0
+  const hasTasks =
+    subtasks.length > 0
 
   return (
     <>
       <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
-            {event.name}
-          </h1>
-
-          <p className="mt-2 text-sm text-[#667085] md:text-[15px]">
-            {formatEventDate(
-              event.eventDate,
-            )}
-            {' · '}
-            {event.location}
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
+          {event.name}
+        </h1>
 
         <div className="flex gap-3">
           <Button
@@ -72,7 +61,9 @@ export function EventDetailContent({
 
           <Button
             type="button"
-            onClick={onDeleteEvent}
+            onClick={
+              onDeleteEvent
+            }
             className="h-11 rounded-[10px] bg-[#b42318] text-white hover:bg-[#912018] sm:w-[120px]"
           >
             Eliminar
@@ -80,7 +71,27 @@ export function EventDetailContent({
         </div>
       </header>
 
-      <div className="mt-8 max-w-[460px]">
+      <div className="mt-8">
+        <EventInfoCard
+          eventDate={
+            event.eventDate
+          }
+          location={
+            event.location
+          }
+          contact={
+            event.contact
+          }
+          eventTypeName={
+            eventTypeName
+          }
+          description={
+            eventDescription
+          }
+        />
+      </div>
+
+      <div className="mt-5 max-w-[460px]">
         <EventProgressCard
           subtasks={subtasks}
         />
@@ -107,19 +118,33 @@ export function EventDetailContent({
         <div className="mt-5">
           {!hasTasks ? (
             <EmptyTasksState
-              eventName={event.name}
-              onAddTask={onAddTask}
+              eventName={
+                event.name
+              }
+              onAddTask={
+                onAddTask
+              }
             />
           ) : (
             <div className="max-w-[820px] space-y-4">
-              {subtasks.map((subtask) => (
-                <EventTaskCard
-                  key={subtask.id}
-                  subtask={subtask}
-                  onEdit={onEditTask}
-                  onDelete={onDeleteTask}
-                />
-              ))}
+              {subtasks.map(
+                (subtask) => (
+                  <EventTaskCard
+                    key={
+                      subtask.id
+                    }
+                    subtask={
+                      subtask
+                    }
+                    onEdit={
+                      onEditTask
+                    }
+                    onDelete={
+                      onDeleteTask
+                    }
+                  />
+                ),
+              )}
             </div>
           )}
         </div>

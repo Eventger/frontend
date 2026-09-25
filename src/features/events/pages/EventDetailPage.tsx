@@ -215,6 +215,15 @@ const [
 const currentEvent =
   updatedEvent ?? event
 
+const currentEventTypeName =
+  currentEvent
+    ? eventTypes.find(
+        (eventType) =>
+          eventType.id ===
+          currentEvent.typeId,
+      )?.name
+    : undefined
+
   const handleCreateSubtask = async (
     data: CreateSubtaskInput,
   ) => {
@@ -760,8 +769,13 @@ const handleConfirmDeleteEvent =
                   <EventDetailContent
                     event={currentEvent}
                     subtasks={subtasks}
+                    eventTypeName={
+                      currentEventTypeName
+                    }
                     onAddTask={() =>
-                      setIsAddSubtaskOpen(true)
+                      setIsAddSubtaskOpen(
+                        true,
+                      )
                     }
                     onEditTask={
                       handleEditTask

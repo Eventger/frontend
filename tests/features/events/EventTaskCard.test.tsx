@@ -35,6 +35,7 @@ describe('EventTaskCard', () => {
     expect(
       screen.getByText(`${formattedDate} · ${subtask.estimatedHours} h`),
     ).toBeTruthy()
+    expect(screen.getByText(subtask.details)).toBeTruthy()
     expect(screen.getByText('Completada')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Editar' }))
@@ -101,5 +102,20 @@ describe('EventTaskCard', () => {
     )
 
     expect(screen.getByText('Hoy')).toBeTruthy()
+  })
+
+  it('no renderiza una descripción cuando la subtarea no tiene detalles', () => {
+    render(
+      <EventTaskCard
+        subtask={{
+          ...subtaskFixture,
+          details: '',
+        }}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText(subtaskFixture.details)).toBeNull()
   })
 })
