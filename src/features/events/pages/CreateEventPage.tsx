@@ -6,11 +6,14 @@ import { CreateEventError } from '@/features/events/components/CreateEventError'
 import { CreateEventSuccess } from '@/features/events/components/CreateEventSuccess'
 import { EventForm } from '@/features/events/components/EventForm'
 import { createEvent } from '@/features/events/services/event.service'
+import { createSubtask } from '@/features/events/services/subtasks.service'
 import type {
   CreateEventInput,
   Event,
 } from '@/features/events/types/event.types'
-
+import type {
+  CreateSubtaskInput,
+} from '@/features/events/types/subtask.types'
 type CreateEventView =
   | 'form'
   | 'success'
@@ -33,13 +36,16 @@ export function CreateEventPage() {
 
   const handleSubmit = async (
     data: CreateEventInput,
+    subtasks: CreateSubtaskInput[],
   ) => {
     setSubmittedData(data)
     setIsSubmitting(true)
 
     try {
       const event = await createEvent(data)
-
+      for (const subtask of subtasks) {
+        await createSubtask(event.id, subtask)
+    }
       setCreatedEvent(event)
       setView('success')
     } catch {

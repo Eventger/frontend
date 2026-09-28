@@ -20,10 +20,17 @@ import type {
   CreateEventInput,
 } from '@/features/events/types/event.types'
 
+import { AddSubtaskDialog } from '@/features/events/components/detail/AddSubtaskDialog'
+
+import type {
+  CreateSubtaskInput,
+} from '@/features/events/types/subtask.types'
+
 type EventFormProps = {
   initialValues?: CreateEventInput
   onSubmit: (
     data: CreateEventInput,
+    subtasks: CreateSubtaskInput[],
   ) => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
@@ -85,6 +92,14 @@ export function EventForm({
   const [errors, setErrors] =
     useState<EventFormErrors>({})
 
+  const [subtasks, setSubtasks] =
+    useState<CreateSubtaskInput[]>([])
+
+  const [isSubtaskDialogOpen, setIsSubtaskDialogOpen] =
+    useState(false)
+
+  const [editingSubtaskIndex, setEditingSubtaskIndex] =
+    useState<number | null>(null)
   const updateField = <
     K extends keyof CreateEventInput,
   >(
@@ -101,7 +116,43 @@ export function EventForm({
       [field]: undefined,
     }))
   }
+  const handleAddSubtask = async (
+    subtask: CreateSubtaskInput,
+    ) => {
+      if (editingSubtaskIndex !== null) {
+        setSubtasks((current) =>
+          current.map((currentSubtask, index) =>
+            index === editingSubtaskIndex
+              ? subtask
+              : currentSubtask,
+          ),
+        )
+      } else {
+        setSubtasks((current) => [
+          ...current,
+          subtask,
+        ])
+      }
 
+  setEditingSubtaskIndex(null)
+  setIsSubtaskDialogOpen(false)
+}
+
+  const handleEditSubtask = (
+      index: number,
+    ) => {
+      setEditingSubtaskIndex(index)
+      setIsSubtaskDialogOpen(true)
+    }
+  const handleDeleteSubtask = (
+    indexToDelete: number,
+ ) => {
+  setSubtasks((current) =>
+    current.filter(
+      (_, index) => index !== indexToDelete,
+    ),
+  )
+}
   const validate = () => {
     const nextErrors:
       EventFormErrors = {}
@@ -162,10 +213,12 @@ export function EventForm({
         values.location.trim(),
       contact:
         values.contact.trim(),
-    })
+    }, subtasks
+    )
   }
 
   return (
+    <>
     <form
       onSubmit={handleSubmit}
       className="rounded-[18px] border border-[#dde2ea] bg-white p-5 sm:p-7 md:min-h-[720px]"
@@ -453,7 +506,87 @@ export function EventForm({
           )}
         </div>
       </section>
+      {/* Plan logístico */}
+    <section className="mt-8">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h3 className="text-[13px] font-semibold text-[#17212b]">
+            Plan logístico
+          </h3>
 
+          <p className="mt-1 text-xs text-[#667085]">
+            Añade las tareas necesarias para preparar este evento.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          disabled={
+            isSubmitting ||
+            !values.name.trim() ||
+            !values.eventDate
+          }
+          onClick={() => {
+              setEditingSubtaskIndex(null)
+              setIsSubtaskDialogOpen(true)
+          }}
+          className="rounded-[9px]"
+        >
+          + Agregar tarea
+        </Button>
+      </div>
+
+      {subtasks.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {subtasks.map((subtask, index) => (
+            <div
+              key={`${subtask.name}-${index}`}
+              className="rounded-[10px] border border-[#dde2ea] p-4"
+            >
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm font-medium text-[#17212b]">
+                {subtask.name}
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() =>
+                  handleEditSubtask(index)
+                }
+                className="h-auto px-2 py-1 text-xs text-[#4f46e5]"
+              >
+                Editar
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() =>
+                  handleDeleteSubtask(index)
+                }
+                className="h-auto px-2 py-1 text-xs text-[#f04438]"
+              >
+                Eliminar
+              </Button>
+            </div>
+
+              <p className="mt-1 text-xs text-[#667085]">
+                {subtask.targetDate}
+                {' · '}
+                {subtask.estimatedHours} h
+              </p>
+
+              {subtask.details && (
+                <p className="mt-2 text-xs text-[#667085]">
+                  {subtask.details}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
       <p className="mt-4 text-xs text-[#667085]">
         * Campos obligatorios
       </p>
@@ -497,5 +630,21 @@ export function EventForm({
         </Button>
       </div>
     </form>
+        {values.name.trim() && values.eventDate && (
+          <AddSubtaskDialog
+            open={isSubtaskDialogOpen}
+            eventName={values.name}
+            eventDate={values.eventDate}
+            initialValues={
+                editingSubtaskIndex !== null
+                  ? subtasks[editingSubtaskIndex]
+                  : undefined
+              }
+            isSubmitting={false}
+            onOpenChange={setIsSubtaskDialogOpen}
+            onSubmit={handleAddSubtask}
+          />
+        )}
+    </>
   )
 }
