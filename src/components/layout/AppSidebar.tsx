@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Menu } from 'lucide-react'
+import { CalendarDays, Menu,} from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
@@ -36,15 +36,19 @@ function SidebarContent({ onNavigate }: SidebarContentProps) {
 
   return (
     <div className="flex h-full flex-col bg-white">
-      <div className="px-6 pt-7">
-        <p className="text-[26px] leading-none font-bold text-[#3730a3]">
-          Evento
-        </p>
+      <div className="flex items-center gap-3 px-6 pt-6">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[#4f46e5]">
+            <CalendarDays
+              size={22}
+              strokeWidth={2.2}
+              className="text-white"
+            />
+          </div>
 
-        <p className="mt-1 text-xs font-medium text-[#667085]">
-          organizador
-        </p>
-      </div>
+          <span className="text-[20px] font-semibold text-[#17212b]">
+            Eventger
+          </span>
+        </div>
 
       <nav
         className="mt-10 flex flex-col gap-3 px-6"

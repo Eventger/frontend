@@ -6,11 +6,14 @@ import { CreateEventError } from '@/features/events/components/CreateEventError'
 import { CreateEventSuccess } from '@/features/events/components/CreateEventSuccess'
 import { EventForm } from '@/features/events/components/EventForm'
 import { createEvent } from '@/features/events/services/event.service'
+import { createSubtask } from '@/features/events/services/subtasks.service'
 import type {
   CreateEventInput,
   Event,
 } from '@/features/events/types/event.types'
-
+import type {
+  CreateSubtaskInput,
+} from '@/features/events/types/subtask.types'
 type CreateEventView =
   | 'form'
   | 'success'
@@ -27,19 +30,24 @@ export function CreateEventPage() {
 
   const [submittedData, setSubmittedData] =
     useState<CreateEventInput>()
-
+  const [submittedSubtasks, setSubmittedSubtasks] =
+    useState<CreateSubtaskInput[]>([])
   const [createdEvent, setCreatedEvent] =
     useState<Event>()
 
   const handleSubmit = async (
     data: CreateEventInput,
+    subtasks: CreateSubtaskInput[],
   ) => {
     setSubmittedData(data)
+    setSubmittedSubtasks(subtasks)
     setIsSubmitting(true)
 
     try {
       const event = await createEvent(data)
-
+      for (const subtask of subtasks) {
+        await createSubtask(event.id, subtask)
+    }
       setCreatedEvent(event)
       setView('success')
     } catch {
@@ -60,13 +68,14 @@ export function CreateEventPage() {
               </h1>
 
               <p className="mt-2 text-sm text-[#667085] md:text-[15px]">
-                Completa la información básica de tu evento.
+                Completa la información básica de tu evento y agrega las tareas principales para dejarlo listo.
               </p>
             </header>
 
-            <div className="mt-8 max-w-[820px]">
+            <div className="mt-3 max-w-[1040px]">
               <EventForm
                 initialValues={submittedData}
+                initialSubtasks={submittedSubtasks}
                 onSubmit={handleSubmit}
                 onCancel={() =>
                   navigate('/eventos')

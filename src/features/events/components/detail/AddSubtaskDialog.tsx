@@ -1,4 +1,5 @@
 import {
+    useEffect,
   useState,
   type FormEvent,
 } from 'react'
@@ -20,6 +21,7 @@ type AddSubtaskDialogProps = {
   open: boolean
   eventName: string
   eventDate: string
+  initialValues?: CreateSubtaskInput
   isSubmitting?: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (
@@ -71,6 +73,7 @@ export function AddSubtaskDialog({
   open,
   eventName,
   eventDate,
+  initialValues,
   isSubmitting = false,
   onOpenChange,
   onSubmit,
@@ -80,6 +83,27 @@ export function AddSubtaskDialog({
 
   const [errors, setErrors] =
     useState<FormErrors>({})
+
+  useEffect(() => {
+  if (!open) {
+    return
+  }
+
+  if (initialValues) {
+    setValues({
+      name: initialValues.name,
+      targetDate: initialValues.targetDate,
+      estimatedHours: String(
+        initialValues.estimatedHours,
+      ),
+      details: initialValues.details,
+    })
+  } else {
+    setValues(emptyValues)
+  }
+
+  setErrors({})
+}, [open, initialValues])
 
   const eventDateOnly =
     eventDate.slice(0, 10)
