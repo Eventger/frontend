@@ -30,7 +30,8 @@ export function CreateEventPage() {
 
   const [submittedData, setSubmittedData] =
     useState<CreateEventInput>()
-
+  const [submittedSubtasks, setSubmittedSubtasks] =
+    useState<CreateSubtaskInput[]>([])
   const [createdEvent, setCreatedEvent] =
     useState<Event>()
 
@@ -39,6 +40,7 @@ export function CreateEventPage() {
     subtasks: CreateSubtaskInput[],
   ) => {
     setSubmittedData(data)
+    setSubmittedSubtasks(subtasks)
     setIsSubmitting(true)
 
     try {
@@ -66,13 +68,14 @@ export function CreateEventPage() {
               </h1>
 
               <p className="mt-2 text-sm text-[#667085] md:text-[15px]">
-                Completa la información básica de tu evento.
+                Completa la información básica de tu evento y agrega las tareas principales para dejarlo listo.
               </p>
             </header>
 
-            <div className="mt-8 max-w-[820px]">
+            <div className="mt-3 max-w-[1040px]">
               <EventForm
                 initialValues={submittedData}
+                initialSubtasks={submittedSubtasks}
                 onSubmit={handleSubmit}
                 onCancel={() =>
                   navigate('/eventos')

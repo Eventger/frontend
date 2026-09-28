@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 
+
 type CreateEventErrorProps = {
   eventName: string
   onReview: () => void
 }
+
 
 export function CreateEventError({
   eventName,
@@ -15,47 +17,60 @@ export function CreateEventError({
   const navigate = useNavigate()
 
   return (
-    <section>
+    <>
       <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
         Evento no creado
       </h1>
 
-      <div className="mx-auto mt-10 flex max-w-[760px] flex-col items-center rounded-[18px] border border-[#dde2ea] bg-white px-5 py-10 text-center sm:px-10 md:mt-32 md:min-h-[430px] md:justify-center">
-        <div className="flex size-16 items-center justify-center rounded-full bg-[#feeeec]">
+      <div className="mx-auto mt-[132px] flex min-h-[430px] w-full max-w-[760px] flex-col items-center rounded-[18px] border border-[#dde2ea] bg-white px-6 py-12 text-center">
+
+        {/* Icono de error */}
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#feeeec]">
           <X
-            className="size-8 text-[#b42318]"
+            size={38}
             strokeWidth={3}
+            className="text-[#b42318]"
           />
         </div>
 
-        <h2 className="mt-7 max-w-[530px] text-xl font-bold text-[#17212b] sm:text-2xl">
+        {/* Título */}
+        <h2 className="mt-7 max-w-[530px] text-[24px] font-bold leading-[1.35] text-[#17212b]">
           No pudimos crear {eventName}
         </h2>
 
-        <p className="mt-4 max-w-[540px] text-sm leading-6 text-[#667085] sm:text-[15px]">
-          Ocurrió un problema al guardar el evento. Conservamos la información
-          que ingresaste para que puedas revisarla e intentarlo nuevamente.
+        {/* Mensaje */}
+        <p className="mt-4 max-w-[540px] text-[15px] leading-6 text-[#667085]">
+          Ocurrió un problema al guardar el evento.
+          Conservamos la información que ingresaste
+          para que puedas revisarla e intentarlo
+          nuevamente.
         </p>
 
-        <div className="mt-8 flex w-full flex-col-reverse gap-3 sm:w-auto sm:flex-row">
+        {/* Botones */}
+        <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+
           <Button
             type="button"
             variant="outline"
-            className="h-11 sm:min-w-[175px]"
-            onClick={() => navigate('/eventos')}
+            onClick={() =>
+              navigate('/eventos')
+            }
+            className="h-11 min-w-[175px] rounded-[10px] border-[#dde2ea] text-[14px] font-semibold text-[#17212b]"
           >
             Volver a eventos
           </Button>
 
           <Button
             type="button"
-            className="h-11 bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:min-w-[190px]"
             onClick={onReview}
+            className="h-11 min-w-[190px] rounded-[10px] bg-[#4f46e5] text-[14px] font-semibold text-white hover:bg-[#4338ca]"
           >
             Volver y revisar
           </Button>
+
         </div>
+
       </div>
-    </section>
+    </>
   )
 }
