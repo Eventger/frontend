@@ -862,11 +862,15 @@ export function EventForm({
 
               <div className="space-y-1">
 
-                <label className="text-[12px] font-medium text-[#17212b]">
+                <label
+                  htmlFor="subtask-name"
+                  className="text-[12px] font-medium text-[#17212b]"
+                >
                   Nombre de la tarea *
                 </label>
 
                 <Input
+                  id="subtask-name"
                   value={
                     subtaskValues.name
                   }
@@ -898,11 +902,15 @@ export function EventForm({
 
               <div className="space-y-1">
 
-                <label className="text-[12px] font-medium text-[#17212b]">
+                <label
+                  htmlFor="subtask-target-date"
+                  className="text-[12px] font-medium text-[#17212b]"
+                >
                   Fecha límite *
                 </label>
 
                 <Input
+                  id="subtask-target-date"
                   type="date"
                   min={
                     minimumEventDate
@@ -951,11 +959,15 @@ export function EventForm({
 
               <div className="space-y-1">
 
-                <label className="text-[12px] font-medium text-[#17212b]">
+                <label
+                  htmlFor="subtask-estimated-hours"
+                  className="text-[12px] font-medium text-[#17212b]"
+                >
                   Tiempo estimado *
                 </label>
 
                 <Input
+                  id="subtask-estimated-hours"
                   type="number"
                   min="0.5"
                   step="0.5"
@@ -998,11 +1010,15 @@ export function EventForm({
 
               <div className="flex-1 space-y-1">
 
-                <label className="text-[12px] font-medium text-[#17212b]">
+                <label
+                  htmlFor="subtask-details"
+                  className="text-[12px] font-medium text-[#17212b]"
+                >
                   Nota opcional
                 </label>
 
                 <Textarea
+                  id="subtask-details"
                   value={
                     subtaskValues.details
                   }
