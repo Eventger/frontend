@@ -13,16 +13,8 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    path: '/login-error',
-    element: <LoginPage showErrors />,
-  },
-  {
     path: '/crear-cuenta',
     element: <SignUpPage />,
-  },
-  {
-    path: '/crear-cuenta-validacion',
-    element: <SignUpPage showErrors />,
   },
   {
     path: '/eventos',
