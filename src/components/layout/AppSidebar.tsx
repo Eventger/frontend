@@ -1,14 +1,26 @@
 import { useState } from 'react'
-import { CalendarDays, Menu,} from 'lucide-react'
-import { NavLink, useNavigate } from 'react-router'
+import {
+  CalendarDays,
+  LogOut,
+  Menu,
+} from 'lucide-react'
+
+import {
+  NavLink,
+  useNavigate,
+} from 'react-router'
+
+import { useClerk } from '@clerk/react'
 
 import { Button } from '@/components/ui/button'
+
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
+
 import { cn } from '@/lib/utils'
 
 const navigationItems = [
@@ -26,30 +38,45 @@ type SidebarContentProps = {
   onNavigate?: () => void
 }
 
-function SidebarContent({ onNavigate }: SidebarContentProps) {
+function SidebarContent({
+  onNavigate,
+}: SidebarContentProps) {
   const navigate = useNavigate()
+
+  const { signOut } = useClerk()
 
   const handleCreateEvent = () => {
     navigate('/crear')
     onNavigate?.()
   }
 
+  const handleSignOut = async () => {
+    await signOut({
+      redirectUrl: '/',
+    })
+
+    onNavigate?.()
+  }
+
   return (
     <div className="flex h-full flex-col bg-white">
-      <div className="flex items-center gap-3 px-6 pt-6">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[#4f46e5]">
-            <CalendarDays
-              size={22}
-              strokeWidth={2.2}
-              className="text-white"
-            />
-          </div>
 
-          <span className="text-[20px] font-semibold text-[#17212b]">
-            Eventger
-          </span>
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-6 pt-6">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[#4f46e5]">
+          <CalendarDays
+            size={22}
+            strokeWidth={2.2}
+            className="text-white"
+          />
         </div>
 
+        <span className="text-[20px] font-semibold text-[#17212b]">
+          Eventger
+        </span>
+      </div>
+
+      {/* Navegación */}
       <nav
         className="mt-10 flex flex-col gap-3 px-6"
         aria-label="Navegación principal"
@@ -74,17 +101,21 @@ function SidebarContent({ onNavigate }: SidebarContentProps) {
         ))}
       </nav>
 
+      {/* Crear evento */}
       <div className="mt-10 px-6">
         <Button
           type="button"
           onClick={handleCreateEvent}
-          className="h-11 w-full justify-start rounded-[10px] bg-[#4f46e5] px-4 text-sm font-semibold text-white hover:bg-[#4338ca] hover:cursor-pointer"
+          className="h-11 w-full justify-start rounded-[10px] bg-[#4f46e5] px-4 text-sm font-semibold text-white hover:cursor-pointer hover:bg-[#4338ca]"
         >
           + Crear evento
         </Button>
       </div>
 
+      {/* Parte inferior */}
       <div className="mt-auto p-6">
+
+        {/* Usuario */}
         <button
           type="button"
           className="flex h-[68px] w-full items-center rounded-xl border border-[#dde2ea] bg-[#f9fafb] px-3 text-left"
@@ -103,19 +134,36 @@ function SidebarContent({ onNavigate }: SidebarContentProps) {
             </span>
           </span>
         </button>
+
+        {/* Cerrar sesión */}
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="mt-3 flex h-11 w-full items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-[#667085] transition-colors hover:bg-[#fef2f2] hover:text-[#b42318]"
+        >
+          <LogOut size={18} />
+
+          <span>
+            Cerrar sesión
+          </span>
+        </button>
       </div>
     </div>
   )
 }
 
 export function AppSidebar() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] =
+    useState(false)
 
   return (
     <>
       {/* Mobile */}
       <header className="flex h-16 items-center border-b border-[#dde2ea] bg-white px-4 md:hidden">
-        <Sheet open={open} onOpenChange={setOpen}>
+        <Sheet
+          open={open}
+          onOpenChange={setOpen}
+        >
           <SheetTrigger asChild>
             <Button
               variant="ghost"
@@ -135,7 +183,9 @@ export function AppSidebar() {
             </SheetTitle>
 
             <SidebarContent
-              onNavigate={() => setOpen(false)}
+              onNavigate={() =>
+                setOpen(false)
+              }
             />
           </SheetContent>
         </Sheet>

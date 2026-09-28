@@ -157,7 +157,9 @@ export function LoginPage() {
             )
             return
           }
-
+          sessionStorage.removeItem(
+            'accountCreated',
+          )
           navigate('/hoy')
         },
       })
