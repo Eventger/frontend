@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CreateEventPage } from '@/features/events/pages/CreateEventPage'
 import { createEvent } from '@/features/events/services/event.service'
+import { createSubtask } from '@/features/events/services/subtasks.service'
 import type {
   CreateEventInput,
   Event,
@@ -24,6 +25,10 @@ const submittedInput: CreateEventInput = {
 
 vi.mock('@/features/events/services/event.service', () => ({
   createEvent: vi.fn(),
+}))
+
+vi.mock('@/features/events/services/subtasks.service', () => ({
+  createSubtask: vi.fn(),
 }))
 
 vi.mock('@/components/layout/AppLayout', () => ({
@@ -61,6 +66,7 @@ function renderPage() {
 describe('CreateEventPage', () => {
   beforeEach(() => {
     vi.mocked(createEvent).mockReset()
+    vi.mocked(createSubtask).mockReset()
   })
 
   it('muestra el estado de éxito con el nombre devuelto por el backend', async () => {
