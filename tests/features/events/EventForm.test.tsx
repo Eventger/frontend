@@ -51,7 +51,7 @@ describe('EventForm', () => {
 
     expect(screen.getByText('Ingresa el nombre del evento.')).toBeTruthy()
     expect(screen.getByText('Selecciona un tipo de evento.')).toBeTruthy()
-    expect(screen.getByText('Selecciona la fecha del evento.')).toBeTruthy()
+    expect(screen.getByText('Selecciona una fecha válida.')).toBeTruthy()
     expect(screen.getByText('Ingresa el lugar del evento.')).toBeTruthy()
     expect(
       screen.getByText('Ingresa un contacto para el evento.'),
@@ -97,7 +97,7 @@ describe('EventForm', () => {
     )
 
     expect(onSubmit).toHaveBeenCalledOnce()
-    expect(onSubmit).toHaveBeenCalledWith(validInput)
+    expect(onSubmit).toHaveBeenCalledWith(validInput, [])
   })
 
   it('rechaza una fecha de evento anterior al día actual', async () => {
