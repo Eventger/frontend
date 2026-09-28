@@ -10,7 +10,7 @@ import {
   useNavigate,
 } from 'react-router'
 
-import { useClerk } from '@clerk/react'
+import { useClerk, useUser } from '@clerk/react'
 
 import { Button } from '@/components/ui/button'
 
@@ -44,7 +44,11 @@ function SidebarContent({
   const navigate = useNavigate()
 
   const { signOut } = useClerk()
-
+  const {
+  user,
+  isLoaded,
+  isSignedIn,
+  } = useUser()
   const handleCreateEvent = () => {
     navigate('/crear')
     onNavigate?.()
@@ -120,19 +124,24 @@ function SidebarContent({
           type="button"
           className="flex h-[68px] w-full items-center rounded-xl border border-[#dde2ea] bg-[#f9fafb] px-3 text-left"
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#4f46e5] text-xs font-bold text-white">
-            MN
-          </span>
-
-          <span className="ml-3 min-w-0">
-            <span className="block truncate text-[13px] font-semibold text-[#17212b]">
-              Mateo Noguera
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#4f46e5] text-xs font-bold text-white">
+              {isLoaded && isSignedIn
+                ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`
+                    .toUpperCase()
+                : 'U'}
             </span>
 
-            <span className="mt-1 block text-[11px] font-medium text-[#667085]">
-              Configuración
+            <span className="ml-3 min-w-0">
+              <span className="block truncate text-[13px] font-semibold text-[#17212b]">
+                {isLoaded && isSignedIn
+                  ? user.fullName || 'Usuario'
+                  : 'Usuario'}
+              </span>
+
+              <span className="mt-1 block text-[11px] font-medium text-[#667085]">
+                Configuración
+              </span>
             </span>
-          </span>
         </button>
 
         {/* Cerrar sesión */}
