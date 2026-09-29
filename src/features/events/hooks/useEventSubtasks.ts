@@ -1,11 +1,22 @@
-import { useCallback, useEffect, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 
 import { getEventSubtasks } from '@/features/events/services/subtasks.service'
 import type { Subtask } from '@/features/events/types/subtask.types'
+import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 
 export function useEventSubtasks(
   eventId: number | null,
 ) {
+  const {
+    authenticatedRequest,
+    isAuthLoaded,
+    isSignedIn,
+  } = useAuthenticatedApi()
+
   const [subtasks, setSubtasks] =
     useState<Subtask[]>([])
 
@@ -15,34 +26,57 @@ export function useEventSubtasks(
   const [error, setError] =
     useState<string | null>(null)
 
-  const loadSubtasks = useCallback(async () => {
-    if (eventId === null) {
-      setSubtasks([])
+  const loadSubtasks = useCallback(
+    async () => {
+      if (eventId === null) {
+        setSubtasks([])
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const data =
+          await getEventSubtasks(
+            authenticatedRequest,
+            eventId,
+          )
+
+        setSubtasks(data)
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'No se pudieron cargar las subtareas',
+        )
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [
+      eventId,
+      authenticatedRequest,
+    ],
+  )
+
+  useEffect(() => {
+    if (!isAuthLoaded) {
+      return
+    }
+
+    if (!isSignedIn) {
       setIsLoading(false)
       return
     }
 
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      const data = await getEventSubtasks(eventId)
-
-      setSubtasks(data)
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudieron cargar las subtareas',
-      )
-    } finally {
-      setIsLoading(false)
-    }
-  }, [eventId])
-
-  useEffect(() => {
     void loadSubtasks()
-  }, [loadSubtasks])
+  }, [
+    isAuthLoaded,
+    isSignedIn,
+    loadSubtasks,
+  ])
 
   return {
     subtasks,

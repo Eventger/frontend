@@ -1,5 +1,3 @@
-import { apiRequest } from '@/lib/api'
-
 import {
   getEvents,
 } from '@/features/events/services/event.service'
@@ -13,6 +11,11 @@ import type {
   TodayData,
   TodayTaskItem,
 } from '@/features/today/types/today.types'
+
+type RequestFn = <T>(
+  path: string,
+  options?: RequestInit,
+) => Promise<T>
 
 function mapTodayTask(
   task: SubtaskApiData,
@@ -58,14 +61,15 @@ function sortByPriority(
   )
 }
 
-export async function getToday():
-  Promise<TodayData> {
+export async function getToday(
+  requestFn: RequestFn,
+): Promise<TodayData> {
   const [todayResponse, events] =
     await Promise.all([
-      apiRequest<TodayApiResponse>(
+      requestFn<TodayApiResponse>(
         '/hoy',
       ),
-      getEvents(),
+      getEvents(requestFn),
     ])
 
   const eventNames = new Map(

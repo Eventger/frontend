@@ -2,18 +2,22 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { AppLayout } from '@/components/layout/AppLayout'
+import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 import { CreateEventError } from '@/features/events/components/CreateEventError'
 import { CreateEventSuccess } from '@/features/events/components/CreateEventSuccess'
 import { EventForm } from '@/features/events/components/EventForm'
 import { createEvent } from '@/features/events/services/event.service'
 import { createSubtask } from '@/features/events/services/subtasks.service'
+
 import type {
   CreateEventInput,
   Event,
 } from '@/features/events/types/event.types'
+
 import type {
   CreateSubtaskInput,
 } from '@/features/events/types/subtask.types'
+
 type CreateEventView =
   | 'form'
   | 'success'
@@ -22,18 +26,33 @@ type CreateEventView =
 export function CreateEventPage() {
   const navigate = useNavigate()
 
+  const {
+    authenticatedRequest,
+  } = useAuthenticatedApi()
+
   const [view, setView] =
     useState<CreateEventView>('form')
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false)
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] = useState(false)
 
-  const [submittedData, setSubmittedData] =
-    useState<CreateEventInput>()
-  const [submittedSubtasks, setSubmittedSubtasks] =
+  const [
+    submittedData,
+    setSubmittedData,
+  ] = useState<CreateEventInput>()
+
+  const [
+    submittedSubtasks,
+    setSubmittedSubtasks,
+  ] =
     useState<CreateSubtaskInput[]>([])
-  const [createdEvent, setCreatedEvent] =
-    useState<Event>()
+
+  const [
+    createdEvent,
+    setCreatedEvent,
+  ] = useState<Event>()
 
   const handleSubmit = async (
     data: CreateEventInput,
@@ -44,10 +63,20 @@ export function CreateEventPage() {
     setIsSubmitting(true)
 
     try {
-      const event = await createEvent(data)
+      const event =
+        await createEvent(
+          authenticatedRequest,
+          data,
+        )
+
       for (const subtask of subtasks) {
-        await createSubtask(event.id, subtask)
-    }
+        await createSubtask(
+          authenticatedRequest,
+          event.id,
+          subtask,
+        )
+      }
+
       setCreatedEvent(event)
       setView('success')
     } catch {
@@ -74,30 +103,44 @@ export function CreateEventPage() {
 
             <div className="mt-3 max-w-[1040px]">
               <EventForm
-                initialValues={submittedData}
-                initialSubtasks={submittedSubtasks}
-                onSubmit={handleSubmit}
+                initialValues={
+                  submittedData
+                }
+                initialSubtasks={
+                  submittedSubtasks
+                }
+                onSubmit={
+                  handleSubmit
+                }
                 onCancel={() =>
                   navigate('/eventos')
                 }
-                isSubmitting={isSubmitting}
+                isSubmitting={
+                  isSubmitting
+                }
               />
             </div>
           </>
         )}
 
-        {view === 'success' && createdEvent && (
-          <CreateEventSuccess
-            event={createdEvent}
-          />
-        )}
+        {view === 'success' &&
+          createdEvent && (
+            <CreateEventSuccess
+              event={createdEvent}
+            />
+          )}
 
-        {view === 'error' && submittedData && (
-          <CreateEventError
-            eventName={submittedData.name}
-            onReview={() => setView('form')}
-          />
-        )}
+        {view === 'error' &&
+          submittedData && (
+            <CreateEventError
+              eventName={
+                submittedData.name
+              }
+              onReview={() =>
+                setView('form')
+              }
+            />
+          )}
       </div>
     </AppLayout>
   )

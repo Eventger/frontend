@@ -15,6 +15,11 @@ import type {
   UpdateEventInput,
 } from '@/features/events/types/event.types'
 
+type RequestFn = <T>(
+  path: string,
+  options?: RequestInit,
+) => Promise<T>
+
 function mapEventResponse(
   event: EventApiData,
 ): Event {
@@ -44,10 +49,13 @@ export async function getEventTypes(): Promise<EventType[]> {
 }
 
 export async function createEvent(
+  requestFn: RequestFn,
   data: CreateEventInput,
 ): Promise<Event> {
   if (data.typeId === null) {
-    throw new Error('Event type is required')
+    throw new Error(
+      'Event type is required',
+    )
   }
 
   const request: CreateEventApiRequest = {
@@ -59,8 +67,9 @@ export async function createEvent(
     location: data.location,
     contact: data.contact,
   }
+
   const response =
-    await apiRequest<CreateEventApiResponse>(
+    await requestFn<CreateEventApiResponse>(
       '/events/',
       {
         method: 'POST',
@@ -69,29 +78,41 @@ export async function createEvent(
     )
 
   if (!response.success) {
-    throw new Error(response.message)
+    throw new Error(
+      response.message,
+    )
   }
 
-  return mapEventResponse(response.data)
+  return mapEventResponse(
+    response.data,
+  )
 }
 
-export async function getEvents(): Promise<Event[]> {
+export async function getEvents(
+  requestFn: RequestFn,
+): Promise<Event[]> {
   const response =
-    await apiRequest<EventsApiResponse>('/events/')
+    await requestFn<EventsApiResponse>(
+      '/events/',
+    )
 
   if (!response.success) {
-    throw new Error('Could not retrieve events')
+    throw new Error(
+      'Could not retrieve events',
+    )
   }
 
-  return response.data.map(mapEventResponse)
+  return response.data.map(
+    mapEventResponse,
+  )
 }
 
-
 export async function getEventById(
+  requestFn: RequestFn,
   eventId: number,
 ): Promise<Event> {
   const response =
-    await apiRequest<EventApiResponse>(
+    await requestFn<EventApiResponse>(
       `/events/${eventId}/`,
     )
 
@@ -101,11 +122,13 @@ export async function getEventById(
     )
   }
 
-  return mapEventResponse(response.data)
+  return mapEventResponse(
+    response.data,
+  )
 }
 
-
 export async function updateEvent(
+  requestFn: RequestFn,
   eventId: number,
   data: UpdateEventInput,
 ): Promise<Event> {
@@ -126,7 +149,7 @@ export async function updateEvent(
   }
 
   const response =
-    await apiRequest<UpdateEventApiResponse>(
+    await requestFn<UpdateEventApiResponse>(
       `/events/${eventId}/`,
       {
         method: 'PATCH',
@@ -146,16 +169,16 @@ export async function updateEvent(
 }
 
 export async function deleteEvent(
+  requestFn: RequestFn,
   eventId: number,
 ): Promise<void> {
-  await apiRequest<void>(
+  await requestFn<void>(
     `/events/${eventId}/`,
     {
       method: 'DELETE',
     },
   )
 }
-
 
 function toEventDateTime(
   date: string,
