@@ -19,6 +19,7 @@ import {
 
 import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark'
+import { isValidEmail } from '@/features/auth/utils/isValidEmail'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import eyeIcon from '@/assets/auth/eye.svg'
@@ -132,11 +133,7 @@ export function SignUpPage() {
         'Ingresa tu correo electrónico.',
       )
       isValid = false
-    } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-        email,
-      )
-    ) {
+    } else if (!isValidEmail(email)) {
       setEmailError(
         'Ingresa una dirección de correo válida.',
       )
@@ -169,9 +166,7 @@ export function SignUpPage() {
         lastNameInputRef.current?.focus()
       } else if (
         !email.trim() ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-          email,
-        )
+        !isValidEmail(email)
       ) {
         emailInputRef.current?.focus()
       } else if (
