@@ -14,35 +14,31 @@ type TodaySummaryCardProps = {
 const toneStyles: Record<
   SummaryTone,
   {
-    container: string
+    accent: string
     title: string
     value: string
   }
 > = {
   danger: {
-    container:
-      'border-[#fef3f2] bg-[#fef3f2]',
+    accent: 'bg-[#b42318]',
     title: 'text-[#b42318]',
     value: 'text-[#b42318]',
   },
 
   warning: {
-    container:
-      'border-[#fffaeb] bg-[#fffaeb]',
+    accent: 'bg-[#b54708]',
     title: 'text-[#b54708]',
     value: 'text-[#b54708]',
   },
 
   info: {
-    container:
-      'border-[#eff8ff] bg-[#eff8ff]',
+    accent: 'bg-[#175cd3]',
     title: 'text-[#175cd3]',
     value: 'text-[#175cd3]',
   },
 
   neutral: {
-    container:
-      'border-[#d9dee7] bg-white',
+    accent: 'bg-[#4f46e5]',
     title: 'text-[#4f46e5]',
     value: 'text-[#17212b]',
   },
@@ -58,15 +54,17 @@ export function TodaySummaryCard({
     toneStyles[tone]
 
   return (
-    <div
-      className={[
-        'min-h-[112px] rounded-[14px] border p-[18px]',
-        styles.container,
-      ].join(' ')}
-    >
+    <div className="relative min-h-[104px] overflow-hidden rounded-[10px] border border-[#dde2ea] bg-white px-[18px] py-4">
+      <div
+        className={[
+          'absolute bottom-0 left-0 top-0 w-1',
+          styles.accent,
+        ].join(' ')}
+      />
+
       <p
         className={[
-          'text-[13px] font-semibold',
+          'text-[13px] font-semibold leading-4',
           styles.title,
         ].join(' ')}
       >
@@ -75,14 +73,17 @@ export function TodaySummaryCard({
 
       <p
         className={[
-          'mt-1 text-[30px] font-bold leading-tight',
+          'mt-[6px] font-bold leading-none',
+          tone === 'neutral'
+            ? 'text-[24px]'
+            : 'text-[30px]',
           styles.value,
         ].join(' ')}
       >
         {value}
       </p>
 
-      <p className="mt-2 text-xs text-[#667085]">
+      <p className="mt-[7px] text-[12px] leading-[15px] text-[#667085]">
         {description}
       </p>
     </div>

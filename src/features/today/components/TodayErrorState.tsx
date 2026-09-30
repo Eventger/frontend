@@ -1,10 +1,3 @@
-import {
-  RefreshCw,
-  TriangleAlert,
-} from 'lucide-react'
-
-import { Button } from '@/components/ui/button'
-
 type TodayErrorStateProps = {
   onRetry: () => void
 }
@@ -13,30 +6,28 @@ export function TodayErrorState({
   onRetry,
 }: TodayErrorStateProps) {
   return (
-    <div className="mx-auto flex min-h-[320px] max-w-[780px] flex-col items-center justify-center rounded-[18px] border border-[#dde2ea] bg-white px-6 text-center">
-      <TriangleAlert
-        aria-label="Error al cargar tareas"
-        className="size-12 text-[#b42318]"
-      />
+    <section className="flex min-h-[280px] w-full flex-col items-center rounded-[12px] border border-[#dde2ea] bg-white px-6 text-center">
+      <div className="mt-[37px] flex size-16 items-center justify-center rounded-full bg-[#feeeec]">
+        <span className="text-[28px] font-bold leading-none text-[#b42318]">
+          !
+        </span>
+      </div>
 
-      <h2 className="mt-5 text-xl font-bold text-[#17212b]">
+      <h2 className="mt-[10px] text-[24px] font-semibold leading-[29px] text-[#17212b]">
         No pudimos cargar tus tareas
       </h2>
 
-      <p className="mt-2 max-w-md text-sm leading-6 text-[#667085]">
-        Ocurrió un problema al cargar
-        las prioridades de hoy. Intenta
-        nuevamente.
+      <p className="mt-3 max-w-[660px] text-[14px] leading-5 text-[#667085]">
+        Ocurrió un problema al cargar las prioridades de hoy. Intenta nuevamente.
       </p>
 
-      <Button
+      <button
         type="button"
         onClick={onRetry}
-        className="mt-6 h-11 rounded-[10px] bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca]"
+        className="mt-[38px] h-11 w-[170px] rounded-[8px] bg-[#4f46e5] text-[13px] font-semibold text-white transition-colors hover:bg-[#4338ca]"
       >
-        <RefreshCw />
         Reintentar
-      </Button>
-    </div>
+      </button>
+    </section>
   )
 }

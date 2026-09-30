@@ -1,18 +1,36 @@
 import { TodayTaskCard } from './TodayTaskCard'
 
 import type {
-  TodayTaskGroup,
   TodayTaskItem,
 } from '@/features/today/types/today.types'
 
+type TaskGroup =
+  | 'overdue'
+  | 'today'
+  | 'upcoming'
+
 type TodayTaskSectionProps = {
   title: string
-  description: string
+  description?: string
   tasks: TodayTaskItem[]
-  group: TodayTaskGroup
+  group: TaskGroup
   onOpenTask: (
     task: TodayTaskItem,
   ) => void
+}
+
+const countStyles: Record<
+  TaskGroup,
+  string
+> = {
+  overdue:
+    'bg-[#fef3f2] text-[#b42318]',
+
+  today:
+    'bg-[#fffaeb] text-[#b54708]',
+
+  upcoming:
+    'bg-[#eff8ff] text-[#175cd3]',
 }
 
 export function TodayTaskSection({
@@ -28,24 +46,35 @@ export function TodayTaskSection({
 
   return (
     <section>
-      <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:gap-3">
-        <h2 className="text-lg font-bold text-[#17212b]">
+      <div className="mb-[7px] flex items-center gap-2">
+        <h2 className="text-[18px] font-semibold leading-[25px] text-[#17212b]">
           {title}
         </h2>
 
-        <p className="text-xs text-[#667085]">
-          {description}
-        </p>
+        <span
+          className={[
+            'inline-flex h-[26px] min-w-[34px] items-center justify-center rounded-full px-2 text-[12px] font-semibold',
+            countStyles[group],
+          ].join(' ')}
+        >
+          {tasks.length}
+        </span>
       </div>
 
-      <div className="mt-3 space-y-3">
+      {description && (
+        <p className="mb-3 text-[12px] text-[#667085]">
+          {description}
+        </p>
+      )}
+
+      <div className="space-y-2">
         {tasks.map((task) => (
           <TodayTaskCard
             key={task.id}
             task={task}
             group={group}
-            onOpen={() =>
-              onOpenTask(task)
+            onOpenTask={
+              onOpenTask
             }
           />
         ))}

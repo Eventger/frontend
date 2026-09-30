@@ -56,28 +56,39 @@ export function TodaySummary({
 
   return (
     <>
-      {/* Desktop */}
       <section className="hidden grid-cols-4 gap-5 md:grid">
         <TodaySummaryCard
           title="Vencidas"
           value={overdueCount}
-          description="requieren atención"
+          description={
+            overdueCount === 0
+              ? 'sin pendientes'
+              : 'requieren atención'
+          }
           tone="danger"
         />
 
         <TodaySummaryCard
           title="Para hoy"
           value={todayCount}
-          description={`${formatHours(
-            plannedHours,
-          )} h planificadas`}
+          description={
+            todayCount === 0
+              ? 'sin tareas'
+              : `${formatHours(
+                  plannedHours,
+                )} h planificadas`
+          }
           tone="warning"
         />
 
         <TodaySummaryCard
           title="Próximas"
           value={upcomingCount}
-          description="vencen pronto"
+          description={
+            upcomingCount === 0
+              ? 'sin tareas próximas'
+              : 'vencen pronto'
+          }
           tone="info"
         />
 
@@ -91,9 +102,8 @@ export function TodaySummary({
         />
       </section>
 
-      {/* Mobile según Figma */}
       <section className="md:hidden">
-        <div className="rounded-[14px] border border-[#dde2ea] bg-white p-4">
+        <div className="rounded-[10px] border border-[#dde2ea] bg-white p-4">
           <p className="text-base font-semibold text-[#17212b]">
             {dailyLimitHours !==
             undefined
@@ -107,7 +117,7 @@ export function TodaySummary({
                 )} h planificadas`}
           </p>
 
-          <p className="mt-3 text-[13px] font-semibold text-[#027a48]">
+          <p className="mt-3 text-[13px] text-[#667085]">
             {availableHours !== null
               ? `${formatHours(
                   availableHours,
