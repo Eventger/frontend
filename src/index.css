@@ -108,8 +108,12 @@ body {
   view-transition-name: auth-card;
 }
 
-.auth-card__content {
-  view-transition-name: auth-card-content;
+.auth-card__intro {
+  view-transition-name: auth-card-intro;
+}
+
+.auth-card__form {
+  view-transition-name: auth-card-form;
 }
 
 .auth-brand-panel {
@@ -172,9 +176,10 @@ body {
 }
 
 ::view-transition-group(auth-card),
-::view-transition-group(auth-card-content),
+::view-transition-group(auth-card-intro),
+::view-transition-group(auth-card-form),
 ::view-transition-group(auth-brand-panel) {
-  animation-duration: 400ms;
+  animation-duration: 380ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -186,25 +191,36 @@ body {
   mix-blend-mode: normal;
 }
 
-::view-transition-image-pair(auth-card-content) {
+::view-transition-image-pair(auth-card-intro),
+::view-transition-image-pair(auth-card-form) {
   isolation: auto;
   overflow: clip;
   border-radius: 18px;
 }
 
-::view-transition-old(auth-card-content),
-::view-transition-new(auth-card-content) {
+::view-transition-old(auth-card-intro),
+::view-transition-new(auth-card-intro),
+::view-transition-old(auth-card-form),
+::view-transition-new(auth-card-form) {
   transform-origin: 50% 12%;
   mix-blend-mode: normal;
   will-change: opacity, transform, filter;
 }
 
-html[data-auth-direction]::view-transition-old(auth-card-content) {
-  animation: auth-content-fade-out 140ms cubic-bezier(0.4, 0, 1, 1) both;
+html[data-auth-direction]::view-transition-old(auth-card-intro) {
+  animation: auth-content-fade-out 100ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
-html[data-auth-direction]::view-transition-new(auth-card-content) {
-  animation: auth-content-fade-in 260ms 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+html[data-auth-direction]::view-transition-new(auth-card-intro) {
+  animation: auth-content-fade-in 220ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html[data-auth-direction]::view-transition-old(auth-card-form) {
+  animation: auth-content-fade-out 110ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+html[data-auth-direction]::view-transition-new(auth-card-form) {
+  animation: auth-content-fade-in 240ms 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @supports not (view-transition-name: auth-card) {
@@ -215,10 +231,13 @@ html[data-auth-direction]::view-transition-new(auth-card-content) {
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(auth-card),
-  ::view-transition-group(auth-card-content),
+  ::view-transition-group(auth-card-intro),
+  ::view-transition-group(auth-card-form),
   ::view-transition-group(auth-brand-panel),
-  ::view-transition-old(auth-card-content),
-  ::view-transition-new(auth-card-content) {
+  ::view-transition-old(auth-card-intro),
+  ::view-transition-new(auth-card-intro),
+  ::view-transition-old(auth-card-form),
+  ::view-transition-new(auth-card-form) {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
   }

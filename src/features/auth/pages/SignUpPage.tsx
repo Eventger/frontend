@@ -519,7 +519,7 @@ export function SignUpPage() {
 
           <form
             onSubmit={handleSubmit}
-            className="auth-card__form mt-[34px]"
+            className="auth-card__form mt-10"
             noValidate
           >
             {/* Nombre y apellido */}
@@ -553,7 +553,7 @@ export function SignUpPage() {
                     )
                     setFirstNameError('')
                   }}
-                  className={`mt-1.5 h-11 rounded-[10px] px-3 text-[13px] ${
+                  className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
                     firstNameError
                       ? 'border-[#d92d20]'
                       : ''
@@ -600,7 +600,7 @@ export function SignUpPage() {
                     )
                     setLastNameError('')
                   }}
-                  className={`mt-1.5 h-11 rounded-[10px] px-3 text-[13px] ${
+                  className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
                     lastNameError
                       ? 'border-[#d92d20]'
                       : ''
@@ -620,7 +620,7 @@ export function SignUpPage() {
             </div>
 
             {/* correo */}
-            <div className="mt-3">
+            <div className="mt-5">
               <label
                 htmlFor="signup-email"
                 className="text-[12px] font-medium text-[#17212b]"
@@ -651,7 +651,7 @@ export function SignUpPage() {
                   )
                   setEmailError('')
                 }}
-                className={`mt-1.5 h-11 rounded-[10px] px-3 text-[13px] ${
+                className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
                   emailError
                     ? 'border-[#d92d20]'
                     : ''
@@ -670,7 +670,7 @@ export function SignUpPage() {
             </div>
 
             {/* contraseña */}
-            <div className="mt-[14px]">
+            <div className="mt-5">
               <label
                 htmlFor="signup-password"
                 className="text-[12px] font-medium text-[#17212b]"
@@ -678,7 +678,7 @@ export function SignUpPage() {
                 Contraseña
               </label>
 
-              <div className="relative mt-1.5">
+              <div className="relative mt-2">
                 <img
                   src={lockIcon}
                   alt=""

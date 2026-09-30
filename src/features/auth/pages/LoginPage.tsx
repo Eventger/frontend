@@ -465,7 +465,7 @@ export function LoginPage() {
           {recoveryStep ? (
             <form
               onSubmit={handlePasswordRecovery}
-              className="mt-10"
+              className="auth-card__form mt-10"
               noValidate
             >
               <label
