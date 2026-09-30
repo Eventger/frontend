@@ -44,12 +44,12 @@ export function EventDetailContent({
 
   return (
     <>
-      <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+      <header className="flex max-w-[1022px] flex-col justify-between gap-5 sm:flex-row sm:items-start">
         <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
           {event.name}
         </h1>
 
-        <div className="flex gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <Button
             type="button"
             variant="outline"
@@ -64,7 +64,7 @@ export function EventDetailContent({
             onClick={
               onDeleteEvent
             }
-            className="h-11 rounded-[10px] bg-[#b42318] text-white hover:bg-[#912018] sm:w-[120px]"
+            className="h-11 rounded-[10px] bg-[#c2413a] text-white hover:bg-[#a53732] focus-visible:ring-[#c2413a]/30 sm:w-[120px]"
           >
             Eliminar
           </Button>

@@ -12,6 +12,11 @@ import type {
   UpdateSubtaskInput,
 } from '@/features/events/types/subtask.types'
 
+type RequestFn = <T>(
+  path: string,
+  options?: RequestInit,
+) => Promise<T>
+
 function mapSubtaskResponse(
   subtask: SubtaskApiData,
 ): Subtask {
@@ -21,7 +26,9 @@ function mapSubtaskResponse(
     state: subtask.state,
     name: subtask.name,
     targetDate: subtask.target_date,
-    estimatedHours: Number(subtask.estimated_hours),
+    estimatedHours: Number(
+      subtask.estimated_hours,
+    ),
     details: subtask.details,
   }
 }
@@ -38,9 +45,10 @@ function toDeadlineDateTime(
 
 export async function getEventSubtasks(
   eventId: number,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Subtask[]> {
   const response =
-    await apiRequest<EventSubtasksApiResponse>(
+    await requestFn<EventSubtasksApiResponse>(
       `/events/${eventId}/subtasks/`,
     )
 
@@ -50,12 +58,15 @@ export async function getEventSubtasks(
     )
   }
 
-  return response.data.map(mapSubtaskResponse)
+  return response.data.map(
+    mapSubtaskResponse,
+  )
 }
 
 export async function createSubtask(
   eventId: number,
   data: CreateSubtaskInput,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Subtask> {
   const request: CreateSubtaskApiRequest = {
     name: data.name,
@@ -68,7 +79,7 @@ export async function createSubtask(
   }
 
   const response =
-    await apiRequest<CreateSubtaskApiResponse>(
+    await requestFn<CreateSubtaskApiResponse>(
       `/events/${eventId}/subtasks/`,
       {
         method: 'POST',
@@ -77,15 +88,20 @@ export async function createSubtask(
     )
 
   if (!response.success) {
-    throw new Error(response.message)
+    throw new Error(
+      response.message,
+    )
   }
 
-  return mapSubtaskResponse(response.data)
+  return mapSubtaskResponse(
+    response.data,
+  )
 }
 
 export async function updateSubtask(
   subtaskId: number,
   data: UpdateSubtaskInput,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Subtask> {
   const request: UpdateSubtaskApiRequest = {
     name: data.name,
@@ -98,7 +114,7 @@ export async function updateSubtask(
   }
 
   const response =
-    await apiRequest<UpdateSubtaskApiResponse>(
+    await requestFn<UpdateSubtaskApiResponse>(
       `/subtasks/${subtaskId}/`,
       {
         method: 'PATCH',
@@ -107,7 +123,9 @@ export async function updateSubtask(
     )
 
   if (!response.success) {
-    throw new Error(response.message)
+    throw new Error(
+      response.message,
+    )
   }
 
   return mapSubtaskResponse(
@@ -117,8 +135,9 @@ export async function updateSubtask(
 
 export async function deleteSubtask(
   subtaskId: number,
+  requestFn: RequestFn = apiRequest,
 ): Promise<void> {
-  await apiRequest<void>(
+  await requestFn<void>(
     `/subtasks/${subtaskId}/`,
     {
       method: 'DELETE',

@@ -14,6 +14,11 @@ import type {
   TodayTaskItem,
 } from '@/features/today/types/today.types'
 
+type RequestFn = <T>(
+  path: string,
+  options?: RequestInit,
+) => Promise<T>
+
 function mapTodayTask(
   task: SubtaskApiData,
   eventNames: Map<number, string>,
@@ -58,14 +63,15 @@ function sortByPriority(
   )
 }
 
-export async function getToday():
-  Promise<TodayData> {
+export async function getToday(
+  requestFn: RequestFn = apiRequest,
+): Promise<TodayData> {
   const [todayResponse, events] =
     await Promise.all([
-      apiRequest<TodayApiResponse>(
+      requestFn<TodayApiResponse>(
         '/hoy',
       ),
-      getEvents(),
+      getEvents(requestFn),
     ])
 
   const eventNames = new Map(

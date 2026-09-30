@@ -97,6 +97,29 @@ body {
   margin: 0;
 }
 
+::selection {
+  background: rgb(79 70 229 / 22%);
+  color: #17212b;
+}
+
+.auth-card {
+  scrollbar-color: #c7d2fe transparent;
+  scrollbar-width: thin;
+}
+
+.auth-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-card::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c7d2fe;
+}
+
+.auth-card input {
+  caret-color: #4f46e5;
+}
+
 @theme inline {
   --font-heading:
     var(--font-sans);

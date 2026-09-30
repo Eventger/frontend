@@ -12,7 +12,17 @@ import type {
   TodayData,
 } from '@/features/today/types/today.types'
 
+import {
+  useAuthenticatedApi,
+} from '@/features/auth/hooks/useAuthenticatedApi'
+
 export function useToday() {
+  const {
+    authenticatedRequest,
+    isAuthLoaded,
+    isSignedIn,
+  } = useAuthenticatedApi()
+
   const [data, setData] =
     useState<TodayData | null>(
       null,
@@ -33,7 +43,9 @@ export function useToday() {
         setError(null)
 
         const today =
-          await getToday()
+          await getToday(
+            authenticatedRequest,
+          )
 
         setData(today)
       } catch {
@@ -43,15 +55,32 @@ export function useToday() {
       } finally {
         setIsLoading(false)
       }
-    }, [])
+    }, [authenticatedRequest])
 
   useEffect(() => {
-    void loadToday()
-  }, [loadToday])
+    if (!isAuthLoaded) {
+      return
+    }
+
+    if (!isSignedIn) {
+      return
+    }
+
+    void Promise.resolve().then(
+      loadToday,
+    )
+  }, [
+    isAuthLoaded,
+    isSignedIn,
+    loadToday,
+  ])
 
   return {
     data,
-    isLoading,
+    isLoading:
+      isAuthLoaded && !isSignedIn
+        ? false
+        : isLoading,
     error,
     retry: loadToday,
   }
