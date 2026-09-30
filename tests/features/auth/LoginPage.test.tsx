@@ -512,7 +512,7 @@ describe('LoginPage', () => {
       )
     expect(
       newPassword.getAttribute('minlength'),
-    ).toBe('8')
+    ).toBe('15')
     await user.type(newPassword, 'corta')
     await user.click(
       screen.getByRole('button', {
@@ -521,14 +521,14 @@ describe('LoginPage', () => {
     )
     expect(
       screen.getByText(
-        'La nueva contraseña debe tener al menos 8 caracteres.',
+        'La nueva contraseña debe tener al menos 15 caracteres.',
       ),
     ).toBeTruthy()
 
     await user.clear(newPassword)
     await user.type(
       newPassword,
-      '12345678',
+      '123456789012345',
     )
     await user.click(
       screen.getByRole('button', {
@@ -539,7 +539,7 @@ describe('LoginPage', () => {
     expect(
       submitRecoveryPassword,
     ).toHaveBeenCalledWith({
-      password: '12345678',
+      password: '123456789012345',
       signOutOfOtherSessions: true,
     })
     expect(finalize).toHaveBeenCalledOnce()

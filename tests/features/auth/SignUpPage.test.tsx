@@ -77,7 +77,7 @@ async function fillSignUpForm(
   )
   await user.type(
     screen.getByLabelText('Contraseña'),
-    '12345678',
+    '123456789012345',
   )
   await user.click(screen.getByRole('checkbox'))
 }
@@ -135,7 +135,7 @@ describe('SignUpPage', () => {
 
     expect(
       screen.getByText(
-        'Usa al menos 8 caracteres.',
+        'Usa al menos 15 caracteres.',
       ),
     ).toBeTruthy()
     expect(document.activeElement).toBe(
@@ -241,6 +241,41 @@ describe('SignUpPage', () => {
         'No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.',
       ),
     ).toBeTruthy()
+  })
+
+  it('muestra junto al campo los errores específicos de Clerk', async () => {
+    const user = userEvent.setup()
+    password.mockResolvedValueOnce({
+      error: Object.assign(
+        new Error('contraseña corta'),
+        {
+          code: 'form_password_length_too_short',
+        },
+      ),
+    })
+    renderSignUp()
+    await fillSignUpForm(user)
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Crear cuenta',
+      }),
+    )
+
+    const passwordInput =
+      screen.getByLabelText('Contraseña')
+    expect(
+      await screen.findByText(
+        'Usa al menos 15 caracteres.',
+      ),
+    ).toBeTruthy()
+    expect(document.activeElement).toBe(
+      passwordInput,
+    )
+    expect(
+      passwordInput.getAttribute(
+        'aria-invalid',
+      ),
+    ).toBe('true')
   })
 
   it('valida, rechaza y reenvía códigos de verificación', async () => {

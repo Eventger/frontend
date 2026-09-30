@@ -31,6 +31,74 @@ import eyeIcon from '@/assets/auth/eye.svg'
 import googleLogo from '@/assets/auth/google.svg'
 import lockIcon from '@/assets/auth/lock.svg'
 
+type SignUpErrorTarget =
+  | 'email'
+  | 'password'
+  | 'general'
+
+type SignUpErrorDetails = {
+  target: SignUpErrorTarget
+  message: string
+}
+
+function getSignUpErrorDetails(
+  error: unknown,
+): SignUpErrorDetails {
+  const code =
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+      ? error.code
+      : ''
+
+  if (
+    code === 'form_identifier_exists' ||
+    code === 'form_email_address_exists'
+  ) {
+    return {
+      target: 'email',
+      message:
+        'Ya existe una cuenta con este correo electrónico.',
+    }
+  }
+
+  if (
+    code === 'form_password_pwned' ||
+    code === 'form_password_compromised'
+  ) {
+    return {
+      target: 'password',
+      message:
+        'Esta contraseña apareció en una filtración de datos. Usa otra.',
+    }
+  }
+
+  if (
+    code === 'form_password_length_too_short' ||
+    code === 'form_password_too_short'
+  ) {
+    return {
+      target: 'password',
+      message: PASSWORD_MIN_LENGTH_HINT,
+    }
+  }
+
+  if (code.startsWith('form_password_')) {
+    return {
+      target: 'password',
+      message:
+        'La contraseña no cumple los requisitos de seguridad. Usa otra.',
+    }
+  }
+
+  return {
+    target: 'general',
+    message:
+      'No pudimos crear tu cuenta. Revisa los datos e inténtalo de nuevo.',
+  }
+}
+
 export function SignUpPage() {
   const navigate = useNavigate()
 
@@ -219,9 +287,20 @@ export function SignUpPage() {
     }
 
     if (error) {
-      setGeneralError(
-        'No pudimos crear tu cuenta. Revisa los datos e inténtalo de nuevo.',
-      )
+      const details =
+        getSignUpErrorDetails(error)
+
+      if (details.target === 'email') {
+        setEmailError(details.message)
+        emailInputRef.current?.focus()
+      } else if (
+        details.target === 'password'
+      ) {
+        setPasswordError(details.message)
+        passwordInputRef.current?.focus()
+      } else {
+        setGeneralError(details.message)
+      }
 
       return
     }
@@ -713,7 +792,7 @@ export function SignUpPage() {
                     )
                     setPasswordError('')
                   }}
-                  className={`h-11 rounded-[10px] pl-10 pr-11 text-[13px] ${
+                  className={`app-password-input h-11 rounded-[10px] pl-10 pr-11 text-[13px] ${
                     passwordError
                       ? 'border-[#d92d20]'
                       : ''

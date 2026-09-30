@@ -690,7 +690,7 @@ export function LoginPage() {
                     setPasswordError('')
                     setGeneralError('')
                   }}
-                  className={`h-11 rounded-[10px] pl-10 pr-11 text-[13px] ${
+                  className={`app-password-input h-11 rounded-[10px] pl-10 pr-11 text-[13px] ${
                     passwordError
                       ? 'border-[#d92d20]'
                       : ''
