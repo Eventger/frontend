@@ -111,6 +111,36 @@ describe('SignUpPage', () => {
     expect(
       firstName.getAttribute('aria-invalid'),
     ).toBe('true')
+
+    await user.type(firstName, 'Ana')
+    await user.type(
+      screen.getByLabelText('Apellido'),
+      'Rojas',
+    )
+    await user.type(
+      screen.getByLabelText(
+        'Correo electrónico',
+      ),
+      'ana@example.com',
+    )
+    const passwordInput =
+      screen.getByLabelText('Contraseña')
+    await user.type(passwordInput, 'corta')
+    await user.click(screen.getByRole('checkbox'))
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Crear cuenta',
+      }),
+    )
+
+    expect(
+      screen.getByText(
+        'Usa al menos 8 caracteres.',
+      ),
+    ).toBeTruthy()
+    expect(document.activeElement).toBe(
+      passwordInput,
+    )
   })
 
   it('inicia el registro con Google y registra la aceptación legal', async () => {
