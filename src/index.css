@@ -105,6 +105,11 @@ body {
 .auth-card {
   scrollbar-color: #c7d2fe transparent;
   scrollbar-width: thin;
+  view-transition-name: auth-card;
+}
+
+.auth-brand-panel {
+  view-transition-name: auth-brand-panel;
 }
 
 .auth-card::-webkit-scrollbar {
@@ -118,6 +123,107 @@ body {
 
 .auth-card input {
   caret-color: #4f46e5;
+}
+
+@media (min-width: 1360px) and (max-height: 850px) {
+  .auth-brand-artwork {
+    transform: scale(0.66);
+    transform-origin: top left;
+  }
+
+  .auth-brand-benefits {
+    bottom: 64px;
+    gap: 16px;
+  }
+}
+
+@keyframes auth-card-out-forward {
+  to {
+    opacity: 0;
+    transform: translateX(-18px) scale(0.99);
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes auth-card-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(22px) scale(0.99);
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes auth-card-out-backward {
+  to {
+    opacity: 0;
+    transform: translateX(18px) scale(0.99);
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes auth-card-in-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-22px) scale(0.99);
+    filter: blur(1.5px);
+  }
+}
+
+@keyframes auth-card-fallback {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-group(auth-card),
+::view-transition-group(auth-brand-panel) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-auth-direction="forward"]::view-transition-old(auth-card) {
+  animation: auth-card-out-forward 180ms ease-in both;
+}
+
+html[data-auth-direction="forward"]::view-transition-new(auth-card) {
+  animation: auth-card-in-forward 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-auth-direction="backward"]::view-transition-old(auth-card) {
+  animation: auth-card-out-backward 180ms ease-in both;
+}
+
+html[data-auth-direction="backward"]::view-transition-new(auth-card) {
+  animation: auth-card-in-backward 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@supports not (view-transition-name: auth-card) {
+  .auth-card {
+    animation: auth-card-fallback 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(auth-card),
+  ::view-transition-group(auth-brand-panel),
+  ::view-transition-old(auth-card),
+  ::view-transition-new(auth-card) {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  @supports not (view-transition-name: auth-card) {
+    .auth-card {
+      animation: none;
+    }
+  }
 }
 
 @theme inline {

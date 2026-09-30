@@ -19,6 +19,8 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 const password = vi.fn()
 const finalize = vi.fn()
 const sso = vi.fn()
+const create = vi.fn()
+const sendRecoveryCode = vi.fn()
 
 function renderLogin(
   state?: { from: string },
@@ -48,6 +50,8 @@ describe('LoginPage', () => {
     password.mockReset()
     finalize.mockReset()
     sso.mockReset()
+    create.mockReset()
+    sendRecoveryCode.mockReset()
     vi.mocked(useSignIn).mockReturnValue({
       fetchStatus: 'idle',
       errors: {
@@ -62,6 +66,10 @@ describe('LoginPage', () => {
         password,
         finalize,
         sso,
+        create,
+        resetPasswordEmailCode: {
+          sendCode: sendRecoveryCode,
+        },
       },
     } as never)
     sessionStorage.clear()
@@ -159,5 +167,40 @@ describe('LoginPage', () => {
       redirectCallbackUrl:
         `${window.location.origin}/`,
     })
+  })
+
+  it('inicia una recuperación de contraseña real con el correo escrito', async () => {
+    const user = userEvent.setup()
+    create.mockResolvedValue({
+      error: null,
+    })
+    sendRecoveryCode.mockResolvedValue({
+      error: null,
+    })
+    renderLogin()
+
+    await user.type(
+      screen.getByLabelText(
+        'Correo electrónico',
+      ),
+      'ana@example.com',
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: '¿Olvidaste tu contraseña?',
+      }),
+    )
+
+    expect(create).toHaveBeenCalledWith({
+      identifier: 'ana@example.com',
+    })
+    expect(
+      sendRecoveryCode,
+    ).toHaveBeenCalledOnce()
+    expect(
+      await screen.findByLabelText(
+        'Código de verificación',
+      ),
+    ).toBeTruthy()
   })
 })
