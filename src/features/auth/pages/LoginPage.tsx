@@ -403,11 +403,11 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-svh bg-[#f7f8fc] sm:h-svh sm:overflow-hidden">
+    <main className="flex min-h-svh bg-[#f7f8fc] min-[1360px]:h-svh min-[1360px]:overflow-hidden">
       <AuthBrandPanel />
 
-      <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:h-full sm:min-h-0 sm:px-6 min-[1360px]:items-stretch min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:pb-12 min-[1360px]:pt-9">
-        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] min-[1360px]:h-full">
+      <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:h-full min-[1360px]:min-h-0 min-[1360px]:items-stretch min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:py-12">
+        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] min-[1360px]:h-full min-[1360px]:overflow-y-auto">
 
           {/* Logo superior */}
           <div className="flex items-center gap-3">
@@ -418,7 +418,8 @@ export function LoginPage() {
             </span>
           </div>
 
-          <div className="auth-card__intro mt-[77px]">
+          <div className="auth-card__content flex flex-1 flex-col">
+          <div className="auth-card__intro mt-[60px]">
             <h1 className="text-pretty text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
               {recoveryStep
                 ? 'Recupera tu cuenta'
@@ -783,6 +784,7 @@ export function LoginPage() {
             </p>
           </form>
           )}
+          </div>
         </div>
       </section>
     </main>

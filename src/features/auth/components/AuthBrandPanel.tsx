@@ -27,13 +27,7 @@ const benefits = [
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 const days = Array.from({ length: 35 }, (_, index) => index + 1)
 
-type AuthBrandPanelProps = {
-  lowered?: boolean
-}
-
-export function AuthBrandPanel({
-  lowered = false,
-}: AuthBrandPanelProps) {
+export function AuthBrandPanel() {
   return (
     <aside className="auth-brand-panel relative hidden min-h-svh overflow-hidden bg-[#3730a3] text-white min-[1360px]:block min-[1360px]:w-[57%] min-[1360px]:max-w-[820px] min-[1360px]:shrink-0 min-[1360px]:self-stretch">
       <img
@@ -47,11 +41,7 @@ export function AuthBrandPanel({
         className="pointer-events-none absolute -bottom-[180px] right-[-120px] h-[520px] w-[520px]"
       />
 
-      <div
-        className={`relative z-10 mx-auto h-full w-full max-w-[820px] px-[clamp(64px,5.8vw,84px)] pt-[clamp(36px,5vh,52px)] ${
-          lowered ? 'translate-y-3' : ''
-        }`}
-      >
+      <div className="relative z-10 mx-auto h-full w-full max-w-[820px] px-[clamp(64px,5.8vw,84px)] pt-[clamp(36px,5vh,52px)]">
         <div className="flex items-center gap-3">
           <AuthLogoMark inverse />
           <span className="text-[27px] font-semibold tracking-[-0.025em]">
