@@ -41,7 +41,7 @@ export function AuthBrandPanel() {
         className="pointer-events-none absolute -bottom-[180px] right-[-120px] h-[520px] w-[520px]"
       />
 
-      <div className="relative z-10 mx-auto h-full w-full max-w-[820px] px-[clamp(64px,5.8vw,84px)] pt-[clamp(36px,5vh,52px)]">
+      <div className="auth-brand-inner relative z-10 mx-auto h-full w-full max-w-[820px] px-[clamp(64px,5.8vw,84px)] pt-[clamp(36px,5vh,52px)]">
         <div className="flex items-center gap-3">
           <AuthLogoMark inverse />
           <span className="text-[27px] font-semibold tracking-[-0.025em]">
@@ -49,7 +49,7 @@ export function AuthBrandPanel() {
           </span>
         </div>
 
-        <div className="mt-[clamp(58px,7.5vh,77px)] grid grid-cols-[minmax(280px,316px)_minmax(270px,285px)] gap-[clamp(24px,3.55vw,51px)]">
+        <div className="auth-brand-hero mt-[clamp(58px,7.5vh,77px)] grid grid-cols-[minmax(280px,316px)_minmax(270px,285px)] gap-[clamp(24px,3.55vw,51px)]">
           <div className="max-w-[316px]">
             <h2 className="text-pretty text-[clamp(36px,2.8vw,40px)] font-bold leading-[1.18] tracking-[-0.025em]">
               Convierte cada evento en una experiencia bien organizada.
@@ -118,8 +118,8 @@ export function AuthBrandPanel() {
 
         <div className="auth-brand-benefits absolute bottom-[147px] left-[clamp(64px,5.8vw,84px)] flex flex-col gap-8">
           {benefits.map((benefit) => (
-            <div key={benefit.title} className="flex items-center gap-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-[11px] border border-white/20 bg-white/10">
+            <div key={benefit.title} className="auth-brand-benefit flex items-center gap-4">
+              <span className="auth-brand-benefit-icon flex size-11 shrink-0 items-center justify-center rounded-[11px] border border-white/20 bg-white/10">
                 <img
                   src={benefit.icon}
                   alt=""
@@ -138,7 +138,7 @@ export function AuthBrandPanel() {
           ))}
         </div>
 
-        <p className="absolute bottom-[62px] left-[clamp(64px,5.8vw,84px)] text-[11px] text-white/55">
+        <p className="auth-brand-footer absolute bottom-[62px] left-[clamp(64px,5.8vw,84px)] text-[11px] text-white/55">
           © 2026 Eventger. Todos los derechos reservados.
         </p>
       </div>
