@@ -1,4 +1,5 @@
-export const PASSWORD_MIN_LENGTH = 8
+// Keep this value aligned with Clerk Dashboard > Password settings.
+export const PASSWORD_MIN_LENGTH = 15
 
 export const PASSWORD_MIN_LENGTH_HINT =
   `Usa al menos ${PASSWORD_MIN_LENGTH} caracteres.`

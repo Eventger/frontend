@@ -151,6 +151,13 @@ body {
   caret-color: #4f46e5;
 }
 
+/* Edge provides its own reveal control for password inputs. These fields have
+   an accessible cross-browser control already, so hide the native duplicate. */
+.app-password-input::-ms-reveal,
+.app-password-input::-ms-clear {
+  display: none;
+}
+
 .event-task-list {
   max-height: min(28rem, 60vh);
   overflow-y: auto;

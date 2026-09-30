@@ -2,9 +2,9 @@
 
 Este documento es la referencia para mantener alineados el frontend, las pruebas,
 los prototipos de Figma y las evidencias UX. La política vigente para crear o
-restablecer una contraseña es de **8 caracteres como mínimo**.
+restablecer una contraseña es de **15 caracteres como mínimo**.
 
-La constante implementada en el frontend es `PASSWORD_MIN_LENGTH = 8`. La
+La constante implementada en el frontend es `PASSWORD_MIN_LENGTH = 15`. La
 configuración de contraseñas de la instancia de Clerk debe aceptar el mismo mínimo;
 el frontend no reemplaza la validación del proveedor de identidad.
 
@@ -20,11 +20,11 @@ el frontend no reemplaza la validación del proveedor de identidad.
 | Crear cuenta | Correo electrónico | Vacío | Ingresa tu correo electrónico. |
 | Crear cuenta | Correo electrónico | Formato inválido | Ingresa una dirección de correo válida. |
 | Crear cuenta | Contraseña | Vacía | Ingresa una contraseña. |
-| Crear cuenta | Contraseña | Menos de 8 caracteres | Usa al menos 8 caracteres. |
+| Crear cuenta | Contraseña | Menos de 15 caracteres | Usa al menos 15 caracteres. |
 | Crear cuenta | Términos | Sin aceptar | Debes aceptar los Términos y condiciones y la Política de privacidad. |
 | Verificación | Código | No tiene 6 dígitos | Ingresa el código de 6 dígitos. |
 | Recuperación | Código | No tiene 6 dígitos | Ingresa el código de 6 dígitos que enviamos a tu correo. |
-| Recuperación | Nueva contraseña | Menos de 8 caracteres | La nueva contraseña debe tener al menos 8 caracteres. |
+| Recuperación | Nueva contraseña | Menos de 15 caracteres | La nueva contraseña debe tener al menos 15 caracteres. |
 
 ## Criterios de presentación
 
