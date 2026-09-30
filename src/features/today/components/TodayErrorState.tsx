@@ -6,7 +6,10 @@ export function TodayErrorState({
   onRetry,
 }: TodayErrorStateProps) {
   return (
-    <section className="flex min-h-[280px] w-full flex-col items-center rounded-[12px] border border-[#dde2ea] bg-white px-6 text-center">
+    <section
+      role="alert"
+      className="flex min-h-[280px] w-full flex-col items-center rounded-[12px] border border-[#dde2ea] bg-white px-6 text-center"
+    >
       <div className="mt-[37px] flex size-16 items-center justify-center rounded-full bg-[#feeeec]">
         <span className="text-[28px] font-bold leading-none text-[#b42318]">
           !

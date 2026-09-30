@@ -136,6 +136,7 @@ export function TodayTaskCard({
 
         <button
           type="button"
+          aria-label={`Ver tarea: ${task.name}`}
           onClick={() =>
             onOpenTask(task)
           }
@@ -147,6 +148,7 @@ export function TodayTaskCard({
 
       <button
         type="button"
+        aria-label={`Ver tarea: ${task.name}`}
         onClick={() =>
           onOpenTask(task)
         }

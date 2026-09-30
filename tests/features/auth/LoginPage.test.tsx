@@ -154,6 +154,16 @@ describe('LoginPage', () => {
       emailAddress: 'ana@example.com',
       password: 'una-clave-segura',
     })
+    expect(
+      await screen.findByRole('status', {
+        name: 'Sesión iniciada correctamente',
+      }),
+    ).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Continuar',
+      }),
+    )
     expect(finalize).toHaveBeenCalledOnce()
     expect(decorateUrl).toHaveBeenCalledWith(
       '/eventos',
@@ -218,19 +228,10 @@ describe('LoginPage', () => {
   })
 
   it.each([
-    [
-      'needs_second_factor',
-      'Tu cuenta requiere una verificación adicional.',
-    ],
-    [
-      'needs_client_trust',
-      'Clerk requiere verificar este dispositivo antes de continuar.',
-    ],
-    [
-      'needs_identifier',
-      'No fue posible completar el inicio de sesión.',
-    ],
-  ])('informa el estado pendiente %s', async (status, message) => {
+    'needs_second_factor',
+    'needs_client_trust',
+    'needs_identifier',
+  ])('informa el estado pendiente %s', async (status) => {
     const user = userEvent.setup()
     password.mockResolvedValue({ error: null })
     mockSignIn(status)
@@ -243,7 +244,9 @@ describe('LoginPage', () => {
     )
 
     expect(
-      await screen.findByText(message),
+      await screen.findByRole('alertdialog', {
+        name: 'No pudimos iniciar sesión',
+      }),
     ).toBeTruthy()
   })
 
@@ -260,10 +263,15 @@ describe('LoginPage', () => {
       }),
     )
     expect(
-      await screen.findByText(
-        'No pudimos iniciar sesión. Verifica tus datos e inténtalo de nuevo.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'Credenciales inválidas',
+      }),
     ).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Cerrar',
+      }),
+    )
 
     password.mockRejectedValueOnce(
       new Error('red'),
@@ -274,9 +282,9 @@ describe('LoginPage', () => {
       }),
     )
     expect(
-      await screen.findByText(
-        'No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'Sin conexión',
+      }),
     ).toBeTruthy()
   })
 
@@ -313,10 +321,15 @@ describe('LoginPage', () => {
         name: 'Iniciar sesión',
       }),
     )
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Continuar',
+      }),
+    )
     expect(
-      await screen.findByText(
-        'Completa la verificación pendiente para continuar.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'No pudimos iniciar sesión',
+      }),
     ).toBeTruthy()
   })
 
@@ -332,17 +345,22 @@ describe('LoginPage', () => {
     )
     await user.click(googleButton)
     expect(
-      await screen.findByText(
-        'No pudimos iniciar sesión con Google. Inténtalo de nuevo.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'No pudimos iniciar sesión',
+      }),
     ).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Cerrar',
+      }),
+    )
 
     sso.mockRejectedValueOnce(new Error('red'))
     await user.click(googleButton)
     expect(
-      await screen.findByText(
-        'No pudimos conectarnos con Google. Revisa tu conexión e inténtalo de nuevo.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'Sin conexión',
+      }),
     ).toBeTruthy()
   })
 
