@@ -28,6 +28,7 @@ describe('SubtaskOperationFeedback', () => {
       screen.getByRole('heading', { name: 'Tarea actualizada' }),
     ).toBeTruthy()
     expect(screen.getByText(new RegExp(subtaskFixture.name))).toBeTruthy()
+    expect(screen.getByRole('status')).toBeTruthy()
 
     await user.click(
       screen.getByRole('button', { name: 'Seguir editando' }),
@@ -59,6 +60,7 @@ describe('SubtaskOperationFeedback', () => {
     expect(
       screen.getByRole('heading', { name: 'No pudimos actualizar la tarea' }),
     ).toBeTruthy()
+    expect(screen.getByRole('alert')).toBeTruthy()
 
     await user.click(
       screen.getByRole('button', { name: 'Intentar de nuevo' }),
@@ -135,8 +137,15 @@ describe('SubtaskOperationFeedback', () => {
       />,
     )
 
-    const retryButton = screen.getByRole('button', { name: 'Procesando...' })
+    const retryButton = screen.getByRole('button', { name: 'Procesando…' })
     expect((retryButton as HTMLButtonElement).disabled).toBe(true)
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Volver al evento',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true)
 
     await user.click(retryButton)
     expect(onRetry).not.toHaveBeenCalled()

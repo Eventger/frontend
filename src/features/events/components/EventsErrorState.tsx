@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { LoadErrorState } from '@/components/LoadErrorState'
 
 type EventsErrorStateProps = {
   onRetry: () => void
@@ -8,24 +8,12 @@ export function EventsErrorState({
   onRetry,
 }: EventsErrorStateProps) {
   return (
-    <section className="flex min-h-[360px] items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-lg font-semibold text-[#17212b]">
-          No pudimos cargar tus eventos
-        </h2>
-
-        <p className="mt-2 text-sm text-[#667085]">
-          Intenta nuevamente.
-        </p>
-
-        <Button
-          type="button"
-          className="mt-6"
-          onClick={onRetry}
-        >
-          Reintentar
-        </Button>
-      </div>
-    </section>
+    <LoadErrorState
+      title="No pudimos cargar tus eventos"
+      description="Ocurrió un problema al cargar tus eventos. Intenta nuevamente."
+      iconLabel="Error al cargar eventos"
+      onRetry={onRetry}
+      variant="events"
+    />
   )
 }

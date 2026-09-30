@@ -166,12 +166,12 @@ describe('EditSubtaskDialog', () => {
         .disabled,
     ).toBe(true)
     expect(
-      (screen.getByRole('button', { name: 'Guardando...' }) as HTMLButtonElement)
+      (screen.getByRole('button', { name: 'Guardando…' }) as HTMLButtonElement)
         .disabled,
     ).toBe(true)
 
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
-    await user.click(screen.getByRole('button', { name: 'Guardando...' }))
+    await user.click(screen.getByRole('button', { name: 'Guardando…' }))
     await user.keyboard('{Escape}')
 
     expect(onClose).not.toHaveBeenCalled()

@@ -8,10 +8,12 @@ describe('EventProgressCard', () => {
   it('muestra el estado inicial cuando no hay subtareas', () => {
     render(<EventProgressCard subtasks={[]} />)
 
-    expect(screen.getByText('—')).toBeTruthy()
+    expect(screen.getByText('0%')).toBeTruthy()
     expect(
-      screen.getByText('Agrega tareas para comenzar a medir el progreso.'),
+      screen.getByText('Aún no hay tareas creadas.'),
     ).toBeTruthy()
+    expect(screen.getByText('0 h / día')).toBeTruthy()
+    expect(screen.getByText('Aún no hay tareas programadas.')).toBeTruthy()
   })
 
   it('calcula el progreso con los datos reales de las subtareas', () => {
@@ -23,7 +25,7 @@ describe('EventProgressCard', () => {
 
     render(<EventProgressCard subtasks={subtasks} />)
 
-    expect(screen.getByText('50 %')).toBeTruthy()
-    expect(screen.getByText('2 de 4 tareas completadas')).toBeTruthy()
+    expect(screen.getByText('50%')).toBeTruthy()
+    expect(screen.getByText('2 de 4 tareas completadas.')).toBeTruthy()
   })
 })

@@ -77,7 +77,7 @@ async function fillSignUpForm(
   )
   await user.type(
     screen.getByLabelText('Contraseña'),
-    'una-clave-de-15-caracteres',
+    '12345678',
   )
   await user.click(screen.getByRole('checkbox'))
 }

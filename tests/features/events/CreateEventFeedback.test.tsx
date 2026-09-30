@@ -36,16 +36,43 @@ describe('CreateEventFeedback', () => {
         name: 'Boda Laura y Daniel se creó correctamente',
       }),
     ).toBeTruthy()
+    expect(screen.getByRole('status')).toBeTruthy()
+
+    const primaryAction = screen.getByRole(
+      'button',
+      { name: 'Ver detalle del evento' },
+    )
+    const secondaryAction = screen.getByRole(
+      'button',
+      { name: 'Volver a eventos' },
+    )
+
+    expect(primaryAction.className).toContain(
+      'w-full',
+    )
+    expect(
+      primaryAction.compareDocumentPosition(
+        secondaryAction,
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
 
     await user.click(
-      screen.getByRole('button', { name: 'Volver a eventos' }),
+      secondaryAction,
     )
     await user.click(
-      screen.getByRole('button', { name: 'Ver detalle del evento' }),
+      primaryAction,
     )
 
-    expect(navigate).toHaveBeenNthCalledWith(1, '/eventos')
-    expect(navigate).toHaveBeenNthCalledWith(2, '/evento/21')
+    expect(navigate).toHaveBeenNthCalledWith(
+      1,
+      '/eventos',
+      { viewTransition: true },
+    )
+    expect(navigate).toHaveBeenNthCalledWith(
+      2,
+      '/evento/21',
+      { viewTransition: true },
+    )
   })
 
   it('conserva el nombre y permite revisar o abandonar un evento fallido', async () => {
@@ -64,6 +91,7 @@ describe('CreateEventFeedback', () => {
         name: 'No pudimos crear Boda Laura y Daniel',
       }),
     ).toBeTruthy()
+    expect(screen.getByRole('alert')).toBeTruthy()
 
     await user.click(
       screen.getByRole('button', { name: 'Volver y revisar' }),
@@ -73,6 +101,9 @@ describe('CreateEventFeedback', () => {
     )
 
     expect(onReview).toHaveBeenCalledOnce()
-    expect(navigate).toHaveBeenCalledWith('/eventos')
+    expect(navigate).toHaveBeenCalledWith(
+      '/eventos',
+      { viewTransition: true },
+    )
   })
 })

@@ -1,7 +1,10 @@
-import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+} from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CreateEventPage } from '@/features/events/pages/CreateEventPage'
@@ -23,6 +26,9 @@ const submittedInput: CreateEventInput = {
   contact: 'Laura 3001234567',
 }
 
+const createEventDraftKey =
+  'eventger:create-event-draft'
+
 vi.mock('@/features/events/services/event.service', () => ({
   createEvent: vi.fn(),
 }))
@@ -31,27 +37,54 @@ vi.mock('@/features/events/services/subtasks.service', () => ({
   createSubtask: vi.fn(),
 }))
 
-vi.mock('@/components/layout/AppLayout', () => ({
-  AppLayout: ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
-  ),
-}))
-
 vi.mock('@/features/events/components/EventForm', () => ({
   EventForm: ({
     onSubmit,
+    onCancel,
+    onDraftChange,
+    initialValues,
+    initialSubtasks = [],
   }: {
     onSubmit: (
       data: CreateEventInput,
       subtasks: CreateSubtaskInput[],
     ) => Promise<void>
+    onCancel: () => void
+    onDraftChange?: (
+      data: CreateEventInput,
+      subtasks: CreateSubtaskInput[],
+    ) => void
+    initialValues?: CreateEventInput
+    initialSubtasks?: CreateSubtaskInput[]
   }) => (
-    <button
-      type="button"
-      onClick={() => onSubmit(submittedInput, [])}
-    >
-      Enviar formulario de prueba
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => onSubmit(submittedInput, [])}
+      >
+        Enviar formulario de prueba
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onDraftChange?.(submittedInput, [])
+        }
+      >
+        Guardar borrador de prueba
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+      >
+        Cancelar
+      </button>
+      <span data-testid="initial-event-name">
+        {initialValues?.name ?? ''}
+      </span>
+      <span data-testid="initial-subtask-count">
+        {initialSubtasks.length}
+      </span>
+    </>
   ),
 }))
 
@@ -65,6 +98,7 @@ function renderPage() {
 
 describe('CreateEventPage', () => {
   beforeEach(() => {
+    sessionStorage.clear()
     vi.mocked(createEvent).mockReset()
     vi.mocked(createSubtask).mockReset()
   })
@@ -80,6 +114,14 @@ describe('CreateEventPage', () => {
       contact: submittedInput.contact,
     }
     vi.mocked(createEvent).mockResolvedValue(createdEvent)
+
+    sessionStorage.setItem(
+      createEventDraftKey,
+      JSON.stringify({
+        data: submittedInput,
+        subtasks: [],
+      }),
+    )
 
     renderPage()
 
@@ -106,8 +148,13 @@ describe('CreateEventPage', () => {
       screen.getByRole('button', { name: 'Volver a eventos' }),
     ).toBeTruthy()
     expect(
-        screen.getByRole('button', { name: 'Ver detalle del evento' }),
+      screen.getByRole('button', { name: 'Ver detalle del evento' }),
     ).toBeTruthy()
+    expect(
+      sessionStorage.getItem(
+        createEventDraftKey,
+      ),
+    ).toBeNull()
   })
 
   it('muestra el estado de error cuando la creación falla', async () => {
@@ -133,5 +180,101 @@ describe('CreateEventPage', () => {
       }),
     ).toBeTruthy()
     expect(createEvent).toHaveBeenCalledOnce()
+  })
+
+  it('cierra la creación y vuelve a eventos', async () => {
+    const user = userEvent.setup()
+
+    sessionStorage.setItem(
+      createEventDraftKey,
+      JSON.stringify({
+        data: submittedInput,
+        subtasks: [],
+      }),
+    )
+
+    render(
+      <MemoryRouter initialEntries={['/crear']}>
+        <Routes>
+          <Route
+            path="/crear"
+            element={<CreateEventPage />}
+          />
+          <Route
+            path="/eventos"
+            element={<h1>Eventos destino</h1>}
+          />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Cancelar',
+      }),
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Eventos destino',
+      }),
+    ).toBeTruthy()
+    expect(
+      sessionStorage.getItem(
+        createEventDraftKey,
+      ),
+    ).toBeNull()
+  })
+
+  it('restaura el borrador al volver a crear', () => {
+    const savedSubtask: CreateSubtaskInput = {
+      name: 'Confirmar catering',
+      targetDate: '2099-12-20',
+      estimatedHours: 2,
+      details: '',
+    }
+
+    sessionStorage.setItem(
+      createEventDraftKey,
+      JSON.stringify({
+        data: submittedInput,
+        subtasks: [savedSubtask],
+      }),
+    )
+
+    renderPage()
+
+    expect(
+      screen.getByTestId(
+        'initial-event-name',
+      ).textContent,
+    ).toBe(submittedInput.name)
+    expect(
+      screen.getByTestId(
+        'initial-subtask-count',
+      ).textContent,
+    ).toBe('1')
+  })
+
+  it('guarda los cambios del borrador durante la sesión', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Guardar borrador de prueba',
+      }),
+    )
+
+    expect(
+      JSON.parse(
+        sessionStorage.getItem(
+          createEventDraftKey,
+        ) ?? '{}',
+      ),
+    ).toEqual({
+      data: submittedInput,
+      subtasks: [],
+    })
   })
 })

@@ -20,7 +20,11 @@ export function EventNotFoundState() {
           type="button"
           variant="outline"
           className="mt-6"
-          onClick={() => navigate('/eventos')}
+          onClick={() =>
+            navigate('/eventos', {
+              viewTransition: true,
+            })
+          }
         >
           Volver a eventos
         </Button>
