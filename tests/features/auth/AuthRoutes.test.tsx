@@ -133,4 +133,34 @@ describe('rutas de autenticación', () => {
       '"pathname":"/hoy"',
     )
   })
+
+  it('muestra carga y luego permite la ruta pública sin sesión', () => {
+    setAuthState(false, false)
+    const { rerender } = render(
+      <MemoryRouter>
+        <PublicOnlyRoute>
+          <h1>Iniciar sesión</h1>
+        </PublicOnlyRoute>
+      </MemoryRouter>,
+    )
+    expect(
+      screen.getByText(
+        'Verificando tu sesión…',
+      ),
+    ).toBeTruthy()
+
+    setAuthState(true, false)
+    rerender(
+      <MemoryRouter>
+        <PublicOnlyRoute>
+          <h1>Iniciar sesión</h1>
+        </PublicOnlyRoute>
+      </MemoryRouter>,
+    )
+    expect(
+      screen.getByRole('heading', {
+        name: 'Iniciar sesión',
+      }),
+    ).toBeTruthy()
+  })
 })
