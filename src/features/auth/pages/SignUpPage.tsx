@@ -1,4 +1,5 @@
 import {
+  Check,
   EyeOff,
 } from 'lucide-react'
 
@@ -9,7 +10,6 @@ import {
 } from 'react'
 
 import {
-  Link,
   useNavigate,
 } from 'react-router'
 
@@ -19,6 +19,7 @@ import {
 
 import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark'
+import { AuthRouteLink } from '@/features/auth/components/AuthRouteLink'
 import { isValidEmail } from '@/features/auth/utils/isValidEmail'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -145,9 +146,9 @@ export function SignUpPage() {
         'Ingresa una contraseña.',
       )
       isValid = false
-    } else if (password.length < 15) {
+    } else if (password.length < 8) {
       setPasswordError(
-        'Usa al menos 15 caracteres.',
+        'Usa al menos 8 caracteres.',
       )
       isValid = false
     }
@@ -171,7 +172,7 @@ export function SignUpPage() {
         emailInputRef.current?.focus()
       } else if (
         !password ||
-        password.length < 15
+        password.length < 8
       ) {
         passwordInputRef.current?.focus()
       } else {
@@ -357,11 +358,11 @@ export function SignUpPage() {
 
   if (isVerifying) {
     return (
-      <main className="flex min-h-svh bg-[#f7f8fc]">
+      <main className="flex min-h-svh bg-[#f7f8fc] min-[1360px]:h-svh min-[1360px]:overflow-hidden">
         <AuthBrandPanel />
 
-        <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 lg:py-3">
-          <div className="auth-card w-full max-w-[500px] rounded-2xl border border-[#dde2ea] bg-white px-5 py-5 shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-8">
+        <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:h-full min-[1360px]:min-h-0 min-[1360px]:items-stretch min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:py-12">
+          <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] min-[1360px]:h-full min-[1360px]:overflow-y-auto">
             <div className="flex items-center gap-3">
               <AuthLogoMark size="small" />
 
@@ -370,8 +371,9 @@ export function SignUpPage() {
               </span>
             </div>
 
-            <div className="auth-card__intro mt-7">
-              <h1 className="text-pretty text-[28px] font-bold tracking-[-0.025em] text-[#17212b]">
+            <div className="auth-card__content flex flex-1 flex-col">
+            <div className="auth-card__intro mt-[60px]">
+              <h1 className="text-pretty text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
                 Verifica tu correo
               </h1>
 
@@ -386,7 +388,7 @@ export function SignUpPage() {
 
             <form
               onSubmit={handleVerify}
-              className="auth-card__form mt-7 flex flex-col gap-4"
+              className="auth-card__form mt-10 flex flex-col gap-4"
               noValidate
             >
               <div className="space-y-1.5">
@@ -474,6 +476,7 @@ export function SignUpPage() {
                 Reenviar código
               </button>
             </form>
+            </div>
           </div>
         </section>
       </main>
@@ -481,11 +484,11 @@ export function SignUpPage() {
   }
 
   return (
-    <main className="flex min-h-svh bg-[#f7f8fc] sm:h-svh sm:overflow-hidden">
+    <main className="flex min-h-svh bg-[#f7f8fc] min-[1360px]:h-svh min-[1360px]:overflow-hidden">
       <AuthBrandPanel />
 
-      <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-2 sm:h-full sm:min-h-0 sm:px-6 sm:py-0">
-        <div className="auth-card w-full max-w-[500px] rounded-2xl border border-[#dde2ea] bg-white px-5 py-4 shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:min-h-[598px] sm:px-8">
+      <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:h-full min-[1360px]:min-h-0 min-[1360px]:items-stretch min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:py-12">
+        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] min-[1360px]:h-full min-[1360px]:overflow-y-auto">
 
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -496,30 +499,32 @@ export function SignUpPage() {
             </span>
           </div>
 
-          <div className="auth-card__intro mt-4">
-            <h1 className="text-pretty text-[28px] font-bold tracking-[-0.025em] text-[#17212b]">
+          <div className="auth-card__content flex flex-1 flex-col">
+          <div className="auth-card__intro mt-[60px]">
+            <h1 className="text-pretty text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
               Crear tu cuenta
             </h1>
 
-            <p className="mt-1 text-[13px] text-[#667085]">
+            <p className="mt-2 text-[13px] text-[#667085]">
               ¿Ya tienes una cuenta?{' '}
-              <Link
+              <AuthRouteLink
                 to="/"
-                className="rounded-sm font-medium text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+                direction="backward"
+                className="ml-5 rounded-sm font-semibold text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
               >
                 Iniciar sesión
-              </Link>
+              </AuthRouteLink>
             </p>
           </div>
 
           <form
             onSubmit={handleSubmit}
-            className="mt-3 flex flex-col gap-2"
+            className="auth-card__form mt-10"
             noValidate
           >
             {/* Nombre y apellido */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
                 <label
                   htmlFor="signup-first-name"
                   className="text-[12px] font-medium text-[#17212b]"
@@ -532,6 +537,7 @@ export function SignUpPage() {
                   id="signup-first-name"
                   name="given-name"
                   value={firstName}
+                  placeholder="Mateo"
                   disabled={isLoading}
                   autoComplete="given-name"
                   required
@@ -547,7 +553,7 @@ export function SignUpPage() {
                     )
                     setFirstNameError('')
                   }}
-                  className={`h-11 rounded-[10px] px-3 text-[13px] sm:h-10 ${
+                  className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
                     firstNameError
                       ? 'border-[#d92d20]'
                       : ''
@@ -565,7 +571,7 @@ export function SignUpPage() {
                 )}
               </div>
 
-              <div className="space-y-1">
+              <div>
                 <label
                   htmlFor="signup-last-name"
                   className="text-[12px] font-medium text-[#17212b]"
@@ -578,6 +584,7 @@ export function SignUpPage() {
                   id="signup-last-name"
                   name="family-name"
                   value={lastName}
+                  placeholder="Noguera"
                   disabled={isLoading}
                   autoComplete="family-name"
                   required
@@ -593,7 +600,7 @@ export function SignUpPage() {
                     )
                     setLastNameError('')
                   }}
-                  className={`h-11 rounded-[10px] px-3 text-[13px] sm:h-10 ${
+                  className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
                     lastNameError
                       ? 'border-[#d92d20]'
                       : ''
@@ -613,7 +620,7 @@ export function SignUpPage() {
             </div>
 
             {/* correo */}
-            <div className="space-y-1">
+            <div className="mt-5">
               <label
                 htmlFor="signup-email"
                 className="text-[12px] font-medium text-[#17212b]"
@@ -630,7 +637,7 @@ export function SignUpPage() {
                 disabled={isLoading}
                 autoComplete="email"
                 spellCheck={false}
-                placeholder="nombre@correo.com…"
+                placeholder="nombre@correo.com"
                 required
                 aria-invalid={Boolean(emailError)}
                 aria-describedby={
@@ -644,7 +651,7 @@ export function SignUpPage() {
                   )
                   setEmailError('')
                 }}
-                className={`h-11 rounded-[10px] px-3 text-[13px] sm:h-10 ${
+                className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
                   emailError
                     ? 'border-[#d92d20]'
                     : ''
@@ -663,7 +670,7 @@ export function SignUpPage() {
             </div>
 
             {/* contraseña */}
-            <div className="space-y-1">
+            <div className="mt-5">
               <label
                 htmlFor="signup-password"
                 className="text-[12px] font-medium text-[#17212b]"
@@ -671,7 +678,7 @@ export function SignUpPage() {
                 Contraseña
               </label>
 
-              <div className="relative">
+              <div className="relative mt-2">
                 <img
                   src={lockIcon}
                   alt=""
@@ -691,7 +698,7 @@ export function SignUpPage() {
                   disabled={isLoading}
                   autoComplete="new-password"
                   required
-                  minLength={15}
+                  minLength={8}
                   aria-invalid={Boolean(passwordError)}
                   aria-describedby="signup-password-hint"
                   onChange={(event) => {
@@ -700,7 +707,7 @@ export function SignUpPage() {
                     )
                     setPasswordError('')
                   }}
-                  className={`h-11 rounded-[10px] pl-10 pr-11 text-[13px] sm:h-10 ${
+                  className={`h-11 rounded-[10px] pl-10 pr-11 text-[13px] ${
                     passwordError
                       ? 'border-[#d92d20]'
                       : ''
@@ -715,7 +722,7 @@ export function SignUpPage() {
                         !current,
                     )
                   }
-                  className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center text-[#667085] hover:text-[#3730a3] focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#4f46e5] sm:size-10"
+                  className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center text-[#667085] hover:text-[#3730a3] focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#4f46e5]"
                   aria-label={
                     showPassword
                       ? 'Ocultar contraseña'
@@ -740,20 +747,20 @@ export function SignUpPage() {
 
               <p
                 id="signup-password-hint"
-                className={`text-[11px] ${
+                className={`mt-2.5 text-[11px] ${
                   passwordError
                     ? 'text-[#d92d20]'
                     : 'text-[#667085]'
                 }`}
               >
                 {passwordError ||
-                  'Usa al menos 15 caracteres.'}
+                  'Usa al menos 8 caracteres.'}
               </p>
             </div>
 
             {/* términos */}
-            <div>
-              <label className="flex items-start gap-3 text-[11px] text-[#17212b]">
+            <div className="mt-[18px]">
+              <label className="flex cursor-pointer items-start gap-3 text-[11px] leading-5 text-[#17212b]">
                 <input
                   ref={termsInputRef}
                   id="signup-terms"
@@ -767,7 +774,7 @@ export function SignUpPage() {
                     )
                     setTermsError('')
                   }}
-                  className="mt-0.5 h-4 w-4 rounded accent-[#4f46e5]"
+                  className="peer sr-only"
                   required
                   aria-invalid={Boolean(termsError)}
                   aria-describedby={
@@ -776,6 +783,13 @@ export function SignUpPage() {
                       : undefined
                   }
                 />
+
+                <span
+                  className="mt-px flex size-5 shrink-0 items-center justify-center rounded-[5px] border border-[#d9dee7] bg-white text-white transition-colors peer-checked:border-[#4f46e5] peer-checked:bg-[#4f46e5] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#4f46e5]"
+                  aria-hidden="true"
+                >
+                  <Check className="size-3.5" strokeWidth={2.5} />
+                </span>
 
                 <span>
                   Acepto los Términos y condiciones y la Política de privacidad.
@@ -795,7 +809,7 @@ export function SignUpPage() {
 
             {generalError && (
               <div
-                className="rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
+                className="mt-4 rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
                 role="alert"
                 aria-live="polite"
               >
@@ -816,14 +830,14 @@ export function SignUpPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30 sm:h-10"
+              className="mt-8 h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30"
             >
               {isLoading
                 ? 'Creando cuenta…'
                 : 'Crear cuenta'}
             </Button>
 
-            <div className="flex items-center gap-4 py-0.5">
+            <div className="mt-[26px] flex items-center gap-4">
               <div className="h-px flex-1 bg-[#dde2ea]" />
 
               <span className="text-[11px] text-[#667085]">
@@ -838,7 +852,7 @@ export function SignUpPage() {
               variant="outline"
               disabled={isLoading}
               onClick={handleGoogleSignUp}
-              className="h-11 w-full rounded-[10px] border-[#dde2ea] text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc] sm:h-10"
+              className="mt-5 h-11 w-full rounded-[10px] border-[#dde2ea] text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc]"
             >
               <img
                 src={googleLogo}
@@ -849,7 +863,7 @@ export function SignUpPage() {
               Registrarme con Google
             </Button>
 
-            <p className="text-center text-[11px] leading-4 text-[#667085]">
+            <p className="mt-[22px] text-center text-[11px] leading-4 text-[#667085]">
               Al crear tu cuenta aceptas nuestros{' '}
               <span className="font-semibold text-[#4f46e5] underline underline-offset-2">
                 Términos y condiciones
@@ -861,6 +875,7 @@ export function SignUpPage() {
             </p>
 
           </form>
+          </div>
         </div>
       </section>
     </main>

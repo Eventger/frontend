@@ -9,7 +9,6 @@ import {
 } from 'react'
 
 import {
-  Link,
   useLocation,
   useNavigate,
 } from 'react-router'
@@ -18,6 +17,7 @@ import { useSignIn } from '@clerk/react'
 
 import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark'
+import { AuthRouteLink } from '@/features/auth/components/AuthRouteLink'
 import { isValidEmail } from '@/features/auth/utils/isValidEmail'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,6 +65,23 @@ export function LoginPage() {
   const [
     generalError,
     setGeneralError,
+  ] = useState('')
+
+  const [
+    recoveryStep,
+    setRecoveryStep,
+  ] = useState<
+    'code' | 'password' | null
+  >(null)
+
+  const [
+    recoveryCode,
+    setRecoveryCode,
+  ] = useState('')
+
+  const [
+    newPassword,
+    setNewPassword,
   ] = useState('')
 
   const [
@@ -246,12 +263,151 @@ export function LoginPage() {
     }
   }
 
+  const handleStartPasswordRecovery =
+    async () => {
+      setEmailError('')
+      setGeneralError('')
+
+      if (!email.trim()) {
+        setEmailError(
+          'Ingresa tu correo electrónico.',
+        )
+        emailInputRef.current?.focus()
+        return
+      }
+
+      if (!isValidEmail(email)) {
+        setEmailError(
+          'Ingresa una dirección de correo válida.',
+        )
+        emailInputRef.current?.focus()
+        return
+      }
+
+      try {
+        const createResult =
+          await signIn.create({
+            identifier: email.trim(),
+          })
+
+        if (createResult.error) {
+          setGeneralError(
+            'No pudimos iniciar la recuperación. Verifica el correo e inténtalo de nuevo.',
+          )
+          return
+        }
+
+        const sendResult =
+          await signIn
+            .resetPasswordEmailCode
+            .sendCode()
+
+        if (sendResult.error) {
+          setGeneralError(
+            'No pudimos enviar el código de recuperación. Inténtalo de nuevo.',
+          )
+          return
+        }
+
+        setRecoveryStep('code')
+      } catch {
+        setGeneralError(
+          'No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.',
+        )
+      }
+    }
+
+  const handlePasswordRecovery = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+    setGeneralError('')
+
+    if (recoveryStep === 'code') {
+      if (!/^\d{6}$/.test(
+        recoveryCode.trim(),
+      )) {
+        setGeneralError(
+          'Ingresa el código de 6 dígitos que enviamos a tu correo.',
+        )
+        return
+      }
+
+      try {
+        const result =
+          await signIn
+            .resetPasswordEmailCode
+            .verifyCode({
+              code: recoveryCode.trim(),
+            })
+
+        if (result.error) {
+          setGeneralError(
+            'El código no es válido o ya expiró.',
+          )
+          return
+        }
+
+        setRecoveryStep('password')
+      } catch {
+        setGeneralError(
+          'No pudimos verificar el código. Inténtalo de nuevo.',
+        )
+      }
+
+      return
+    }
+
+    if (newPassword.length < 15) {
+      setGeneralError(
+        'La nueva contraseña debe tener al menos 15 caracteres.',
+      )
+      return
+    }
+
+    try {
+      const result =
+        await signIn
+          .resetPasswordEmailCode
+          .submitPassword({
+            password: newPassword,
+            signOutOfOtherSessions: true,
+          })
+
+      if (result.error) {
+        setGeneralError(
+          'No pudimos actualizar la contraseña. Revisa los requisitos e inténtalo de nuevo.',
+        )
+        return
+      }
+
+      const finalizeResult =
+        await signIn.finalize({
+          navigate: () => {
+            navigate(destination, {
+              replace: true,
+            })
+          },
+        })
+
+      if (finalizeResult.error) {
+        setGeneralError(
+          'La contraseña se actualizó, pero no pudimos activar la sesión.',
+        )
+      }
+    } catch {
+      setGeneralError(
+        'No pudimos actualizar la contraseña. Inténtalo de nuevo.',
+      )
+    }
+  }
+
   return (
-    <main className="flex min-h-svh bg-[#f7f8fc] sm:h-svh sm:overflow-hidden">
+    <main className="flex min-h-svh bg-[#f7f8fc] min-[1360px]:h-svh min-[1360px]:overflow-hidden">
       <AuthBrandPanel />
 
-      <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-2 sm:h-full sm:min-h-0 sm:px-6 sm:py-0">
-        <div className="auth-card flex w-full max-w-[500px] flex-col rounded-2xl border border-[#dde2ea] bg-white px-5 py-4 shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:min-h-[598px] sm:px-8">
+      <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:h-full min-[1360px]:min-h-0 min-[1360px]:items-stretch min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:py-12">
+        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] min-[1360px]:h-full min-[1360px]:overflow-y-auto">
 
           {/* Logo superior */}
           <div className="flex items-center gap-3">
@@ -262,19 +418,31 @@ export function LoginPage() {
             </span>
           </div>
 
-          <div className="auth-card__intro mt-4">
-            <h1 className="text-pretty text-[28px] font-bold tracking-[-0.025em] text-[#17212b]">
-              Bienvenido de nuevo
+          <div className="auth-card__content flex flex-1 flex-col">
+          <div className="auth-card__intro mt-[60px]">
+            <h1 className="text-pretty text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
+              {recoveryStep
+                ? 'Recupera tu cuenta'
+                : 'Bienvenido de nuevo'}
             </h1>
 
-            <p className="mt-1 text-[13px] text-[#667085]">
-              ¿No tienes una cuenta?{' '}
-              <Link
-                to="/crear-cuenta"
-                className="rounded-sm font-medium text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
-              >
-                Crear cuenta
-              </Link>
+            <p className="mt-2 text-[13px] text-[#667085]">
+              {recoveryStep ? (
+                recoveryStep === 'code'
+                  ? `Escribe el código enviado a ${email.trim()}.`
+                  : 'Crea una contraseña nueva para continuar.'
+              ) : (
+                <>
+                  ¿No tienes una cuenta?{' '}
+                  <AuthRouteLink
+                    to="/crear-cuenta"
+                    direction="forward"
+                    className="ml-5 rounded-sm font-semibold text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+                  >
+                    Crear cuenta
+                  </AuthRouteLink>
+                </>
+              )}
             </p>
 
             {/* Mensaje después de crear cuenta */}
@@ -294,9 +462,108 @@ export function LoginPage() {
             )}
           </div>
 
+          {recoveryStep ? (
+            <form
+              onSubmit={handlePasswordRecovery}
+              className="auth-card__form mt-10"
+              noValidate
+            >
+              <label
+                htmlFor="login-recovery"
+                className="text-[12px] font-medium text-[#17212b]"
+              >
+                {recoveryStep === 'code'
+                  ? 'Código de verificación'
+                  : 'Nueva contraseña'}
+              </label>
+
+              <Input
+                id="login-recovery"
+                type={
+                  recoveryStep === 'code'
+                    ? 'text'
+                    : 'password'
+                }
+                inputMode={
+                  recoveryStep === 'code'
+                    ? 'numeric'
+                    : undefined
+                }
+                autoComplete={
+                  recoveryStep === 'code'
+                    ? 'one-time-code'
+                    : 'new-password'
+                }
+                maxLength={
+                  recoveryStep === 'code'
+                    ? 6
+                    : undefined
+                }
+                value={
+                  recoveryStep === 'code'
+                    ? recoveryCode
+                    : newPassword
+                }
+                onChange={(event) => {
+                  if (
+                    recoveryStep === 'code'
+                  ) {
+                    setRecoveryCode(
+                      event.target.value.replace(
+                        /\D/g,
+                        '',
+                      ),
+                    )
+                  } else {
+                    setNewPassword(
+                      event.target.value,
+                    )
+                  }
+                  setGeneralError('')
+                }}
+                disabled={isLoading}
+                autoFocus
+                className="mt-2 h-11 rounded-[10px] px-3 text-[13px]"
+              />
+
+              {generalError && (
+                <div
+                  className="mt-4 rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
+                  role="alert"
+                >
+                  <p className="text-[11px] leading-4 text-[#b42318]">
+                    {generalError}
+                  </p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="mt-6 h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca]"
+              >
+                {recoveryStep === 'code'
+                  ? 'Verificar código'
+                  : 'Actualizar contraseña'}
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRecoveryStep(null)
+                  setRecoveryCode('')
+                  setNewPassword('')
+                  setGeneralError('')
+                }}
+                className="mt-5 w-full rounded-sm text-[12px] font-semibold text-[#4f46e5] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+              >
+                Volver al inicio de sesión
+              </button>
+            </form>
+          ) : (
           <form
             onSubmit={handleSubmit}
-            className="auth-card__form mt-3 flex flex-1 flex-col gap-4 sm:justify-between"
+            className="auth-card__form mt-10"
             noValidate
           >
             {/* Email */}
@@ -315,7 +582,7 @@ export function LoginPage() {
                 type="email"
                 autoComplete="email"
                 spellCheck={false}
-                placeholder="nombre@correo.com…"
+                placeholder="nombre@correo.com"
                 value={email}
                 disabled={isLoading}
                 required
@@ -333,7 +600,7 @@ export function LoginPage() {
                   setEmailError('')
                   setGeneralError('')
                 }}
-                className={`h-11 rounded-[10px] px-3 text-[13px] sm:h-10 ${
+                className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
                   emailError
                     ? 'border-[#d92d20]'
                     : ''
@@ -352,7 +619,7 @@ export function LoginPage() {
             </div>
 
             {/* Contraseña */}
-            <div className="space-y-1.5">
+            <div className="mt-7">
               <label
                 htmlFor="login-password"
                 className="text-[12px] font-medium text-[#17212b]"
@@ -360,7 +627,7 @@ export function LoginPage() {
                 Contraseña
               </label>
 
-              <div className="relative">
+              <div className="relative mt-2">
                 <img
                   src={lockIcon}
                   alt=""
@@ -394,7 +661,7 @@ export function LoginPage() {
                     setPasswordError('')
                     setGeneralError('')
                   }}
-                  className={`h-11 rounded-[10px] pl-10 pr-11 text-[13px] sm:h-10 ${
+                  className={`h-11 rounded-[10px] pl-10 pr-11 text-[13px] ${
                     passwordError
                       ? 'border-[#d92d20]'
                       : ''
@@ -442,12 +709,23 @@ export function LoginPage() {
                 </p>
               )}
 
+              <div className="mt-[9px] flex justify-end">
+                <button
+                  type="button"
+                  onClick={
+                    handleStartPasswordRecovery
+                  }
+                  className="rounded-sm text-[12px] font-semibold text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
             </div>
 
             {/* Error general */}
             {generalError && (
               <div
-                className="rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
+                className="mt-4 rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
                 role="alert"
                 aria-live="polite"
               >
@@ -460,7 +738,7 @@ export function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30 sm:h-10"
+              className="mt-[29px] h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30"
             >
               {isLoading
                 ? 'Iniciando sesión…'
@@ -468,7 +746,7 @@ export function LoginPage() {
             </Button>
 
             {/* divisor */}
-            <div className="flex items-center gap-4">
+            <div className="mt-[29px] flex items-center gap-4">
               <div className="h-px flex-1 bg-[#dde2ea]" />
 
               <span className="text-[11px] text-[#667085]">
@@ -483,7 +761,7 @@ export function LoginPage() {
               variant="outline"
               disabled={isLoading}
               onClick={handleGoogleSignIn}
-              className="h-11 w-full rounded-[10px] border-[#dde2ea] text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc] sm:h-10"
+              className="mt-5 h-11 w-full rounded-[10px] border-[#dde2ea] text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc]"
             >
               <img
                 src={googleLogo}
@@ -494,7 +772,7 @@ export function LoginPage() {
               Continuar con Google
             </Button>
 
-            <p className="text-center text-[11px] leading-4 text-[#667085]">
+            <p className="mt-8 text-left text-[11px] leading-4 text-[#667085]">
               Al continuar aceptas nuestros{' '}
               <span className="font-semibold text-[#4f46e5] underline underline-offset-2">
                 Términos y condiciones
@@ -505,6 +783,8 @@ export function LoginPage() {
               </span>
             </p>
           </form>
+          )}
+          </div>
         </div>
       </section>
     </main>

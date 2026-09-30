@@ -19,6 +19,10 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 const password = vi.fn()
 const finalize = vi.fn()
 const sso = vi.fn()
+const create = vi.fn()
+const sendRecoveryCode = vi.fn()
+const verifyRecoveryCode = vi.fn()
+const submitRecoveryPassword = vi.fn()
 
 function mockSignIn(
   status = 'needs_identifier',
@@ -31,6 +35,12 @@ function mockSignIn(
       password,
       finalize,
       sso,
+      create,
+      resetPasswordEmailCode: {
+        sendCode: sendRecoveryCode,
+        verifyCode: verifyRecoveryCode,
+        submitPassword: submitRecoveryPassword,
+      },
     },
   } as never)
 }
@@ -78,6 +88,10 @@ describe('LoginPage', () => {
     password.mockReset()
     finalize.mockReset()
     sso.mockReset()
+    create.mockReset()
+    sendRecoveryCode.mockReset()
+    verifyRecoveryCode.mockReset()
+    submitRecoveryPassword.mockReset()
     mockSignIn()
     sessionStorage.clear()
   })
@@ -314,6 +328,293 @@ describe('LoginPage', () => {
     expect(
       await screen.findByText(
         'No pudimos conectarnos con Google. Revisa tu conexión e inténtalo de nuevo.',
+      ),
+    ).toBeTruthy()
+  })
+
+  it('inicia la recuperación de contraseña con el correo escrito', async () => {
+    const user = userEvent.setup()
+    create.mockResolvedValue({
+      error: null,
+    })
+    sendRecoveryCode.mockResolvedValue({
+      error: null,
+    })
+    renderLogin()
+
+    await user.type(
+      screen.getByLabelText(
+        'Correo electrónico',
+      ),
+      'ana@example.com',
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: '¿Olvidaste tu contraseña?',
+      }),
+    )
+
+    expect(create).toHaveBeenCalledWith({
+      identifier: 'ana@example.com',
+    })
+    expect(
+      sendRecoveryCode,
+    ).toHaveBeenCalledOnce()
+    expect(
+      await screen.findByLabelText(
+        'Código de verificación',
+      ),
+    ).toBeTruthy()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Volver al inicio de sesión',
+      }),
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'Iniciar sesión',
+      }),
+    ).toBeTruthy()
+  })
+
+  it('valida el correo y los errores al iniciar la recuperación', async () => {
+    const user = userEvent.setup()
+    create
+      .mockResolvedValueOnce({
+        error: new Error('identificador'),
+      })
+      .mockResolvedValueOnce({ error: null })
+      .mockRejectedValueOnce(new Error('red'))
+    sendRecoveryCode.mockResolvedValueOnce({
+      error: new Error('envío'),
+    })
+    renderLogin()
+
+    const email = screen.getByLabelText(
+      'Correo electrónico',
+    )
+    const recoveryButton = screen.getByRole(
+      'button',
+      { name: '¿Olvidaste tu contraseña?' },
+    )
+
+    await user.click(recoveryButton)
+    expect(
+      screen.getByText(
+        'Ingresa tu correo electrónico.',
+      ),
+    ).toBeTruthy()
+    expect(document.activeElement).toBe(email)
+
+    await user.type(email, 'correo-invalido')
+    await user.click(recoveryButton)
+    expect(
+      screen.getByText(
+        'Ingresa una dirección de correo válida.',
+      ),
+    ).toBeTruthy()
+
+    await user.clear(email)
+    await user.type(email, 'ana@example.com')
+    await user.click(recoveryButton)
+    expect(
+      await screen.findByText(
+        'No pudimos iniciar la recuperación. Verifica el correo e inténtalo de nuevo.',
+      ),
+    ).toBeTruthy()
+
+    await user.click(recoveryButton)
+    expect(
+      await screen.findByText(
+        'No pudimos enviar el código de recuperación. Inténtalo de nuevo.',
+      ),
+    ).toBeTruthy()
+
+    await user.click(recoveryButton)
+    expect(
+      await screen.findByText(
+        'No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.',
+      ),
+    ).toBeTruthy()
+  })
+
+  it('verifica el código y actualiza la contraseña', async () => {
+    const user = userEvent.setup()
+    create.mockResolvedValue({ error: null })
+    sendRecoveryCode.mockResolvedValue({ error: null })
+    verifyRecoveryCode.mockResolvedValue({ error: null })
+    submitRecoveryPassword.mockResolvedValue({ error: null })
+    finalize.mockImplementation(
+      async ({ navigate }) => {
+        navigate({ session: null })
+        return { error: null }
+      },
+    )
+    renderLogin({ from: '/eventos' })
+
+    await user.type(
+      screen.getByLabelText('Correo electrónico'),
+      'ana@example.com',
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: '¿Olvidaste tu contraseña?',
+      }),
+    )
+
+    const codeInput = await screen.findByLabelText(
+      'Código de verificación',
+    )
+    await user.type(codeInput, '123')
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Verificar código',
+      }),
+    )
+    expect(
+      screen.getByText(
+        'Ingresa el código de 6 dígitos que enviamos a tu correo.',
+      ),
+    ).toBeTruthy()
+
+    await user.clear(codeInput)
+    await user.type(codeInput, '123456')
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Verificar código',
+      }),
+    )
+    expect(verifyRecoveryCode).toHaveBeenCalledWith({
+      code: '123456',
+    })
+
+    const newPassword =
+      await screen.findByLabelText(
+        'Nueva contraseña',
+      )
+    await user.type(newPassword, 'corta')
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Actualizar contraseña',
+      }),
+    )
+    expect(
+      screen.getByText(
+        'La nueva contraseña debe tener al menos 15 caracteres.',
+      ),
+    ).toBeTruthy()
+
+    await user.clear(newPassword)
+    await user.type(
+      newPassword,
+      'nueva-clave-segura',
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Actualizar contraseña',
+      }),
+    )
+
+    expect(
+      submitRecoveryPassword,
+    ).toHaveBeenCalledWith({
+      password: 'nueva-clave-segura',
+      signOutOfOtherSessions: true,
+    })
+    expect(finalize).toHaveBeenCalledOnce()
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Eventos privados',
+      }),
+    ).toBeTruthy()
+  })
+
+  it('informa errores al verificar y actualizar la contraseña', async () => {
+    const user = userEvent.setup()
+    create.mockResolvedValue({ error: null })
+    sendRecoveryCode.mockResolvedValue({ error: null })
+    verifyRecoveryCode
+      .mockResolvedValueOnce({
+        error: new Error('código'),
+      })
+      .mockRejectedValueOnce(new Error('red'))
+      .mockResolvedValueOnce({ error: null })
+    submitRecoveryPassword
+      .mockResolvedValueOnce({
+        error: new Error('contraseña'),
+      })
+      .mockRejectedValueOnce(new Error('red'))
+      .mockResolvedValueOnce({ error: null })
+    finalize.mockResolvedValue({
+      error: new Error('sesión'),
+    })
+    renderLogin()
+
+    await user.type(
+      screen.getByLabelText('Correo electrónico'),
+      'ana@example.com',
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: '¿Olvidaste tu contraseña?',
+      }),
+    )
+    const codeInput = await screen.findByLabelText(
+      'Código de verificación',
+    )
+    await user.type(codeInput, '123456')
+    const verifyButton = screen.getByRole(
+      'button',
+      { name: 'Verificar código' },
+    )
+
+    await user.click(verifyButton)
+    expect(
+      await screen.findByText(
+        'El código no es válido o ya expiró.',
+      ),
+    ).toBeTruthy()
+
+    await user.click(verifyButton)
+    expect(
+      await screen.findByText(
+        'No pudimos verificar el código. Inténtalo de nuevo.',
+      ),
+    ).toBeTruthy()
+
+    await user.click(verifyButton)
+    const newPassword =
+      await screen.findByLabelText(
+        'Nueva contraseña',
+      )
+    await user.type(
+      newPassword,
+      'nueva-clave-segura',
+    )
+    const updateButton = screen.getByRole(
+      'button',
+      { name: 'Actualizar contraseña' },
+    )
+
+    await user.click(updateButton)
+    expect(
+      await screen.findByText(
+        'No pudimos actualizar la contraseña. Revisa los requisitos e inténtalo de nuevo.',
+      ),
+    ).toBeTruthy()
+
+    await user.click(updateButton)
+    expect(
+      await screen.findByText(
+        'No pudimos actualizar la contraseña. Inténtalo de nuevo.',
+      ),
+    ).toBeTruthy()
+
+    await user.click(updateButton)
+    expect(
+      await screen.findByText(
+        'La contraseña se actualizó, pero no pudimos activar la sesión.',
       ),
     ).toBeTruthy()
   })

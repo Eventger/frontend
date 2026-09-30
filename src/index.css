@@ -105,6 +105,19 @@ body {
 .auth-card {
   scrollbar-color: #c7d2fe transparent;
   scrollbar-width: thin;
+  view-transition-name: auth-card;
+}
+
+.auth-card__intro {
+  view-transition-name: auth-card-intro;
+}
+
+.auth-card__form {
+  view-transition-name: auth-card-form;
+}
+
+.auth-brand-panel {
+  view-transition-name: auth-brand-panel;
 }
 
 .auth-card::-webkit-scrollbar {
@@ -118,6 +131,122 @@ body {
 
 .auth-card input {
   caret-color: #4f46e5;
+}
+
+@media (min-width: 1360px) and (max-height: 850px) {
+  .auth-brand-artwork {
+    transform: scale(0.66);
+    transform-origin: top left;
+  }
+
+  .auth-brand-benefits {
+    bottom: 64px;
+    gap: 16px;
+  }
+}
+
+@keyframes auth-content-fade-out {
+  to {
+    opacity: 0;
+    transform: scale(0.992);
+    filter: blur(3px);
+  }
+}
+
+@keyframes auth-content-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.992);
+    filter: blur(3px);
+  }
+}
+
+@keyframes auth-content-fallback {
+  from {
+    opacity: 0;
+    transform: scale(0.992);
+    filter: blur(3px);
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-group(auth-card),
+::view-transition-group(auth-card-intro),
+::view-transition-group(auth-card-form),
+::view-transition-group(auth-brand-panel) {
+  animation-duration: 380ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(auth-card),
+::view-transition-new(auth-card),
+::view-transition-old(auth-brand-panel),
+::view-transition-new(auth-brand-panel) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-image-pair(auth-card-intro),
+::view-transition-image-pair(auth-card-form) {
+  isolation: auto;
+  overflow: clip;
+  border-radius: 18px;
+}
+
+::view-transition-old(auth-card-intro),
+::view-transition-new(auth-card-intro),
+::view-transition-old(auth-card-form),
+::view-transition-new(auth-card-form) {
+  transform-origin: 50% 12%;
+  mix-blend-mode: normal;
+  will-change: opacity, transform, filter;
+}
+
+html[data-auth-direction]::view-transition-old(auth-card-intro) {
+  animation: auth-content-fade-out 100ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+html[data-auth-direction]::view-transition-new(auth-card-intro) {
+  animation: auth-content-fade-in 220ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html[data-auth-direction]::view-transition-old(auth-card-form) {
+  animation: auth-content-fade-out 110ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+html[data-auth-direction]::view-transition-new(auth-card-form) {
+  animation: auth-content-fade-in 240ms 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@supports not (view-transition-name: auth-card) {
+  .auth-card__content {
+    animation: auth-content-fallback 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(auth-card),
+  ::view-transition-group(auth-card-intro),
+  ::view-transition-group(auth-card-form),
+  ::view-transition-group(auth-brand-panel),
+  ::view-transition-old(auth-card-intro),
+  ::view-transition-new(auth-card-intro),
+  ::view-transition-old(auth-card-form),
+  ::view-transition-new(auth-card-form) {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  @supports not (view-transition-name: auth-card) {
+    .auth-card__content {
+      animation: none;
+    }
+  }
 }
 
 @theme inline {
