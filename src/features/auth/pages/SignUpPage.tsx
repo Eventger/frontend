@@ -17,6 +17,10 @@ import {
   useSignUp,
 } from '@clerk/react'
 
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_MIN_LENGTH_HINT,
+} from '@/features/auth/auth.constants'
 import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark'
 import { AuthRouteLink } from '@/features/auth/components/AuthRouteLink'
@@ -146,9 +150,11 @@ export function SignUpPage() {
         'Ingresa una contraseña.',
       )
       isValid = false
-    } else if (password.length < 8) {
+    } else if (
+      password.length < PASSWORD_MIN_LENGTH
+    ) {
       setPasswordError(
-        'Usa al menos 8 caracteres.',
+        PASSWORD_MIN_LENGTH_HINT,
       )
       isValid = false
     }
@@ -172,7 +178,7 @@ export function SignUpPage() {
         emailInputRef.current?.focus()
       } else if (
         !password ||
-        password.length < 8
+        password.length < PASSWORD_MIN_LENGTH
       ) {
         passwordInputRef.current?.focus()
       } else {
@@ -698,7 +704,7 @@ export function SignUpPage() {
                   disabled={isLoading}
                   autoComplete="new-password"
                   required
-                  minLength={8}
+                  minLength={PASSWORD_MIN_LENGTH}
                   aria-invalid={Boolean(passwordError)}
                   aria-describedby="signup-password-hint"
                   onChange={(event) => {
@@ -754,7 +760,7 @@ export function SignUpPage() {
                 }`}
               >
                 {passwordError ||
-                  'Usa al menos 8 caracteres.'}
+                  PASSWORD_MIN_LENGTH_HINT}
               </p>
             </div>
 

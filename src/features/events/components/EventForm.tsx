@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
   type FormEvent,
 } from 'react'
@@ -7,7 +8,6 @@ import {
   CalendarDays,
   Clock3,
   GripVertical,
-  Info,
   Pencil,
   Trash2,
 } from 'lucide-react'
@@ -43,6 +43,10 @@ type EventFormProps = {
     subtasks: CreateSubtaskInput[],
   ) => Promise<void>
   onCancel: () => void
+  onDraftChange?: (
+    data: CreateEventInput,
+    subtasks: CreateSubtaskInput[],
+  ) => void
   isSubmitting?: boolean
 }
 
@@ -125,6 +129,7 @@ export function EventForm({
   initialSubtasks = [],
   onSubmit,
   onCancel,
+  onDraftChange,
   isSubmitting = false,
 }: EventFormProps) {
   const minimumEventDate =
@@ -161,11 +166,6 @@ export function EventForm({
   )
 
   const [
-    isSubtaskFormOpen,
-    setIsSubtaskFormOpen,
-  ] = useState(true)
-
-  const [
     editingSubtaskIndex,
     setEditingSubtaskIndex,
   ] = useState<number | null>(null)
@@ -181,6 +181,10 @@ export function EventForm({
     subtaskErrors,
     setSubtaskErrors,
   ] = useState<SubtaskFormErrors>({})
+
+  useEffect(() => {
+    onDraftChange?.(values, subtasks)
+  }, [onDraftChange, subtasks, values])
 
 
   /*
@@ -319,7 +323,7 @@ export function EventForm({
       estimatedHours <= 0
     ) {
       nextErrors.estimatedHours =
-        'Indica un tiempo estimado válido.'
+        'Ingresa un tiempo estimado válido.'
     }
 
     setSubtaskErrors(nextErrors)
@@ -387,24 +391,6 @@ export function EventForm({
 
     setSubtaskErrors({})
 
-    setIsSubtaskFormOpen(false)
-  }
-
-
-  /*
-   * NUEVA TAREA
-   */
-
-  const handleNewSubtask = () => {
-    setEditingSubtaskIndex(null)
-
-    setSubtaskValues(
-      emptySubtaskValues,
-    )
-
-    setSubtaskErrors({})
-
-    setIsSubtaskFormOpen(true)
   }
 
 
@@ -436,7 +422,6 @@ export function EventForm({
 
     setSubtaskErrors({})
 
-    setIsSubtaskFormOpen(true)
   }
 
 
@@ -458,7 +443,7 @@ export function EventForm({
       editingSubtaskIndex ===
       indexToDelete
     ) {
-      handleNewSubtask()
+      handleCancelSubtask()
     }
   }
 
@@ -476,7 +461,6 @@ export function EventForm({
 
     setSubtaskErrors({})
 
-    setIsSubtaskFormOpen(false)
   }
 
 
@@ -516,7 +500,6 @@ export function EventForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4"
       noValidate
     >
 
@@ -524,21 +507,21 @@ export function EventForm({
           DATOS DEL EVENTO
       ========================== */}
 
-      <section className="rounded-[16px] border border-[#dde2ea] bg-white p-5">
+      <section className="rounded-[16px] border border-[#d9dee7] bg-white p-5">
 
-        <h2 className="text-[20px] font-semibold text-[#17212b]">
+        <h2 className="text-[20px] font-semibold leading-6 text-[#17212b]">
           Datos del evento
         </h2>
 
 
         {/* Nombre y tipo */}
 
-        <div className="mt-2">
+        <div className="mt-1">
           <p className="text-[12px] font-semibold text-[#17212b]">
             ¿Qué vas a organizar?
           </p>
 
-          <div className="mt-1 grid gap-6 md:grid-cols-2">
+          <div className="mt-0.5 grid gap-4 md:grid-cols-2 md:gap-6">
 
             <div className="space-y-1">
 
@@ -562,7 +545,7 @@ export function EventForm({
                 aria-invalid={
                   Boolean(errors.name)
                 }
-                className={`h-11 rounded-[8px] ${
+                className={`h-[42px] rounded-[8px] ${
                   errors.name
                     ? 'border-[#d92d20]'
                     : ''
@@ -609,7 +592,7 @@ export function EventForm({
 
                 <SelectTrigger
                   id="event-type"
-                  className={`h-11! w-full rounded-[8px] ${
+                  className={`h-[42px]! w-full rounded-[8px] ${
                     errors.typeId
                       ? 'border-[#d92d20]'
                       : ''
@@ -618,7 +601,7 @@ export function EventForm({
                   <SelectValue
                     placeholder={
                       isLoadingEventTypes
-                        ? 'Cargando tipos...'
+                        ? 'Cargando tipos…'
                         : 'Selecciona un tipo de evento'
                     }
                   />
@@ -665,13 +648,13 @@ export function EventForm({
 
         {/* Fecha y lugar */}
 
-        <div className="mt-2">
+        <div className="mt-1">
 
           <p className="text-[12px] font-semibold text-[#17212b]">
             ¿Cuándo y dónde será?
           </p>
 
-          <div className="mt-1 grid gap-6 md:grid-cols-2">
+          <div className="mt-0.5 grid gap-4 md:grid-cols-2 md:gap-6">
 
             <div className="space-y-1">
 
@@ -700,7 +683,7 @@ export function EventForm({
                     event.target.value,
                   )
                 }
-                className={`h-11 rounded-[8px] ${
+                className={`h-[42px] rounded-[8px] ${
                   errors.eventDate
                     ? 'border-[#d92d20]'
                     : ''
@@ -739,7 +722,7 @@ export function EventForm({
                     event.target.value,
                   )
                 }
-                className={`h-11 rounded-[8px] ${
+                className={`h-[42px] rounded-[8px] ${
                   errors.location
                     ? 'border-[#d92d20]'
                     : ''
@@ -760,13 +743,13 @@ export function EventForm({
 
         {/* Contacto */}
 
-        <div className="mt-2">
+        <div className="mt-1">
 
           <p className="text-[12px] font-semibold text-[#17212b]">
             ¿A quién podemos contactar?
           </p>
 
-          <div className="mt-1 space-y-1">
+          <div className="mt-0.5 space-y-1">
 
             <label
               htmlFor="event-contact"
@@ -785,7 +768,7 @@ export function EventForm({
                   event.target.value,
                 )
               }
-              className={`h-11 rounded-[8px] ${
+              className={`h-[42px] rounded-[8px] ${
                 errors.contact
                   ? 'border-[#d92d20]'
                   : ''
@@ -804,407 +787,272 @@ export function EventForm({
       </section>
 
 
-      {/* =========================
-          TAREAS DEL EVENTO
-      ========================== */}
-
-      <section className="rounded-[16px] border border-[#dde2ea] bg-white p-5">
-
-        <h2 className="text-[20px] font-semibold text-[#17212b]">
-          Tareas del evento
-        </h2>
-
-        <p className="mt-1 text-[13px] text-[#667085]">
-          Agrega las tareas principales ahora.
-          Podrás editarlas después.
+      <section className="mt-2 rounded-[16px] border border-[#d9dee7] bg-white p-5">
+        <p className="text-[13px] text-[#667085]">
+          Agrega las tareas principales antes de crear el evento.
         </p>
 
+        <div className="mt-5 rounded-[10px] border border-[#d9dee7] bg-[#f7f8fc] p-4">
+          <h2 className="text-[13px] font-semibold text-[#17212b]">
+            {editingSubtaskIndex !== null
+              ? 'Editar tarea'
+              : 'Crear tarea'}
+          </h2>
 
-        {/* Información */}
+          <div className="mt-3 grid gap-4 md:grid-cols-[1.45fr_0.98fr_0.6fr]">
+            <div className="space-y-1">
+              <label
+                htmlFor="subtask-name"
+                className="text-[11px] font-medium text-[#17212b]"
+              >
+                Nombre de la tarea *
+              </label>
 
-        <div className="mt-3 flex gap-3 rounded-[9px] border border-[#c7d2fe] bg-[#eef2ff] px-3 py-2">
-
-          <Info
-            size={20}
-            className="mt-0.5 shrink-0 text-[#4f46e5]"
-          />
-
-          <div>
-
-            <p className="text-[12px] font-semibold text-[#4f46e5]">
-              Agregar tareas es opcional, pero muy recomendado.
-            </p>
-
-            <p className="mt-1 text-[11px] text-[#667085]">
-              Te ayudará a organizar mejor los detalles de tu evento.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        {/* Formulario de tarea */}
-
-        {isSubtaskFormOpen && (
-          <div className="mt-3 rounded-[10px] border border-[#dde2ea] bg-[#fafbfc] p-4">
-
-            <p className="text-[13px] font-semibold text-[#17212b]">
-              {editingSubtaskIndex !== null
-                ? 'Editar tarea'
-                : 'Agregar nueva tarea'}
-            </p>
-
-
-            <div className="mt-3 grid gap-4 md:grid-cols-3">
-
-              {/* Nombre */}
-
-              <div className="space-y-1">
-
-                <label
-                  htmlFor="subtask-name"
-                  className="text-[12px] font-medium text-[#17212b]"
-                >
-                  Nombre de la tarea *
-                </label>
-
-                <Input
-                  id="subtask-name"
-                  value={
-                    subtaskValues.name
-                  }
-                  onChange={(event) =>
-                    updateSubtaskField(
-                      'name',
-                      event.target.value,
-                    )
-                  }
-                  className={`h-11 rounded-[8px] ${
-                    subtaskErrors.name
-                      ? 'border-[#d92d20]'
-                      : ''
-                  }`}
-                />
-
-                {subtaskErrors.name && (
-                  <p className="text-[11px] text-[#d92d20]">
-                    {
-                      subtaskErrors.name
-                    }
-                  </p>
+              <Input
+                id="subtask-name"
+                value={subtaskValues.name}
+                disabled={isSubmitting}
+                aria-invalid={Boolean(
+                  subtaskErrors.name,
                 )}
-
-              </div>
-
-
-              {/* Fecha */}
-
-              <div className="space-y-1">
-
-                <label
-                  htmlFor="subtask-target-date"
-                  className="text-[12px] font-medium text-[#17212b]"
-                >
-                  Fecha límite *
-                </label>
-
-                <Input
-                  id="subtask-target-date"
-                  type="date"
-                  min={
-                    minimumEventDate
-                  }
-                  max={
-                    values.eventDate ||
-                    undefined
-                  }
-                  value={
-                    subtaskValues.targetDate
-                  }
-                  onChange={(event) =>
-                    updateSubtaskField(
-                      'targetDate',
-                      event.target.value,
-                    )
-                  }
-                  className={`h-11 rounded-[8px] ${
-                    subtaskErrors.targetDate
-                      ? 'border-[#d92d20]'
-                      : ''
-                  }`}
-                />
-
-                {subtaskErrors.targetDate ? (
-                  <p className="text-[11px] text-[#d92d20]">
-                    {
-                      subtaskErrors.targetDate
-                    }
-                  </p>
-                ) : (
-                  values.eventDate && (
-                    <p className="text-[10px] text-[#667085]">
-                      Debe completarse antes del{' '}
-                      {formatTaskDate(
-                        values.eventDate,
-                      )}.
-                    </p>
+                onChange={(event) =>
+                  updateSubtaskField(
+                    'name',
+                    event.target.value,
                   )
-                )}
+                }
+                className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+              />
 
-              </div>
-
-
-              {/* Tiempo */}
-
-              <div className="space-y-1">
-
-                <label
-                  htmlFor="subtask-estimated-hours"
-                  className="text-[12px] font-medium text-[#17212b]"
-                >
-                  Tiempo estimado *
-                </label>
-
-                <Input
-                  id="subtask-estimated-hours"
-                  type="number"
-                  min="0.5"
-                  step="0.5"
-                  value={
-                    subtaskValues.estimatedHours
-                  }
-                  onChange={(event) =>
-                    updateSubtaskField(
-                      'estimatedHours',
-                      event.target.value,
-                    )
-                  }
-                  className={`h-11 rounded-[8px] ${
-                    subtaskErrors.estimatedHours
-                      ? 'border-[#d92d20]'
-                      : ''
-                  }`}
-                />
-
-                {subtaskErrors.estimatedHours ? (
-                  <p className="text-[11px] text-[#d92d20]">
-                    {
-                      subtaskErrors.estimatedHours
-                    }
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-[#667085]">
-                    Ej. 1.5 h, 30 min, 1 día, etc.
-                  </p>
-                )}
-
-              </div>
-
+              {subtaskErrors.name && (
+                <p className="text-[11px] text-[#d92d20]">
+                  {subtaskErrors.name}
+                </p>
+              )}
             </div>
 
+            <div className="space-y-1">
+              <label
+                htmlFor="subtask-target-date"
+                className="text-[11px] font-medium text-[#17212b]"
+              >
+                Fecha límite *
+              </label>
 
-            {/* Nota + botones */}
+              <Input
+                id="subtask-target-date"
+                type="date"
+                min={minimumEventDate}
+                max={
+                  values.eventDate || undefined
+                }
+                value={subtaskValues.targetDate}
+                disabled={isSubmitting}
+                aria-invalid={Boolean(
+                  subtaskErrors.targetDate,
+                )}
+                onChange={(event) =>
+                  updateSubtaskField(
+                    'targetDate',
+                    event.target.value,
+                  )
+                }
+                className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+              />
 
-            <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-end">
+              {subtaskErrors.targetDate && (
+                <p className="text-[11px] text-[#d92d20]">
+                  {subtaskErrors.targetDate}
+                </p>
+              )}
+            </div>
 
-              <div className="flex-1 space-y-1">
+            <div className="space-y-1">
+              <label
+                htmlFor="subtask-estimated-hours"
+                className="text-[11px] font-medium text-[#17212b]"
+              >
+                Tiempo estimado *
+              </label>
 
-                <label
-                  htmlFor="subtask-details"
-                  className="text-[12px] font-medium text-[#17212b]"
-                >
-                  Nota opcional
-                </label>
+              <Input
+                id="subtask-estimated-hours"
+                type="number"
+                min="0.5"
+                step="0.5"
+                value={
+                  subtaskValues.estimatedHours
+                }
+                disabled={isSubmitting}
+                aria-invalid={Boolean(
+                  subtaskErrors.estimatedHours,
+                )}
+                onChange={(event) =>
+                  updateSubtaskField(
+                    'estimatedHours',
+                    event.target.value,
+                  )
+                }
+                className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+              />
 
-                <Textarea
-                  id="subtask-details"
-                  value={
-                    subtaskValues.details
-                  }
-                  onChange={(event) =>
-                    updateSubtaskField(
-                      'details',
-                      event.target.value,
-                    )
-                  }
-                  className="min-h-11 resize-none rounded-[8px]"
-                />
+              {subtaskErrors.estimatedHours && (
+                <p className="text-[11px] text-[#d92d20]">
+                  {subtaskErrors.estimatedHours}
+                </p>
+              )}
+            </div>
+          </div>
 
-              </div>
+          <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end">
+            <div className="min-w-0 flex-1 space-y-1">
+              <label
+                htmlFor="subtask-details"
+                className="text-[11px] font-medium text-[#17212b]"
+              >
+                Nota opcional
+              </label>
 
+              <Textarea
+                id="subtask-details"
+                value={subtaskValues.details}
+                disabled={isSubmitting}
+                onChange={(event) =>
+                  updateSubtaskField(
+                    'details',
+                    event.target.value,
+                  )
+                }
+                className="min-h-[74px] resize-none rounded-[8px] border-[#d9dee7] bg-white"
+              />
+            </div>
 
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                onClick={
-                  handleCancelSubtask
-                }
-                className="h-11 rounded-[8px] px-5"
+                disabled={isSubmitting}
+                onClick={handleCancelSubtask}
+                className="h-11 rounded-[8px] border-[#d9dee7] px-8"
               >
-                Cancelar tarea
+                {editingSubtaskIndex !== null
+                  ? 'Cancelar'
+                  : 'Limpiar'}
               </Button>
-
 
               <Button
                 type="button"
-                onClick={
-                  handleSaveSubtask
-                }
-                className="h-11 rounded-[8px] bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca]"
+                disabled={isSubmitting}
+                onClick={handleSaveSubtask}
+                className="h-11 rounded-[8px] bg-[#4f46e5] px-8 text-white hover:bg-[#4338ca]"
               >
                 {editingSubtaskIndex !== null
-                  ? 'Guardar cambios'
+                  ? 'Guardar tarea'
                   : 'Agregar tarea'}
               </Button>
-
             </div>
-
           </div>
-        )}
-
-
-        {/* Tareas añadidas */}
+        </div>
 
         {subtasks.length > 0 && (
-          <div className="mt-3">
-
-            <p className="mb-2 text-[12px] font-semibold text-[#17212b]">
+          <div className="mt-2">
+            <h2 className="text-[20px] font-semibold leading-6 text-[#17212b]">
               Tareas agregadas ({subtasks.length})
-            </p>
+            </h2>
 
-            <div className="space-y-2">
-
+            <div className="mt-1.5 space-y-1">
               {subtasks.map(
                 (subtask, index) => (
                   <div
                     key={`${subtask.name}-${index}`}
-                    className="flex min-h-9 items-center gap-3 rounded-[8px] border border-[#dde2ea] bg-white px-3 py-2"
+                    className="flex min-h-12 items-center gap-3 rounded-[8px] border border-[#d9dee7] bg-white px-3 py-2"
                   >
-
                     <GripVertical
                       size={15}
                       className="shrink-0 text-[#98a2b3]"
+                      aria-hidden="true"
                     />
-
 
                     <p className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#17212b]">
                       {subtask.name}
                     </p>
 
-
-                    <div className="hidden items-center gap-1 text-[11px] text-[#667085] sm:flex">
-
+                    <div className="hidden min-w-[130px] items-center gap-2 text-[11px] text-[#667085] sm:flex">
                       <CalendarDays
                         size={15}
+                        aria-hidden="true"
                       />
-
                       {formatTaskDate(
                         subtask.targetDate,
                       )}
-
                     </div>
 
-
-                    <div className="hidden min-w-[70px] items-center gap-1 text-[11px] text-[#667085] sm:flex">
-
+                    <div className="hidden min-w-[90px] items-center gap-2 text-[11px] text-[#667085] sm:flex">
                       <Clock3
                         size={15}
+                        aria-hidden="true"
                       />
-
-                      {
-                        subtask.estimatedHours
-                      }{' '}
-                      h
-
+                      {subtask.estimatedHours} h
                     </div>
-
 
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
+                      disabled={isSubmitting}
                       onClick={() =>
-                        handleEditSubtask(
-                          index,
-                        )
+                        handleEditSubtask(index)
                       }
-                      className="h-7 w-7 text-[#667085]"
+                      aria-label={`Editar ${subtask.name}`}
+                      className="size-8 text-[#667085] hover:bg-[#eef2ff] hover:text-[#4f46e5]"
                     >
                       <Pencil size={15} />
                     </Button>
 
-
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
+                      disabled={isSubmitting}
                       onClick={() =>
                         handleDeleteSubtask(
                           index,
                         )
                       }
-                      className="h-7 w-7 text-[#d92d20]"
+                      aria-label={`Eliminar ${subtask.name}`}
+                      className="size-8 text-[#d92d20] hover:bg-[#fef2f2] hover:text-[#b42318]"
                     >
                       <Trash2 size={15} />
                     </Button>
-
                   </div>
                 ),
               )}
-
             </div>
-
           </div>
         )}
-
-
-        {/* Botones inferiores */}
-
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={
-              handleNewSubtask
-            }
-            className="h-11 rounded-[8px] border-[#c7d2fe] text-[#4f46e5]"
-          >
-            + Agregar otra tarea
-          </Button>
-
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSubmitting}
-              onClick={onCancel}
-              className="h-11 rounded-[8px]"
-            >
-              Cancelar creación
-            </Button>
-
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-11 rounded-[8px] bg-[#4f46e5] px-6 text-white hover:bg-[#4338ca]"
-            >
-              {isSubmitting
-                ? 'Guardando...'
-                : subtasks.length > 0
-                  ? 'Crear evento con tareas'
-                  : 'Crear evento'}
-            </Button>
-
-          </div>
-
-        </div>
-
       </section>
+
+      <div className="mt-3 flex flex-col-reverse gap-3 border-t border-[#e4e7ec] pt-3 sm:flex-row sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isSubmitting}
+          onClick={onCancel}
+          className="h-11 rounded-[10px] border-[#d9dee7] sm:w-[124px]"
+        >
+          Cancelar
+        </Button>
+
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="h-11 rounded-[10px] bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca] sm:min-w-[178px]"
+        >
+          {isSubmitting
+            ? 'Guardando…'
+            : 'Crear evento'}
+        </Button>
+      </div>
 
     </form>
   )

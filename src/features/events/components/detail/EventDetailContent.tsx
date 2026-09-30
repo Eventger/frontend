@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EmptyTasksState } from '@/features/events/components/detail/EmptyTasksState'
 import { EventInfoCard } from '@/features/events/components/detail/EventInfoCard'
-import { EventProgressCard } from '@/features/events/components/detail/EventProgressCard'
 import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard'
 
 import type { Event } from '@/features/events/types/event.types'
@@ -42,19 +41,73 @@ export function EventDetailContent({
   const hasTasks =
     subtasks.length > 0
 
+  const today = new Date()
+  const todayValue = Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate(),
+  )
+
+  const getTaskRank = (
+    subtask: Subtask,
+  ) => {
+    if (subtask.state === 'completed') {
+      return 0
+    }
+
+    if (subtask.state === 'in_progress') {
+      return 1
+    }
+
+    const targetDate = new Date(
+      subtask.targetDate,
+    )
+    const targetValue = Date.UTC(
+      targetDate.getUTCFullYear(),
+      targetDate.getUTCMonth(),
+      targetDate.getUTCDate(),
+    )
+
+    if (targetValue > todayValue) {
+      return 2
+    }
+
+    if (targetValue === todayValue) {
+      return 3
+    }
+
+    return 4
+  }
+
+  const orderedSubtasks = [
+    ...subtasks,
+  ].sort(
+    (left, right) =>
+      getTaskRank(left) -
+      getTaskRank(right),
+  )
+
+  const focusProgress = () => {
+    document
+      .getElementById(
+        'event-progress',
+      )
+      ?.focus()
+  }
+
   return (
     <>
-      <header className="flex max-w-[1022px] flex-col justify-between gap-5 sm:flex-row sm:items-start">
-        <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
+      <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+        <h1 className="text-[28px] font-bold leading-9 tracking-[-0.02em] text-[#17212b] md:text-[30px]">
           {event.name}
         </h1>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-4">
           <Button
             type="button"
             variant="outline"
             onClick={onEditEvent}
-            className="h-11 rounded-[10px] sm:w-[140px]"
+            className="h-11 rounded-[10px] border-[#d9dee7] bg-white px-5 font-semibold text-[#17212b] hover:bg-[#f8fafc] sm:w-[138px]"
           >
             Editar evento
           </Button>
@@ -64,7 +117,7 @@ export function EventDetailContent({
             onClick={
               onDeleteEvent
             }
-            className="h-11 rounded-[10px] bg-[#c2413a] text-white hover:bg-[#a53732] focus-visible:ring-[#c2413a]/30 sm:w-[120px]"
+            className="h-11 rounded-[10px] bg-[#c9413b] px-5 font-semibold text-white hover:bg-[#ad3530] focus-visible:ring-[#c2413a]/30 sm:w-[118px]"
           >
             Eliminar
           </Button>
@@ -82,6 +135,7 @@ export function EventDetailContent({
           contact={
             event.contact
           }
+          subtasks={subtasks}
           eventTypeName={
             eventTypeName
           }
@@ -91,43 +145,57 @@ export function EventDetailContent({
         />
       </div>
 
-      <div className="mt-5 max-w-[460px]">
-        <EventProgressCard
-          subtasks={subtasks}
-        />
-      </div>
+      <section className="mt-7">
+        <div className="flex min-h-12 flex-col justify-between gap-4 sm:flex-row sm:items-start">
+          <div>
+            <h2 className="text-[20px] font-semibold leading-6 text-[#17212b]">
+              Plan logístico
+            </h2>
 
-      <section className="mt-10">
-        <div className="flex max-w-[820px] items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-[#17212b]">
-            Plan logístico
-          </h2>
+            <p className="mt-0.5 text-[12px] text-[#667085]">
+              Las tareas se gestionan desde Editar evento.
+            </p>
+          </div>
 
           {hasTasks && (
-            <Button
-              type="button"
-              onClick={onAddTask}
-              className="h-11 w-40 rounded-[10px] bg-[#4f46e5] text-[14px] font-semibold text-white hover:bg-[#4338ca]"
-            >
-              <Plus />
-              Agregar tarea
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onAddTask}
+                className="pointer-events-none h-11 translate-y-1 rounded-[10px] border-[#c7d2fe] bg-white px-4 text-[13px] font-semibold text-[#4f46e5] opacity-0 transition-[opacity,transform] focus-visible:pointer-events-auto focus-visible:translate-y-0 focus-visible:opacity-100"
+              >
+                <Plus className="size-4" />
+                Agregar tarea
+              </Button>
+
+              <Button
+                type="button"
+                onClick={focusProgress}
+                className="h-11 rounded-[10px] bg-[#eef2ff] px-5 text-[14px] font-semibold text-[#3730a3] hover:bg-[#e0e7ff] sm:min-w-[207px]"
+              >
+                Ver progreso detallado
+              </Button>
+            </div>
           )}
         </div>
 
-        <div className="mt-5">
+        <div className="mt-2.5">
           {!hasTasks ? (
             <EmptyTasksState
-              eventName={
-                event.name
-              }
-              onAddTask={
-                onAddTask
+              onAddTask={onAddTask}
+              onEditEvent={
+                onEditEvent
               }
             />
           ) : (
-            <div className="max-w-[820px] space-y-4">
-              {subtasks.map(
+            <div
+              role="region"
+              aria-label="Lista de tareas del evento"
+              tabIndex={0}
+              className="event-task-list space-y-2 rounded-[12px] pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2"
+            >
+              {orderedSubtasks.map(
                 (subtask) => (
                   <EventTaskCard
                     key={

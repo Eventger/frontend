@@ -15,6 +15,10 @@ import {
 
 import { useSignIn } from '@clerk/react'
 
+import {
+  NEW_PASSWORD_MIN_LENGTH_ERROR,
+  PASSWORD_MIN_LENGTH,
+} from '@/features/auth/auth.constants'
 import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark'
 import { AuthRouteLink } from '@/features/auth/components/AuthRouteLink'
@@ -181,6 +185,7 @@ export function LoginPage() {
           await signIn.finalize({
             navigate: ({
               session,
+              decorateUrl,
             }) => {
               if (
                 session?.currentTask
@@ -193,7 +198,16 @@ export function LoginPage() {
               sessionStorage.removeItem(
                 'accountCreated',
               )
-              navigate(destination, {
+
+              const url =
+                decorateUrl(destination)
+
+              if (url.startsWith('http')) {
+                window.location.href = url
+                return
+              }
+
+              navigate(url, {
                 replace: true,
               })
             },
@@ -358,9 +372,11 @@ export function LoginPage() {
       return
     }
 
-    if (newPassword.length < 15) {
+    if (
+      newPassword.length < PASSWORD_MIN_LENGTH
+    ) {
       setGeneralError(
-        'La nueva contraseña debe tener al menos 15 caracteres.',
+        NEW_PASSWORD_MIN_LENGTH_ERROR,
       )
       return
     }
@@ -383,8 +399,16 @@ export function LoginPage() {
 
       const finalizeResult =
         await signIn.finalize({
-          navigate: () => {
-            navigate(destination, {
+          navigate: ({ decorateUrl }) => {
+            const url =
+              decorateUrl(destination)
+
+            if (url.startsWith('http')) {
+              window.location.href = url
+              return
+            }
+
+            navigate(url, {
               replace: true,
             })
           },
@@ -497,6 +521,11 @@ export function LoginPage() {
                 maxLength={
                   recoveryStep === 'code'
                     ? 6
+                    : undefined
+                }
+                minLength={
+                  recoveryStep === 'password'
+                    ? PASSWORD_MIN_LENGTH
                     : undefined
                 }
                 value={
@@ -715,7 +744,7 @@ export function LoginPage() {
                   onClick={
                     handleStartPasswordRecovery
                   }
-                  className="rounded-sm text-[12px] font-semibold text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+                  className="inline-flex min-h-11 items-center rounded-sm px-1 text-[12px] font-semibold text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>

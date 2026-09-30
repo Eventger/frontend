@@ -64,7 +64,7 @@ describe('DeleteSubtaskDialog', () => {
     const user = userEvent.setup()
     const { onClose, onConfirm } = renderDialog(true)
     const cancelButton = screen.getByRole('button', { name: 'Cancelar' })
-    const deleteButton = screen.getByRole('button', { name: 'Eliminando...' })
+    const deleteButton = screen.getByRole('button', { name: 'Eliminando…' })
 
     expect((cancelButton as HTMLButtonElement).disabled).toBe(true)
     expect((deleteButton as HTMLButtonElement).disabled).toBe(true)

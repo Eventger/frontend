@@ -5,10 +5,13 @@ import {
 export function TodayLoadingState() {
   return (
     <div
+      role="status"
       aria-label="Cargando prioridades de hoy"
+      aria-live="polite"
+      aria-busy="true"
       className="space-y-8"
     >
-      <div className="grid gap-5 md:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({
           length: 4,
         }).map((_, index) => (

@@ -62,7 +62,7 @@ describe('createEvent', () => {
       body: JSON.stringify({
         name: 'Boda Backend',
         type: 0,
-        date: '2099-12-31T00:00:00.000Z',
+        date: '2099-12-31T23:59:59.999-05:00',
         location: 'Cali',
         contact: 'Laura 3001234567',
       }),
@@ -156,7 +156,7 @@ describe('updateEvent', () => {
       body: JSON.stringify({
         name: input.name,
         type: input.typeId,
-        date: '2099-12-31T00:00:00.000Z',
+        date: '2099-12-31T23:59:59.999-05:00',
         location: input.location,
         contact: input.contact,
       }),

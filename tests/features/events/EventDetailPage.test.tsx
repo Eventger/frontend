@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
@@ -34,12 +33,6 @@ import {
   eventFixture,
   subtaskFixture,
 } from './subtask.fixtures'
-
-vi.mock('@/components/layout/AppLayout', () => ({
-  AppLayout: ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
-  ),
-}))
 
 vi.mock('@/features/events/hooks/useEventDetail', () => ({
   useEventDetail: vi.fn(),
@@ -217,7 +210,11 @@ describe('EventDetailPage', () => {
 
     renderPage()
 
-    expect(screen.getByLabelText('Cargando evento')).toBeTruthy()
+    expect(
+      screen.getByRole('status', {
+        name: 'Cargando evento',
+      }),
+    ).toBeTruthy()
   })
 
   it('muestra el estado de error', () => {
@@ -233,6 +230,7 @@ describe('EventDetailPage', () => {
     expect(
       screen.getByRole('heading', { name: 'No pudimos cargar el evento' }),
     ).toBeTruthy()
+    expect(screen.getByRole('alert')).toBeTruthy()
   })
 
   it('muestra el estado de evento inexistente', () => {
@@ -344,7 +342,7 @@ describe('EventDetailPage', () => {
 
     await screen.findByRole('heading', { name: 'Evento actualizado' })
     await user.click(
-      screen.getByRole('button', { name: 'Seguir editando' }),
+      screen.getByRole('button', { name: 'Volver a editar' }),
     )
 
     expect(

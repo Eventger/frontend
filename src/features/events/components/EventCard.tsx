@@ -42,9 +42,10 @@ export function EventCard({
   return (
     <Link
       to={`/evento/${event.id}`}
-      className="block h-[190px] w-full rounded-[16px] border border-[#dde2ea] bg-white p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5]"
+      viewTransition
+      className="block min-h-[190px] w-full rounded-[16px] border border-[#dde2ea] bg-white p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5]"
     >
-      <h2 className="text-[20px] font-semibold leading-6 text-[#17212b]">
+      <h2 className="break-words text-[20px] font-semibold leading-6 text-[#17212b]">
         {event.name}
       </h2>
 
@@ -54,7 +55,7 @@ export function EventCard({
 
       <p className="mt-[22px] text-[14px] font-medium text-[#17212b]">
         {isLoading
-          ? 'Cargando progreso...'
+          ? 'Cargando progreso…'
           : error
             ? 'Progreso no disponible'
             : `${progress} % · ${completedTasks}/${totalTasks} tareas`}

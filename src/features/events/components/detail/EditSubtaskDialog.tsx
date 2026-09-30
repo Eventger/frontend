@@ -385,7 +385,7 @@ export function EditSubtaskDialog({
               className="h-11 rounded-[10px] bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[170px]"
             >
               {isSubmitting
-                ? 'Guardando...'
+                ? 'Guardando…'
                 : 'Guardar cambios'}
             </Button>
           </div>

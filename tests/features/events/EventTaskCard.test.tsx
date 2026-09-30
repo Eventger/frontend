@@ -18,11 +18,6 @@ describe('EventTaskCard', () => {
       ...subtaskFixture,
       state: 'completed' as const,
     }
-    const formattedDate = new Intl.DateTimeFormat('es-CO', {
-      day: 'numeric',
-      month: 'short',
-    }).format(new Date(subtask.targetDate))
-
     render(
       <EventTaskCard
         subtask={subtask}
@@ -33,10 +28,13 @@ describe('EventTaskCard', () => {
 
     expect(screen.getByRole('heading', { name: subtask.name })).toBeTruthy()
     expect(
-      screen.getByText(`${formattedDate} · ${subtask.estimatedHours} h`),
+      screen.getByText('20 oct · 2,5 h'),
     ).toBeTruthy()
-    expect(screen.getByText(subtask.details)).toBeTruthy()
     expect(screen.getByText('Completada')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Nota' }))
+    expect(screen.getByText(subtask.details)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Ocultar' })).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Editar' }))
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))
@@ -47,7 +45,7 @@ describe('EventTaskCard', () => {
     expect(onDelete).toHaveBeenCalledWith(subtask)
   })
 
-  it('muestra Próxima para una subtarea pendiente con fecha futura', () => {
+  it('muestra Pendiente para una subtarea pendiente con fecha futura', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-09-24T12:00:00.000Z'))
 
@@ -63,7 +61,7 @@ describe('EventTaskCard', () => {
       />,
     )
 
-    expect(screen.getByText('Próxima')).toBeTruthy()
+    expect(screen.getByText('Pendiente')).toBeTruthy()
   })
 
   it('muestra Vencida para una subtarea pendiente con fecha pasada', () => {
@@ -104,7 +102,7 @@ describe('EventTaskCard', () => {
     expect(screen.getByText('Hoy')).toBeTruthy()
   })
 
-  it('no renderiza una descripción cuando la subtarea no tiene detalles', () => {
+  it('no renderiza el botón Nota cuando la subtarea no tiene detalles', () => {
     render(
       <EventTaskCard
         subtask={{
@@ -116,6 +114,21 @@ describe('EventTaskCard', () => {
       />,
     )
 
-    expect(screen.queryByText(subtaskFixture.details)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Nota' })).toBeNull()
+  })
+
+  it('no renderiza el botón Nota cuando details solo contiene espacios', () => {
+    render(
+      <EventTaskCard
+        subtask={{
+          ...subtaskFixture,
+          details: '   ',
+        }}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Nota' })).toBeNull()
   })
 })

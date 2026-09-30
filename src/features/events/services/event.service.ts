@@ -183,5 +183,8 @@ export async function deleteEvent(
 function toEventDateTime(
   date: string,
 ) {
-  return `${date}T00:00:00.000Z`
+  // El formulario captura un día, no una hora. Usar medianoche
+  // hacía que un evento programado para hoy quedara en el pasado
+  // apenas comenzaba el día y el API rechazara la actualización.
+  return `${date}T23:59:59.999-05:00`
 }

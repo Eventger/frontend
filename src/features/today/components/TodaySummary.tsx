@@ -57,7 +57,7 @@ export function TodaySummary({
   return (
     <>
       {/* Desktop */}
-      <section className="hidden grid-cols-4 gap-5 md:grid">
+      <section className="hidden grid-cols-2 gap-5 md:grid xl:grid-cols-4">
         <TodaySummaryCard
           title="Vencidas"
           value={overdueCount}

@@ -23,6 +23,9 @@ const create = vi.fn()
 const sendRecoveryCode = vi.fn()
 const verifyRecoveryCode = vi.fn()
 const submitRecoveryPassword = vi.fn()
+const decorateUrl = vi.fn(
+  (url: string) => url,
+)
 
 function mockSignIn(
   status = 'needs_identifier',
@@ -92,6 +95,10 @@ describe('LoginPage', () => {
     sendRecoveryCode.mockReset()
     verifyRecoveryCode.mockReset()
     submitRecoveryPassword.mockReset()
+    decorateUrl.mockReset()
+    decorateUrl.mockImplementation(
+      (url: string) => url,
+    )
     mockSignIn()
     sessionStorage.clear()
   })
@@ -126,7 +133,10 @@ describe('LoginPage', () => {
     })
     finalize.mockImplementation(
       async ({ navigate }) => {
-        navigate({ session: null })
+        navigate({
+          session: null,
+          decorateUrl,
+        })
         return { error: null }
       },
     )
@@ -145,6 +155,9 @@ describe('LoginPage', () => {
       password: 'una-clave-segura',
     })
     expect(finalize).toHaveBeenCalledOnce()
+    expect(decorateUrl).toHaveBeenCalledWith(
+      '/eventos',
+    )
     expect(
       await screen.findByRole('heading', {
         name: 'Eventos privados',
@@ -276,6 +289,7 @@ describe('LoginPage', () => {
           session: {
             currentTask: { key: 'verify' },
           },
+          decorateUrl,
         })
         return { error: null }
       },
@@ -447,7 +461,10 @@ describe('LoginPage', () => {
     submitRecoveryPassword.mockResolvedValue({ error: null })
     finalize.mockImplementation(
       async ({ navigate }) => {
-        navigate({ session: null })
+        navigate({
+          session: null,
+          decorateUrl,
+        })
         return { error: null }
       },
     )
@@ -493,6 +510,9 @@ describe('LoginPage', () => {
       await screen.findByLabelText(
         'Nueva contraseña',
       )
+    expect(
+      newPassword.getAttribute('minlength'),
+    ).toBe('8')
     await user.type(newPassword, 'corta')
     await user.click(
       screen.getByRole('button', {
@@ -501,14 +521,14 @@ describe('LoginPage', () => {
     )
     expect(
       screen.getByText(
-        'La nueva contraseña debe tener al menos 15 caracteres.',
+        'La nueva contraseña debe tener al menos 8 caracteres.',
       ),
     ).toBeTruthy()
 
     await user.clear(newPassword)
     await user.type(
       newPassword,
-      'nueva-clave-segura',
+      '12345678',
     )
     await user.click(
       screen.getByRole('button', {
@@ -519,10 +539,13 @@ describe('LoginPage', () => {
     expect(
       submitRecoveryPassword,
     ).toHaveBeenCalledWith({
-      password: 'nueva-clave-segura',
+      password: '12345678',
       signOutOfOtherSessions: true,
     })
     expect(finalize).toHaveBeenCalledOnce()
+    expect(decorateUrl).toHaveBeenCalledWith(
+      '/eventos',
+    )
     expect(
       await screen.findByRole('heading', {
         name: 'Eventos privados',

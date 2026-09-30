@@ -38,6 +38,32 @@ describe('AppSidebar', () => {
     expect(openUserProfile).toHaveBeenCalledOnce()
   })
 
+  it('mantiene Eventos activo en las rutas del flujo de eventos', () => {
+    render(
+      <MemoryRouter
+        initialEntries={['/evento/21']}
+      >
+        <AppSidebar />
+      </MemoryRouter>,
+    )
+
+    expect(
+      screen
+        .getByRole('link', {
+          name: 'Eventos',
+        })
+        .getAttribute('aria-current'),
+    ).toBe('page')
+
+    expect(
+      screen
+        .getByRole('link', {
+          name: 'Hoy',
+        })
+        .getAttribute('aria-current'),
+    ).toBeNull()
+  })
+
   it('cierra la sesión y maneja un fallo posterior', async () => {
     const user = userEvent.setup()
     const { unmount } = render(

@@ -7,7 +7,9 @@ import {
   useParams,
 } from 'react-router'
 
-import { AppLayout } from '@/components/layout/AppLayout'
+import { PageContainer } from '@/components/layout/PageContainer'
+import { PageFlowSurface } from '@/components/layout/PageFlowSurface'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 import {
   useAuthenticatedApi,
@@ -251,6 +253,15 @@ export function EventDetailPage() {
             eventType.id ===
             currentEvent.typeId,
         )?.name
+      : undefined
+
+  const currentEventDescription =
+    currentEvent
+      ? eventTypes.find(
+          (eventType) =>
+            eventType.id ===
+            currentEvent.typeId,
+        )?.description
       : undefined
 
   const handleCreateSubtask = async (
@@ -512,6 +523,49 @@ export function EventDetailPage() {
       void retryEvent()
     }
 
+  const handleCreateSubtaskFromEdit =
+    async (
+      data: CreateSubtaskInput,
+    ) => {
+      if (eventId === null) {
+        throw new Error(
+          'Evento no disponible',
+        )
+      }
+
+      await createSubtask(
+        eventId,
+        data,
+        authenticatedRequest,
+      )
+
+      await refreshSubtasks()
+    }
+
+  const handleUpdateSubtaskFromEdit =
+    async (
+      subtask: Subtask,
+      data: UpdateSubtaskInput,
+    ) => {
+      await updateSubtask(
+        subtask.id,
+        data,
+        authenticatedRequest,
+      )
+
+      await refreshSubtasks()
+    }
+
+  const handleDeleteSubtaskFromEdit =
+    async (subtask: Subtask) => {
+      await deleteSubtask(
+        subtask.id,
+        authenticatedRequest,
+      )
+
+      await refreshSubtasks()
+    }
+
   const handleOpenDeleteEvent = () => {
     setIsDeleteEventOpen(true)
   }
@@ -566,8 +620,17 @@ export function EventDetailPage() {
     }
 
   return (
-    <AppLayout>
-      <div className="mx-auto w-full max-w-[1120px] px-4 py-6 sm:px-6 md:px-8 md:py-12">
+    <PageContainer
+      className={
+        view === 'event-edit'
+          ? 'md:py-6'
+          : undefined
+      }
+    >
+      <div
+        key={view}
+        className="event-flow-view"
+      >
         {view === 'create-success' &&
           event &&
           createdSubtask && (
@@ -692,27 +755,21 @@ export function EventDetailPage() {
 
         {view === 'event-edit' &&
           currentEvent && (
-            <>
-              <header>
-                <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
-                  Editar evento
-                </h1>
-
-                <p className="mt-2 text-[15px] text-[#667085]">
-                  Modifica la información de{' '}
-                  {currentEvent.name}.
-                </p>
-              </header>
+            <PageFlowSurface>
+              <PageHeader
+                title="Editar evento"
+                description="Modifica la información del evento y administra sus tareas principales."
+              />
 
               {isLoadingEventTypes && (
-                <div className="mt-8">
+                <div className="mt-4">
                   <EventDetailLoadingState />
                 </div>
               )}
 
               {!isLoadingEventTypes &&
                 eventTypesError && (
-                  <div className="mt-8">
+                  <div className="mt-4">
                     <EventDetailErrorState
                       onRetry={
                         retryEventTypes
@@ -723,7 +780,7 @@ export function EventDetailPage() {
 
               {!isLoadingEventTypes &&
                 !eventTypesError && (
-                  <div className="mt-[30px]">
+                  <div className="mt-4">
                     <EditEventForm
                       key={
                         currentEvent.id
@@ -734,6 +791,7 @@ export function EventDetailPage() {
                       eventTypes={
                         eventTypes
                       }
+                      subtasks={subtasks}
                       isSubmitting={
                         isUpdatingEvent
                       }
@@ -743,10 +801,19 @@ export function EventDetailPage() {
                       onCancel={
                         handleCancelEventEdit
                       }
+                      onCreateSubtask={
+                        handleCreateSubtaskFromEdit
+                      }
+                      onUpdateSubtask={
+                        handleUpdateSubtaskFromEdit
+                      }
+                      onDeleteSubtask={
+                        handleDeleteSubtaskFromEdit
+                      }
                     />
                   </div>
                 )}
-            </>
+            </PageFlowSurface>
           )}
 
         {view ===
@@ -757,7 +824,9 @@ export function EventDetailPage() {
                 deletedEventName
               }
               onGoEvents={() =>
-                navigate('/eventos')
+                navigate('/eventos', {
+                  viewTransition: true,
+                })
               }
             />
           )}
@@ -809,6 +878,9 @@ export function EventDetailPage() {
                     subtasks={subtasks}
                     eventTypeName={
                       currentEventTypeName
+                    }
+                    eventDescription={
+                      currentEventDescription
                     }
                     onAddTask={() =>
                       setIsAddSubtaskOpen(
@@ -914,6 +986,6 @@ export function EventDetailPage() {
           </>
         )}
       </div>
-    </AppLayout>
+    </PageContainer>
   )
 }

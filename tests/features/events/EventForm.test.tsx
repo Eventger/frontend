@@ -159,7 +159,7 @@ describe('EventForm', () => {
     expect(screen.getByText('Ingresa el nombre de la tarea.')).toBeTruthy()
     expect(screen.getByText('Selecciona una fecha límite.')).toBeTruthy()
     expect(
-      screen.getByText('Indica un tiempo estimado válido.'),
+      screen.getByText('Ingresa un tiempo estimado válido.'),
     ).toBeTruthy()
 
     await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Decoración')
@@ -173,7 +173,7 @@ describe('EventForm', () => {
       screen.getByText('La fecha límite no puede estar en el pasado.'),
     ).toBeTruthy()
     expect(
-      screen.getByText('Indica un tiempo estimado válido.'),
+      screen.getByText('Ingresa un tiempo estimado válido.'),
     ).toBeTruthy()
 
     await user.clear(screen.getByLabelText('Fecha límite *'))
@@ -221,7 +221,7 @@ describe('EventForm', () => {
     expect(screen.getByText('Tareas agregadas (1)')).toBeTruthy()
 
     await user.click(
-      screen.getByRole('button', { name: 'Crear evento con tareas' }),
+      screen.getByRole('button', { name: 'Crear evento' }),
     )
 
     expect(onSubmit).toHaveBeenCalledOnce()
@@ -247,10 +247,6 @@ describe('EventForm', () => {
       />,
     )
 
-    await user.click(
-      screen.getByRole('button', { name: 'Cancelar tarea' }),
-    )
-
     const firstTask = screen.getByText('Reservar salón').parentElement
     expect(firstTask).not.toBeNull()
     const [editFirstTask] = within(firstTask!).getAllByRole('button')
@@ -267,7 +263,7 @@ describe('EventForm', () => {
       'Reservar finca',
     )
     await user.click(
-      screen.getByRole('button', { name: 'Guardar cambios' }),
+      screen.getByRole('button', { name: 'Guardar tarea' }),
     )
 
     expect(screen.getByText('Reservar finca')).toBeTruthy()
@@ -278,14 +274,14 @@ describe('EventForm', () => {
     await user.click(editTask)
     await user.click(deleteTask)
 
-    expect(screen.getByText('Agregar nueva tarea')).toBeTruthy()
+    expect(screen.getByText('Crear tarea')).toBeTruthy()
     expect(
       (screen.getByLabelText('Nombre de la tarea *') as HTMLInputElement).value,
     ).toBe('')
     expect(screen.getByText('Tareas agregadas (1)')).toBeTruthy()
 
     await user.click(
-      screen.getByRole('button', { name: 'Cancelar tarea' }),
+      screen.getByRole('button', { name: 'Limpiar' }),
     )
     const remainingTask = screen.getByText('Contratar música').parentElement
     const [, deleteRemainingTask] = within(remainingTask!).getAllByRole('button')
@@ -293,10 +289,7 @@ describe('EventForm', () => {
 
     expect(screen.queryByText(/Tareas agregadas/)).toBeNull()
 
-    await user.click(
-      screen.getByRole('button', { name: '+ Agregar otra tarea' }),
-    )
-    expect(screen.getByText('Agregar nueva tarea')).toBeTruthy()
+    expect(screen.getByText('Crear tarea')).toBeTruthy()
   })
 
   it('cancela la creación del evento y refleja el estado de envío', async () => {
@@ -312,7 +305,7 @@ describe('EventForm', () => {
     )
 
     await user.click(
-      screen.getByRole('button', { name: 'Cancelar creación' }),
+      screen.getByRole('button', { name: 'Cancelar' }),
     )
     expect(onCancel).toHaveBeenCalledOnce()
 
@@ -327,7 +320,7 @@ describe('EventForm', () => {
 
     expect(
       (screen.getByRole('button', {
-        name: 'Guardando...',
+        name: 'Guardando…',
       }) as HTMLButtonElement).disabled,
     ).toBe(true)
     expect(
