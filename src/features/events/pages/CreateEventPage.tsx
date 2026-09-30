@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
-import { AppLayout } from '@/components/layout/AppLayout'
+import { PageContainer } from '@/components/layout/PageContainer'
+import { PageFlowSurface } from '@/components/layout/PageFlowSurface'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 import { CreateEventError } from '@/features/events/components/CreateEventError'
 import { CreateEventSuccess } from '@/features/events/components/CreateEventSuccess'
@@ -23,8 +25,53 @@ type CreateEventView =
   | 'success'
   | 'error'
 
+type CreateEventDraft = {
+  data: CreateEventInput
+  subtasks: CreateSubtaskInput[]
+}
+
+const createEventDraftKey =
+  'eventger:create-event-draft'
+
+function readCreateEventDraft():
+  | CreateEventDraft
+  | undefined {
+  try {
+    const storedDraft =
+      sessionStorage.getItem(
+        createEventDraftKey,
+      )
+
+    if (!storedDraft) {
+      return undefined
+    }
+
+    return JSON.parse(
+      storedDraft,
+    ) as CreateEventDraft
+  } catch {
+    sessionStorage.removeItem(
+      createEventDraftKey,
+    )
+    return undefined
+  }
+}
+
 export function CreateEventPage() {
   const navigate = useNavigate()
+
+  const [initialDraft] =
+    useState(readCreateEventDraft)
+
+  const handleCancel = () => {
+    sessionStorage.removeItem(
+      createEventDraftKey,
+    )
+
+    navigate('/eventos', {
+      viewTransition: true,
+    })
+  }
 
   const {
     authenticatedRequest,
@@ -41,13 +88,17 @@ export function CreateEventPage() {
   const [
     submittedData,
     setSubmittedData,
-  ] = useState<CreateEventInput>()
+  ] = useState<CreateEventInput | undefined>(
+    initialDraft?.data,
+  )
 
   const [
     submittedSubtasks,
     setSubmittedSubtasks,
   ] =
-    useState<CreateSubtaskInput[]>([])
+    useState<CreateSubtaskInput[]>(
+      initialDraft?.subtasks ?? [],
+    )
 
   const [
     createdEvent,
@@ -77,6 +128,9 @@ export function CreateEventPage() {
         )
       }
 
+      sessionStorage.removeItem(
+        createEventDraftKey,
+      )
       setCreatedEvent(event)
       setView('success')
     } catch {
@@ -86,22 +140,39 @@ export function CreateEventPage() {
     }
   }
 
+  const handleDraftChange = (
+    data: CreateEventInput,
+    subtasks: CreateSubtaskInput[],
+  ) => {
+    sessionStorage.setItem(
+      createEventDraftKey,
+      JSON.stringify({
+        data,
+        subtasks,
+      } satisfies CreateEventDraft),
+    )
+  }
+
   return (
-    <AppLayout>
-      <div className="mx-auto w-full max-w-[1120px] px-4 py-6 sm:px-6 md:px-8 md:py-12">
+    <PageContainer
+      className={
+        view === 'form'
+          ? 'md:py-6'
+          : undefined
+      }
+    >
+      <div
+        key={view}
+        className="event-flow-view"
+      >
         {view === 'form' && (
-          <>
-            <header>
-              <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
-                Crear evento
-              </h1>
+          <PageFlowSurface>
+            <PageHeader
+              title="Crear evento"
+              description="Completa la información básica de tu evento y agrega las tareas principales para dejarlo listo."
+            />
 
-              <p className="mt-2 text-sm text-[#667085] md:text-[15px]">
-                Completa la información básica de tu evento y agrega las tareas principales para dejarlo listo.
-              </p>
-            </header>
-
-            <div className="mt-3 max-w-[1040px]">
+            <div className="mt-4">
               <EventForm
                 initialValues={
                   submittedData
@@ -112,15 +183,16 @@ export function CreateEventPage() {
                 onSubmit={
                   handleSubmit
                 }
-                onCancel={() =>
-                  navigate('/eventos')
+                onCancel={handleCancel}
+                onDraftChange={
+                  handleDraftChange
                 }
                 isSubmitting={
                   isSubmitting
                 }
               />
             </div>
-          </>
+          </PageFlowSurface>
         )}
 
         {view === 'success' &&
@@ -142,6 +214,6 @@ export function CreateEventPage() {
             />
           )}
       </div>
-    </AppLayout>
+    </PageContainer>
   )
 }

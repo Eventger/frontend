@@ -27,10 +27,15 @@ describe('EventOperationFeedback', () => {
     expect(
       screen.getByRole('heading', { name: 'Evento actualizado' }),
     ).toBeTruthy()
-    expect(screen.getByText(new RegExp(eventFixture.name))).toBeTruthy()
+    expect(
+      screen.getByText(
+        `La información y las tareas de ${eventFixture.name} se actualizaron correctamente.`,
+      ),
+    ).toBeTruthy()
+    expect(screen.getByRole('status')).toBeTruthy()
 
     await user.click(
-      screen.getByRole('button', { name: 'Seguir editando' }),
+      screen.getByRole('button', { name: 'Volver a editar' }),
     )
     await user.click(
       screen.getByRole('button', { name: 'Volver al evento' }),
@@ -59,6 +64,12 @@ describe('EventOperationFeedback', () => {
     expect(
       screen.getByRole('heading', { name: 'No pudimos actualizar el evento' }),
     ).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Ocurrió un problema al guardar los cambios. Conservamos la información y las tareas que editaste para que puedas intentarlo nuevamente.',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByRole('alert')).toBeTruthy()
 
     await user.click(
       screen.getByRole('button', { name: 'Intentar de nuevo' }),
@@ -136,8 +147,15 @@ describe('EventOperationFeedback', () => {
       />,
     )
 
-    const retryButton = screen.getByRole('button', { name: 'Procesando...' })
+    const retryButton = screen.getByRole('button', { name: 'Procesando…' })
     expect((retryButton as HTMLButtonElement).disabled).toBe(true)
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Volver al evento',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true)
 
     await user.click(retryButton)
     expect(onRetry).not.toHaveBeenCalled()

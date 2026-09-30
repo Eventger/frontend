@@ -1,10 +1,4 @@
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { DestructiveConfirmationDialog } from '@/features/events/components/detail/DestructiveConfirmationDialog'
 
 type DeleteEventDialogProps = {
   open: boolean
@@ -22,55 +16,14 @@ export function DeleteEventDialog({
   onConfirm,
 }: DeleteEventDialogProps) {
   return (
-    <Dialog
+    <DestructiveConfirmationDialog
       open={open}
-      onOpenChange={(nextOpen) => {
-        if (!isDeleting) {
-          onOpenChange(
-            nextOpen,
-          )
-        }
-      }}
-    >
-      <DialogContent
-        className="rounded-[18px] border-[#dde2ea] p-6 sm:max-w-[520px]"
-        showCloseButton={false}
-      >
-        <DialogTitle className="text-[24px] font-bold text-[#17212b]">
-          ¿Eliminar evento?
-        </DialogTitle>
-
-        <DialogDescription className="mt-4 text-[15px] leading-6 text-[#667085]">
-          Se eliminarán el evento y
-          todas sus tareas. Esta acción
-          no se puede deshacer.
-        </DialogDescription>
-
-        <div className="mt-20 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isDeleting}
-            onClick={() =>
-              onOpenChange(false)
-            }
-            className="h-11 rounded-[10px] sm:w-[140px]"
-          >
-            Cancelar
-          </Button>
-
-          <Button
-            type="button"
-            disabled={isDeleting}
-            onClick={onConfirm}
-            className="h-11 rounded-[10px] bg-[#c2413a] text-white hover:bg-[#a53732] focus-visible:ring-[#c2413a]/30 sm:w-[160px]"
-          >
-            {isDeleting
-              ? 'Eliminando...'
-              : 'Eliminar evento'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      title="¿Eliminar evento?"
+      description="Se eliminarán el evento y todas sus tareas. Esta acción no se puede deshacer."
+      confirmLabel="Eliminar evento"
+      isDeleting={isDeleting}
+      onOpenChange={onOpenChange}
+      onConfirm={onConfirm}
+    />
   )
 }

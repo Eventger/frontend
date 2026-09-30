@@ -86,8 +86,8 @@ export function TodayTaskCard({
         className={`absolute inset-y-0 left-0 w-1 ${styles.accent}`}
       />
 
-      <div className="min-h-[112px] px-[18px] py-4 pr-4 md:min-h-[84px] md:pr-[136px]">
-        <p className="text-[15px] font-semibold text-[#17212b] md:text-base">
+      <div className="min-h-[112px] px-[18px] pb-14 pt-4 pr-4 md:min-h-[84px] md:py-4 md:pr-[136px]">
+        <p className="break-words text-[15px] font-semibold text-[#17212b] md:text-base">
           {task.name}
         </p>
 

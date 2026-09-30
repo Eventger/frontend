@@ -1,8 +1,8 @@
-import { Plus } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
-import { AppLayout } from '@/components/layout/AppLayout'
-import { Button } from '@/components/ui/button'
+import { PageContainer } from '@/components/layout/PageContainer'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { PageHeaderCreateButton } from '@/components/layout/PageHeaderCreateButton'
 
 import { TodayEmptyState } from '@/features/today/components/TodayEmptyState'
 import { TodayErrorState } from '@/features/today/components/TodayErrorState'
@@ -56,7 +56,9 @@ export function TodayPage() {
   } = useToday()
 
   const handleCreateEvent = () => {
-    navigate('/crear')
+    navigate('/crear', {
+      viewTransition: true,
+    })
   }
 
   const handleOpenTask = (
@@ -64,11 +66,16 @@ export function TodayPage() {
   ) => {
     navigate(
       `/evento/${task.eventId}`,
+      {
+        viewTransition: true,
+      },
     )
   }
 
   const handleSeeUpcoming = () => {
-    navigate('/eventos')
+    navigate('/eventos', {
+      viewTransition: true,
+    })
   }
 
   const hasPriorities =
@@ -87,16 +94,12 @@ export function TodayPage() {
       : 0
 
   return (
-    <AppLayout>
-      <div className="mx-auto w-full max-w-[1040px] px-4 py-6 sm:px-6 md:px-8 md:py-12">
+    <PageContainer>
         {/* Header */}
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#17212b] md:text-[32px]">
-              Hoy
-            </h1>
-
-            <p className="mt-2 text-[13px] text-[#667085] md:text-[15px]">
+        <PageHeader
+          title="Hoy"
+          description={
+            <>
               <span>
                 {formatTodayDate()}
               </span>
@@ -106,24 +109,14 @@ export function TodayPage() {
                 Organiza primero lo
                 que requiere atención
               </span>
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            onClick={
-              handleCreateEvent
-            }
-            aria-label="Crear evento"
-            className="size-11 shrink-0 rounded-full bg-[#4f46e5] p-0 text-white hover:bg-[#4338ca] md:h-12 md:w-auto md:rounded-[10px] md:px-5"
-          >
-            <Plus className="size-5" />
-
-            <span className="hidden md:inline">
-              Crear evento
-            </span>
-          </Button>
-        </header>
+            </>
+          }
+          action={
+            <PageHeaderCreateButton
+              onClick={handleCreateEvent}
+            />
+          }
+        />
 
         {/* Loading */}
         {isLoading && (
@@ -188,7 +181,7 @@ export function TodayPage() {
 
               <div className="mt-8 grid gap-7 lg:grid-cols-[minmax(0,790px)_228px] lg:items-start lg:gap-[22px]">
                 {/* Priority groups */}
-                <main className="space-y-8">
+                <div className="space-y-8">
                   <TodayTaskSection
                     title="Vencidas"
                     description="Primero resuelve lo que ya superó su plazo."
@@ -224,7 +217,7 @@ export function TodayPage() {
                       handleOpenTask
                     }
                   />
-                </main>
+                </div>
 
                 {/* Desktop priority explanation */}
                 <div className="hidden lg:block">
@@ -238,7 +231,6 @@ export function TodayPage() {
               </div>
             </>
           )}
-      </div>
-    </AppLayout>
+    </PageContainer>
   )
 }

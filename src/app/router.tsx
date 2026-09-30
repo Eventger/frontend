@@ -5,6 +5,7 @@ import { SignUpPage } from '@/features/auth/pages/SignUpPage'
 
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 import { PublicOnlyRoute } from '@/features/auth/components/PublicOnlyRoute'
+import { AppLayout } from '@/components/layout/AppLayout'
 
 import { EventsPage } from '@/features/events/pages/EventsPage'
 import { CreateEventPage } from '@/features/events/pages/CreateEventPage'
@@ -32,38 +33,28 @@ export const router =
     },
 
     {
-      path: '/hoy',
       element: (
         <ProtectedRoute>
-          <TodayPage />
+          <AppLayout />
         </ProtectedRoute>
       ),
-    },
-
-    {
-      path: '/eventos',
-      element: (
-        <ProtectedRoute>
-          <EventsPage />
-        </ProtectedRoute>
-      ),
-    },
-
-    {
-      path: '/crear',
-      element: (
-        <ProtectedRoute>
-          <CreateEventPage />
-        </ProtectedRoute>
-      ),
-    },
-
-    {
-      path: '/evento/:id',
-      element: (
-        <ProtectedRoute>
-          <EventDetailPage />
-        </ProtectedRoute>
-      ),
+      children: [
+        {
+          path: '/hoy',
+          element: <TodayPage />,
+        },
+        {
+          path: '/eventos',
+          element: <EventsPage />,
+        },
+        {
+          path: '/crear',
+          element: <CreateEventPage />,
+        },
+        {
+          path: '/evento/:id',
+          element: <EventDetailPage />,
+        },
+      ],
     },
   ])

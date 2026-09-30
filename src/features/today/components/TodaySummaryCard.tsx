@@ -75,7 +75,7 @@ export function TodaySummaryCard({
 
       <p
         className={[
-          'mt-1 text-[30px] font-bold leading-tight',
+          'mt-1 break-words text-[clamp(1.5rem,3vw,1.875rem)] font-bold leading-tight',
           styles.value,
         ].join(' ')}
       >

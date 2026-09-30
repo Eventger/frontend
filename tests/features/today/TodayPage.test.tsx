@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
@@ -13,12 +12,6 @@ import { useToday } from '@/features/today/hooks/useToday'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import type { TodayData } from '@/features/today/types/today.types'
 import { todayDataFixture } from './today.fixtures'
-
-vi.mock('@/components/layout/AppLayout', () => ({
-  AppLayout: ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
-  ),
-}))
 
 vi.mock('@/features/today/hooks/useToday', () => ({
   useToday: vi.fn(),
@@ -87,7 +80,11 @@ describe('TodayPage', () => {
 
     renderPage()
 
-    expect(screen.getByLabelText('Cargando prioridades de hoy')).toBeTruthy()
+    expect(
+      screen.getByRole('status', {
+        name: 'Cargando prioridades de hoy',
+      }),
+    ).toBeTruthy()
   })
 
   it('renderiza prioridades, contenido y resumen en el orden correcto', () => {
@@ -184,6 +181,7 @@ describe('TodayPage', () => {
     expect(
       screen.getByRole('heading', { name: 'No pudimos cargar tus tareas' }),
     ).toBeTruthy()
+    expect(screen.getByRole('alert')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
     expect(retry).toHaveBeenCalledOnce()
   })

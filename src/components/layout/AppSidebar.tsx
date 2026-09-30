@@ -7,7 +7,8 @@ import {
 } from 'lucide-react'
 
 import {
-  NavLink,
+  Link,
+  useLocation,
   useNavigate,
 } from 'react-router'
 
@@ -43,6 +44,7 @@ function SidebarContent({
   onNavigate,
 }: SidebarContentProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [isSigningOut, setIsSigningOut] =
     useState(false)
   const [signOutError, setSignOutError] =
@@ -54,8 +56,15 @@ function SidebarContent({
     isLoaded,
     isSignedIn,
   } = useUser()
+  const isEventsSection =
+    location.pathname === '/eventos' ||
+    location.pathname === '/crear' ||
+    location.pathname.startsWith('/evento/')
+
   const handleCreateEvent = () => {
-    navigate('/crear')
+    navigate('/crear', {
+      viewTransition: true,
+    })
     onNavigate?.()
   }
 
@@ -106,24 +115,35 @@ function SidebarContent({
         className="mt-10 flex flex-col gap-3 px-6"
         aria-label="Navegación principal"
       >
-        {navigationItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
+        {navigationItems.map((item) => {
+          const isCurrent =
+            item.to === '/eventos'
+              ? isEventsSection
+              : location.pathname === item.to
+
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              viewTransition
+              onClick={onNavigate}
+              aria-current={
+                isCurrent
+                  ? 'page'
+                  : undefined
+              }
+              className={cn(
                 'flex h-11 items-center rounded-[10px] px-4',
                 'text-sm font-medium text-[#17212b]',
                 'transition-colors hover:bg-[#f7f8fc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]',
-                isActive &&
+                isCurrent &&
                   'bg-[#eef2ff] font-semibold text-[#3730a3]',
-              )
-            }
-          >
-            {item.label}
-          </NavLink>
-        ))}
+              )}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
       </nav>
 
       {/* Crear evento */}
@@ -131,6 +151,11 @@ function SidebarContent({
         <Button
           type="button"
           onClick={handleCreateEvent}
+          aria-current={
+            location.pathname === '/crear'
+              ? 'page'
+              : undefined
+          }
           className="h-11 w-full justify-start rounded-[10px] bg-[#4f46e5] px-4 text-sm font-semibold text-white hover:cursor-pointer hover:bg-[#4338ca]"
         >
           + Crear evento
@@ -211,7 +236,7 @@ export function AppSidebar() {
   return (
     <>
       {/* Mobile */}
-      <header className="flex h-16 items-center border-b border-[#dde2ea] bg-white px-4 md:hidden">
+      <header className="sticky top-0 z-30 flex h-16 items-center border-b border-[#dde2ea] bg-white/95 px-4 backdrop-blur xl:hidden">
         <Sheet
           open={open}
           onOpenChange={setOpen}
@@ -221,6 +246,7 @@ export function AppSidebar() {
               variant="ghost"
               size="icon"
               aria-label="Abrir menú"
+              className="size-11"
             >
               <Menu className="size-5" />
             </Button>
@@ -248,7 +274,7 @@ export function AppSidebar() {
       </header>
 
       {/* Desktop */}
-      <aside className="hidden min-h-screen w-60 shrink-0 border-r border-[#dde2ea] bg-white md:block">
+      <aside className="hidden h-svh w-[var(--app-sidebar-width)] shrink-0 border-r border-[#dde2ea] bg-white xl:sticky xl:top-0 xl:block">
         <SidebarContent />
       </aside>
     </>

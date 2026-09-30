@@ -29,5 +29,6 @@ dist-ssr
 !.env.example
 coverage/
 reports/
+tmp/
 .vitest/
 .scannerwork/

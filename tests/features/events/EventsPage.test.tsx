@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
@@ -15,12 +14,6 @@ vi.mock('@/features/events/hooks/useEvents', () => ({
 
 vi.mock('@/features/events/hooks/useEventSubtasks', () => ({
   useEventSubtasks: vi.fn(),
-}))
-
-vi.mock('@/components/layout/AppLayout', () => ({
-  AppLayout: ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
-  ),
 }))
 
 const event: Event = {
@@ -61,7 +54,14 @@ describe('EventsPage', () => {
 
     renderPage()
 
-    expect(screen.getByLabelText('Cargando eventos')).toBeTruthy()
+    expect(
+      screen.getByRole('status', {
+        name: 'Cargando eventos',
+      }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Crear evento' }),
+    ).toBeTruthy()
   })
 
   it('muestra el error y permite reintentar', async () => {
@@ -79,6 +79,7 @@ describe('EventsPage', () => {
     expect(
       screen.getByRole('heading', { name: 'No pudimos cargar tus eventos' }),
     ).toBeTruthy()
+    expect(screen.getByRole('alert')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
     expect(retry).toHaveBeenCalledOnce()
   })
@@ -95,6 +96,11 @@ describe('EventsPage', () => {
 
     expect(
       screen.getByRole('heading', { name: 'Aún no tienes eventos' }),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Crea tu primer evento para organizar sus tareas y hacer seguimiento a su preparación.',
+      ),
     ).toBeTruthy()
   })
 

@@ -30,11 +30,11 @@ describe('EventDetailContent', () => {
       }),
     ).toBeTruthy()
 
+    await user.click(screen.getByRole('button', { name: 'Gestionar tareas del evento' }))
+    expect(onEditEvent).toHaveBeenCalledOnce()
+
     await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
     expect(onAddTask).toHaveBeenCalledOnce()
-
-    await user.click(screen.getByRole('button', { name: 'Editar evento' }))
-    expect(onEditEvent).toHaveBeenCalledOnce()
   })
 
   it('renderiza una tarjeta por subtarea y el progreso real', async () => {
@@ -75,8 +75,15 @@ describe('EventDetailContent', () => {
     expect(
       screen.getByRole('heading', { name: 'Confirmar invitados' }),
     ).toBeTruthy()
-    expect(screen.getByText('50 %')).toBeTruthy()
-    expect(screen.getByText('1 de 2 tareas completadas')).toBeTruthy()
+    expect(screen.getByText('50%')).toBeTruthy()
+    expect(screen.getByText('1 de 2 tareas completadas.')).toBeTruthy()
+
+    const taskList = screen.getByRole('region', {
+      name: 'Lista de tareas del evento',
+    })
+
+    expect(taskList.classList.contains('event-task-list')).toBe(true)
+    expect(taskList.getAttribute('tabindex')).toBe('0')
 
     await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
     expect(onAddTask).toHaveBeenCalledOnce()

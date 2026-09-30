@@ -35,6 +35,8 @@ npm run hooks:install
 Consulta [la guía de contribución y CI](docs/validacion-frontend.md) para el flujo
 trunk-based, resultados, Sonar, protección de main y Vercel. Las verificaciones
 locales y límites están en [el informe de verificación](docs/verificacion-ci.md).
+La redacción exacta de validaciones y la regla de contraseña están en la
+[guía de microcopy de autenticación](docs/microcopy-autenticacion.md).
 
 ## Comandos
 
@@ -44,10 +46,14 @@ locales y límites están en [el informe de verificación](docs/verificacion-ci.
 | `npm run lint` | Oxlint existente |
 | `npm run typecheck` | TypeScript de aplicación, configuración y pruebas |
 | `npm test` | Suite completa una vez |
+| `npm run test:responsive` | Auditoría visual en Chrome para seis tamaños de viewport |
 | `npm run test:watch` | Pruebas durante desarrollo |
 | `npm run test:coverage` | JUnit, LCOV y HTML de cobertura |
 | `npm run build` | Build original: TypeScript + Vite, salida dist/ |
 | `npm run preview` | Previsualización local del build |
+
+La matriz, los criterios de reflow y las reglas para conservar la consistencia
+entre pantallas están documentados en la [guía responsive](docs/responsive.md).
 
 ## Despliegue
 

@@ -1,3 +1,10 @@
+import { useState } from 'react'
+import {
+  ChevronDown,
+  ChevronUp,
+  FileText,
+} from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -11,18 +18,20 @@ type EventTaskCardProps = {
 
 type VisualTaskStatus =
   | 'completed'
+  | 'inProgress'
   | 'overdue'
   | 'today'
-  | 'upcoming'
+  | 'pending'
 
 const STATUS_LABELS: Record<
   VisualTaskStatus,
   string
 > = {
   completed: 'Completada',
+  inProgress: 'En progreso',
   overdue: 'Vencida',
   today: 'Hoy',
-  upcoming: 'Próxima',
+  pending: 'Pendiente',
 }
 
 const STATUS_STYLES: Record<
@@ -30,24 +39,50 @@ const STATUS_STYLES: Record<
   string
 > = {
   completed: 'bg-[#ecfdf3] text-[#027a48]',
+  inProgress: 'bg-[#eef2ff] text-[#4338ca]',
   overdue: 'bg-[#feeeec] text-[#b42318]',
-  today: 'bg-[#fffaeb] text-[#b54708]',
-  upcoming: 'bg-[#eff8ff] text-[#175cd3]',
+  today: 'bg-[#fff7e6] text-[#c2410c]',
+  pending: 'bg-[#eff8ff] text-[#175cd3]',
 }
 
+const MONTHS = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+]
+
 function formatTaskDate(date: string) {
-  return new Intl.DateTimeFormat('es-CO', {
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(date))
+  const value = new Date(date)
+
+  return `${value.getUTCDate()} ${MONTHS[value.getUTCMonth()]}`
+}
+
+function formatEstimatedHours(
+  hours: number,
+) {
+  return new Intl.NumberFormat(
+    'es-CO',
+    {
+      maximumFractionDigits: 2,
+    },
+  ).format(hours)
 }
 
 function getDateOnly(date: Date) {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-  ).getTime()
+  return Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  )
 }
 
 function getVisualStatus(
@@ -57,13 +92,14 @@ function getVisualStatus(
     return 'completed'
   }
 
-  const targetDate =
-    getDateOnly(
-      new Date(subtask.targetDate),
-    )
+  if (subtask.state === 'in_progress') {
+    return 'inProgress'
+  }
 
-  const today =
-    getDateOnly(new Date())
+  const targetDate = getDateOnly(
+    new Date(subtask.targetDate),
+  )
+  const today = getDateOnly(new Date())
 
   if (targetDate < today) {
     return 'overdue'
@@ -73,7 +109,7 @@ function getVisualStatus(
     return 'today'
   }
 
-  return 'upcoming'
+  return 'pending'
 }
 
 export function EventTaskCard({
@@ -81,69 +117,132 @@ export function EventTaskCard({
   onEdit,
   onDelete,
 }: EventTaskCardProps) {
+  const [isNoteOpen, setIsNoteOpen] =
+    useState(false)
+
   const visualStatus =
     getVisualStatus(subtask)
+  const note = subtask.details.trim()
+  const hasNote = note.length > 0
+  const noteId = `task-note-${subtask.id}`
 
   return (
-    <article className="flex min-h-[92px] flex-col justify-between gap-4 rounded-[12px] border border-[#d9dee7] bg-white p-[18px] sm:flex-row sm:items-start">
-      <div className="min-w-0 flex-1">
-        <h3 className="text-[18px] font-semibold leading-[22px] text-[#17212b]">
-          {subtask.name}
-        </h3>
+    <article className="event-task-card relative overflow-hidden rounded-[11px] border border-[#d9dee7] bg-white transition-colors hover:border-[#c7d2fe]">
+      <div className="flex min-h-[61px] flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <h3 className="break-words text-[15px] font-semibold leading-5 text-[#17212b]">
+            {subtask.name}
+          </h3>
 
-        <p className="mt-2 text-[14px] text-[#667085]">
-          {formatTaskDate(
-            subtask.targetDate,
-          )}
-          {' · '}
-          {subtask.estimatedHours} h
-        </p>
+          <p className="mt-1 text-[12px] leading-4 text-[#667085]">
+            {formatTaskDate(
+              subtask.targetDate,
+            )}
+            {' · '}
+            {formatEstimatedHours(
+              subtask.estimatedHours,
+            )}{' '}
+            h
+          </p>
+        </div>
 
-        <p className="mt-2 h-5 max-w-full truncate text-[13px] leading-5 text-[#475467]">
-          {subtask.details}
-        </p>
-      </div>
-
-      <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-        <span
-          className={cn(
-            'rounded-full px-3 py-1.5 text-[12px] font-semibold',
-            STATUS_STYLES[
-              visualStatus
-            ],
-          )}
-        >
-          {
-            STATUS_LABELS[
-              visualStatus
-            ]
-          }
-        </span>
-
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              onEdit(subtask)
-            }
-            className="h-[30px] rounded-[8px] bg-[#f8fafc] px-[11px] text-[12px] font-semibold text-[#17212b]"
+        <div className="flex w-full flex-wrap items-center gap-2.5 sm:ml-4 sm:w-auto sm:shrink-0 sm:flex-nowrap">
+          <span
+            className={cn(
+              'inline-flex h-[30px] min-w-[116px] items-center justify-center rounded-full px-4 text-[12px] font-medium',
+              STATUS_STYLES[
+                visualStatus
+              ],
+            )}
           >
-            Editar
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              onDelete(subtask)
+            {
+              STATUS_LABELS[
+                visualStatus
+              ]
             }
-            className="h-[30px] rounded-[8px] border-[#c2413a] bg-white px-[11px] text-[12px] font-semibold text-[#c2413a] hover:bg-[#fdf2f1] hover:text-[#c2413a] focus-visible:ring-[#c2413a]/25"
-          >
-            Eliminar
-          </Button>
+          </span>
+
+          {hasNote && (
+            <Button
+              type="button"
+              variant="outline"
+              aria-expanded={
+                isNoteOpen
+              }
+              aria-controls={noteId}
+              onClick={() =>
+                setIsNoteOpen(
+                  (current) =>
+                    !current,
+                )
+              }
+              className="event-task-control min-w-[118px] rounded-[8px] border-[#b9c5ff] bg-[#f6f7ff] px-3 text-[12px] font-medium text-[#4f46e5] hover:bg-[#eef2ff] hover:text-[#4338ca]"
+            >
+              <FileText
+                className="size-3.5"
+                aria-hidden="true"
+              />
+              {isNoteOpen
+                ? 'Ocultar'
+                : 'Nota'}
+              {isNoteOpen ? (
+                <ChevronUp
+                  className="ml-auto size-3.5"
+                  aria-hidden="true"
+                />
+              ) : (
+                <ChevronDown
+                  className="ml-auto size-3.5"
+                  aria-hidden="true"
+                />
+              )}
+            </Button>
+          )}
+
+          <div className="event-task-actions ml-auto flex gap-1.5 rounded-[9px] bg-white/95 py-1 pl-2 shadow-[-10px_0_16px_4px_rgba(255,255,255,0.96)] transition-opacity">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                onEdit(subtask)
+              }
+              className="event-task-control rounded-[8px] bg-[#f8fafc] px-2.5 text-[12px] font-semibold text-[#17212b]"
+            >
+              Editar
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                onDelete(subtask)
+              }
+              className="event-task-control rounded-[8px] border-[#c2413a] bg-white px-2.5 text-[12px] font-semibold text-[#c2413a] hover:bg-[#fdf2f1] hover:text-[#c2413a] focus-visible:ring-[#c2413a]/25"
+            >
+              Eliminar
+            </Button>
+          </div>
         </div>
       </div>
+
+      {hasNote && isNoteOpen && (
+        <div
+          id={noteId}
+          className="flex items-start gap-3 border-t border-[#eaecf0] px-4 py-3"
+        >
+          <FileText
+            className="mt-0.5 size-4 shrink-0 text-[#4f46e5]"
+            aria-hidden="true"
+          />
+
+          <p className="min-w-0 text-[12px] leading-5 text-[#667085]">
+            <span className="mr-4 font-semibold text-[#17212b]">
+              Nota
+            </span>
+            {note}
+          </p>
+        </div>
+      )}
     </article>
   )
 }
