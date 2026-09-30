@@ -266,9 +266,9 @@ export function EventDetailPage() {
     try {
       const created =
         await createSubtask(
-          authenticatedRequest,
           eventId,
           data,
+          authenticatedRequest,
         )
 
       setCreatedSubtask(created)
@@ -359,9 +359,9 @@ export function EventDetailPage() {
     try {
       const updated =
         await updateSubtask(
-          authenticatedRequest,
           selectedSubtask.id,
           data,
+          authenticatedRequest,
         )
 
       setUpdatedSubtask(updated)
@@ -425,8 +425,8 @@ export function EventDetailPage() {
           selectedSubtask.name
 
         await deleteSubtask(
-          authenticatedRequest,
           selectedSubtask.id,
+          authenticatedRequest,
         )
 
         setDeletedSubtaskName(name)
@@ -461,9 +461,9 @@ export function EventDetailPage() {
     try {
       const updated =
         await updateEvent(
-          authenticatedRequest,
           eventId,
           data,
+          authenticatedRequest,
         )
 
       setUpdatedEvent(updated)
@@ -532,8 +532,8 @@ export function EventDetailPage() {
           currentEvent.name
 
         await deleteEvent(
-          authenticatedRequest,
           eventId,
+          authenticatedRequest,
         )
 
         setDeletedEventName(

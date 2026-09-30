@@ -55,11 +55,12 @@ export function useEvents() {
     }
 
     if (!isSignedIn) {
-      setIsLoading(false)
       return
     }
 
-    void loadEvents()
+    void Promise.resolve().then(
+      loadEvents,
+    )
   }, [
     isAuthLoaded,
     isSignedIn,
@@ -68,7 +69,10 @@ export function useEvents() {
 
   return {
     events,
-    isLoading,
+    isLoading:
+      isAuthLoaded && !isSignedIn
+        ? false
+        : isLoading,
     error,
     retry: loadEvents,
   }

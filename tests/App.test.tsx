@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 
 vi.mock('@/features/events/services/event.service', () => ({
@@ -48,17 +48,13 @@ vi.mock('@/features/today/pages/TodayPage', () => ({
   TodayPage: () => null,
 }))
 
-test('redirige la raíz a la lista de eventos', async () => {
+test('redirige la raíz a la vista de hoy cuando hay una sesión', async () => {
   window.history.pushState({}, '', '/')
   const { default: App } = await import('../src/app/App.tsx')
 
   render(<App />)
 
-  expect(
-    await screen.findByRole('heading', { level: 1, name: 'Eventos' }),
-  ).toBeTruthy()
-  expect(
-    screen.getByRole('heading', { level: 2, name: 'Aún no tienes eventos' }),
-  ).toBeTruthy()
-  expect(window.location.pathname).toBe('/eventos')
+  await vi.waitFor(() => {
+    expect(window.location.pathname).toBe('/hoy')
+  })
 })

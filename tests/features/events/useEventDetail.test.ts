@@ -27,7 +27,10 @@ describe('useEventDetail', () => {
       expect(result.current.isLoading).toBe(false)
     })
 
-    expect(getEventById).toHaveBeenCalledWith(eventFixture.id)
+    expect(getEventById).toHaveBeenCalledWith(
+      eventFixture.id,
+      expect.any(Function),
+    )
     expect(result.current.event).toEqual(eventFixture)
     expect(result.current.error).toBeNull()
   })

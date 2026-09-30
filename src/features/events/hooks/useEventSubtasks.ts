@@ -40,8 +40,8 @@ export function useEventSubtasks(
 
         const data =
           await getEventSubtasks(
-            authenticatedRequest,
             eventId,
+            authenticatedRequest,
           )
 
         setSubtasks(data)
@@ -67,11 +67,12 @@ export function useEventSubtasks(
     }
 
     if (!isSignedIn) {
-      setIsLoading(false)
       return
     }
 
-    void loadSubtasks()
+    void Promise.resolve().then(
+      loadSubtasks,
+    )
   }, [
     isAuthLoaded,
     isSignedIn,
@@ -80,7 +81,10 @@ export function useEventSubtasks(
 
   return {
     subtasks,
-    isLoading,
+    isLoading:
+      isAuthLoaded && !isSignedIn
+        ? false
+        : isLoading,
     error,
     refresh: loadSubtasks,
   }

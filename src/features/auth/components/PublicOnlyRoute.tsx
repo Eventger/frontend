@@ -10,6 +10,8 @@ import {
   useAuth,
 } from '@clerk/react'
 
+import { AuthLoadingState } from '@/features/auth/components/AuthLoadingState'
+
 type PublicOnlyRouteProps = {
   children: ReactNode
 }
@@ -23,7 +25,7 @@ export function PublicOnlyRoute({
   } = useAuth()
 
   if (!isLoaded) {
-    return null
+    return <AuthLoadingState />
   }
 
   if (isSignedIn) {

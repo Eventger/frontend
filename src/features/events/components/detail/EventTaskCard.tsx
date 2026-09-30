@@ -138,7 +138,7 @@ export function EventTaskCard({
             onClick={() =>
               onDelete(subtask)
             }
-            className="h-[30px] rounded-[8px] border-[#b42318] bg-white px-[11px] text-[12px] font-semibold text-[#b42318] hover:bg-[#feeeec] hover:text-[#b42318]"
+            className="h-[30px] rounded-[8px] border-[#c2413a] bg-white px-[11px] text-[12px] font-semibold text-[#c2413a] hover:bg-[#fdf2f1] hover:text-[#c2413a] focus-visible:ring-[#c2413a]/25"
           >
             Eliminar
           </Button>

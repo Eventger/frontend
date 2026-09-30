@@ -312,7 +312,7 @@ describe('EventDetailPage', () => {
       eventDate: '2026-10-24',
       location: eventFixture.location,
       contact: updatedEvent.contact,
-    })
+    }, expect.any(Function))
     expect(
       await screen.findByRole('heading', { name: 'Evento actualizado' }),
     ).toBeTruthy()
@@ -388,11 +388,13 @@ describe('EventDetailPage', () => {
       1,
       eventFixture.id,
       expectedInput,
+      expect.any(Function),
     )
     expect(updateEvent).toHaveBeenNthCalledWith(
       2,
       eventFixture.id,
       expectedInput,
+      expect.any(Function),
     )
   })
 
@@ -419,7 +421,10 @@ describe('EventDetailPage', () => {
     )
 
     expect(deleteEvent).toHaveBeenCalledOnce()
-    expect(deleteEvent).toHaveBeenCalledWith(eventFixture.id)
+    expect(deleteEvent).toHaveBeenCalledWith(
+      eventFixture.id,
+      expect.any(Function),
+    )
     expect(
       await screen.findByRole('heading', { name: 'Evento eliminado' }),
     ).toBeTruthy()
@@ -456,8 +461,16 @@ describe('EventDetailPage', () => {
     )
 
     expect(deleteEvent).toHaveBeenCalledTimes(2)
-    expect(deleteEvent).toHaveBeenNthCalledWith(1, eventFixture.id)
-    expect(deleteEvent).toHaveBeenNthCalledWith(2, eventFixture.id)
+    expect(deleteEvent).toHaveBeenNthCalledWith(
+      1,
+      eventFixture.id,
+      expect.any(Function),
+    )
+    expect(deleteEvent).toHaveBeenNthCalledWith(
+      2,
+      eventFixture.id,
+      expect.any(Function),
+    )
   })
 
   it('edita una subtarea y muestra el feedback de éxito', async () => {
@@ -489,7 +502,7 @@ describe('EventDetailPage', () => {
       targetDate: subtaskFixture.targetDate,
       estimatedHours: subtaskFixture.estimatedHours,
       details: subtaskFixture.details,
-    })
+    }, expect.any(Function))
     expect(
       await screen.findByRole('heading', { name: 'Tarea actualizada' }),
     ).toBeTruthy()
@@ -522,11 +535,13 @@ describe('EventDetailPage', () => {
       1,
       subtaskFixture.id,
       createSubtaskInputFixture,
+      expect.any(Function),
     )
     expect(updateSubtask).toHaveBeenNthCalledWith(
       2,
       subtaskFixture.id,
       createSubtaskInputFixture,
+      expect.any(Function),
     )
   })
 
@@ -550,7 +565,10 @@ describe('EventDetailPage', () => {
     )
 
     expect(deleteSubtask).toHaveBeenCalledOnce()
-    expect(deleteSubtask).toHaveBeenCalledWith(subtaskFixture.id)
+    expect(deleteSubtask).toHaveBeenCalledWith(
+      subtaskFixture.id,
+      expect.any(Function),
+    )
     expect(
       await screen.findByRole('heading', { name: 'Tarea eliminada' }),
     ).toBeTruthy()
@@ -579,8 +597,16 @@ describe('EventDetailPage', () => {
     )
 
     expect(deleteSubtask).toHaveBeenCalledTimes(2)
-    expect(deleteSubtask).toHaveBeenNthCalledWith(1, subtaskFixture.id)
-    expect(deleteSubtask).toHaveBeenNthCalledWith(2, subtaskFixture.id)
+    expect(deleteSubtask).toHaveBeenNthCalledWith(
+      1,
+      subtaskFixture.id,
+      expect.any(Function),
+    )
+    expect(deleteSubtask).toHaveBeenNthCalledWith(
+      2,
+      subtaskFixture.id,
+      expect.any(Function),
+    )
   })
 
   it('crea una subtarea, refresca y permite volver al evento', async () => {
@@ -595,6 +621,7 @@ describe('EventDetailPage', () => {
     expect(createSubtask).toHaveBeenCalledWith(
       eventFixture.id,
       createSubtaskInputFixture,
+      expect.any(Function),
     )
     expect(refreshSubtasks).toHaveBeenCalledOnce()
 
@@ -655,11 +682,13 @@ describe('EventDetailPage', () => {
       1,
       eventFixture.id,
       createSubtaskInputFixture,
+      expect.any(Function),
     )
     expect(createSubtask).toHaveBeenNthCalledWith(
       2,
       eventFixture.id,
       createSubtaskInputFixture,
+      expect.any(Function),
     )
   })
 })

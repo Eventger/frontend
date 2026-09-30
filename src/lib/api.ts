@@ -1,7 +1,17 @@
-const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
+function getApiUrl() {
+  const apiUrl =
+    import.meta.env.VITE_API_URL?.replace(
+      /\/$/,
+      '',
+    )
 
-if (!API_URL) {
-  throw new Error('VITE_API_URL is not configured')
+  if (!apiUrl) {
+    throw new Error(
+      'VITE_API_URL is not configured',
+    )
+  }
+
+  return apiUrl
 }
 
 export class ApiError extends Error {
@@ -28,7 +38,7 @@ export async function apiRequest<T>(
     headers.set('Content-Type', 'application/json')
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${getApiUrl()}${path}`, {
     ...options,
     headers,
   })

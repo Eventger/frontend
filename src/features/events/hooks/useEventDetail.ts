@@ -48,8 +48,8 @@ export function useEventDetail(
 
         const data =
           await getEventById(
-            authenticatedRequest,
             eventId,
+            authenticatedRequest,
           )
 
         setEvent(data)
@@ -73,11 +73,12 @@ export function useEventDetail(
     }
 
     if (!isSignedIn) {
-      setIsLoading(false)
       return
     }
 
-    void loadEvent()
+    void Promise.resolve().then(
+      loadEvent,
+    )
   }, [
     isAuthLoaded,
     isSignedIn,
@@ -86,7 +87,10 @@ export function useEventDetail(
 
   return {
     event,
-    isLoading,
+    isLoading:
+      isAuthLoaded && !isSignedIn
+        ? false
+        : isLoading,
     error,
     retry: loadEvent,
   }

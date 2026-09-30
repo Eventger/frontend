@@ -98,7 +98,10 @@ describe('CreateEventPage', () => {
       }),
     ).toBeTruthy()
     expect(createEvent).toHaveBeenCalledOnce()
-    expect(createEvent).toHaveBeenCalledWith(submittedInput)
+    expect(createEvent).toHaveBeenCalledWith(
+      submittedInput,
+      expect.any(Function),
+    )
     expect(
       screen.getByRole('button', { name: 'Volver a eventos' }),
     ).toBeTruthy()

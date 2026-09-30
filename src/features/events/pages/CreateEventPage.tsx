@@ -65,15 +65,15 @@ export function CreateEventPage() {
     try {
       const event =
         await createEvent(
-          authenticatedRequest,
           data,
+          authenticatedRequest,
         )
 
       for (const subtask of subtasks) {
         await createSubtask(
-          authenticatedRequest,
           event.id,
           subtask,
+          authenticatedRequest,
         )
       }
 

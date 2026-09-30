@@ -1,8 +1,7 @@
 # Eventger Frontend
 
-React 19 + TypeScript + Vite, con React Compiler y Oxlint. Actualmente muestra
-la pantalla inicial «Eventger / Frontend en construcción»; todavía no implementa
-las historias de usuario ni integración con Backend.
+React 19 + TypeScript + Vite, con React Compiler, Oxlint y autenticación mediante
+Clerk. Incluye las vistas de hoy, eventos, creación y detalle de eventos.
 
 ## Desarrollo
 
@@ -10,8 +9,14 @@ Node 24.18.0 (ver `.nvmrc`). Si usas nvm, ejecuta `nvm install` y `nvm use`.
 
 ```bash
 npm ci --ignore-scripts
+cp .env.example .env
 npm run dev
 ```
+
+Configura `VITE_API_URL` con la URL del backend y
+`VITE_CLERK_PUBLISHABLE_KEY` con la publishable key de tu instancia de Clerk.
+No guardes claves secretas en variables `VITE_*`, porque Vite las expone al
+navegador.
 
 ## Antes de abrir un PR
 
@@ -19,8 +24,9 @@ npm run dev
 npm run validate
 ```
 
-Ejecuta lint, tipos, pruebas con cobertura y build. No requiere Backend, Supabase
-ni secretos. Para instalar el hook opcional de mensajes:
+Ejecuta lint, tipos, pruebas con cobertura y build. Las pruebas sustituyen Clerk
+y las llamadas HTTP, por lo que no requieren Backend ni credenciales reales. Para
+instalar el hook opcional de mensajes:
 
 ```bash
 npm run hooks:install

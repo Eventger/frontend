@@ -49,8 +49,8 @@ export async function getEventTypes(): Promise<EventType[]> {
 }
 
 export async function createEvent(
-  requestFn: RequestFn,
   data: CreateEventInput,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Event> {
   if (data.typeId === null) {
     throw new Error(
@@ -89,7 +89,7 @@ export async function createEvent(
 }
 
 export async function getEvents(
-  requestFn: RequestFn,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Event[]> {
   const response =
     await requestFn<EventsApiResponse>(
@@ -108,8 +108,8 @@ export async function getEvents(
 }
 
 export async function getEventById(
-  requestFn: RequestFn,
   eventId: number,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Event> {
   const response =
     await requestFn<EventApiResponse>(
@@ -128,9 +128,9 @@ export async function getEventById(
 }
 
 export async function updateEvent(
-  requestFn: RequestFn,
   eventId: number,
   data: UpdateEventInput,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Event> {
   if (data.typeId === null) {
     throw new Error(
@@ -169,8 +169,8 @@ export async function updateEvent(
 }
 
 export async function deleteEvent(
-  requestFn: RequestFn,
   eventId: number,
+  requestFn: RequestFn = apiRequest,
 ): Promise<void> {
   await requestFn<void>(
     `/events/${eventId}/`,

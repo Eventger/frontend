@@ -1,35 +1,49 @@
 import {
-  CalendarDays,
-  Eye,
   EyeOff,
-  LockKeyhole,
 } from 'lucide-react'
 
 import {
+  useRef,
   useState,
   type FormEvent,
 } from 'react'
 
 import {
   Link,
+  useLocation,
   useNavigate,
 } from 'react-router'
 
 import { useSignIn } from '@clerk/react'
 
 import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
+import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import eyeIcon from '@/assets/auth/eye.svg'
+import googleLogo from '@/assets/auth/google.svg'
+import lockIcon from '@/assets/auth/lock.svg'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const requestedPath = (
+    location.state as {
+      from?: unknown
+    } | null
+  )?.from
+  const destination =
+    typeof requestedPath === 'string' &&
+    requestedPath.startsWith('/') &&
+    !requestedPath.startsWith('//')
+      ? requestedPath
+      : '/hoy'
   const accountCreated =
     sessionStorage.getItem(
       'accountCreated',
     ) === 'true'
   const {
     signIn,
-    errors: clerkErrors,
     fetchStatus,
   } = useSignIn()
 
@@ -56,6 +70,10 @@ export function LoginPage() {
     showPassword,
     setShowPassword,
   ] = useState(false)
+  const emailInputRef =
+    useRef<HTMLInputElement>(null)
+  const passwordInputRef =
+    useRef<HTMLInputElement>(null)
 
   const isLoading =
     fetchStatus === 'fetching'
@@ -90,6 +108,20 @@ export function LoginPage() {
       isValid = false
     }
 
+    if (!isValid) {
+      const emailIsInvalid =
+        !email.trim() ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          email,
+        )
+
+      if (emailIsInvalid) {
+        emailInputRef.current?.focus()
+      } else {
+        passwordInputRef.current?.focus()
+      }
+    }
+
     return isValid
   }
 
@@ -102,41 +134,27 @@ export function LoginPage() {
       return
     }
 
-    const { error } =
-      await signIn.password({
-        emailAddress: email.trim(),
-        password,
-      })
+    let error: Error | null
+
+    try {
+      const result =
+        await signIn.password({
+          emailAddress: email.trim(),
+          password,
+        })
+
+      error = result.error
+    } catch {
+      setGeneralError(
+        'No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.',
+      )
+      return
+    }
 
     if (error) {
-      const clerkEmailError =
-        clerkErrors.fields
-          ?.emailAddress?.message
-
-      const clerkPasswordError =
-        clerkErrors.fields
-          ?.password?.message
-
-      if (clerkEmailError) {
-        setEmailError(
-          clerkEmailError,
-        )
-      }
-
-      if (clerkPasswordError) {
-        setPasswordError(
-          clerkPasswordError,
-        )
-      }
-
-      if (
-        !clerkEmailError &&
-        !clerkPasswordError
-      ) {
-        setGeneralError(
-          'No pudimos iniciar sesión. Verifica tus datos e inténtalo de nuevo.',
-        )
-      }
+      setGeneralError(
+        'No pudimos iniciar sesión. Verifica tus datos e inténtalo de nuevo.',
+      )
 
       return
     }
@@ -144,25 +162,44 @@ export function LoginPage() {
     if (
       signIn.status === 'complete'
     ) {
-      await signIn.finalize({
-        navigate: ({
-          session,
-        }) => {
-          if (
-            session?.currentTask
-          ) {
-            console.log(
-              'Clerk session task:',
-              session.currentTask,
-            )
-            return
-          }
-          sessionStorage.removeItem(
-            'accountCreated',
-          )
-          navigate('/hoy')
-        },
-      })
+      let finalizeError: Error | null
+
+      try {
+        const result =
+          await signIn.finalize({
+            navigate: ({
+              session,
+            }) => {
+              if (
+                session?.currentTask
+              ) {
+                setGeneralError(
+                  'Completa la verificación pendiente para continuar.',
+                )
+                return
+              }
+              sessionStorage.removeItem(
+                'accountCreated',
+              )
+              navigate(destination, {
+                replace: true,
+              })
+            },
+          })
+
+        finalizeError = result.error
+      } catch {
+        setGeneralError(
+          'La sesión se creó, pero no pudimos activarla. Inténtalo de nuevo.',
+        )
+        return
+      }
+
+      if (finalizeError) {
+        setGeneralError(
+          'La sesión se creó, pero no pudimos activarla. Inténtalo de nuevo.',
+        )
+      }
 
       return
     }
@@ -192,29 +229,46 @@ export function LoginPage() {
     )
   }
 
+  const handleGoogleSignIn = async () => {
+    setGeneralError('')
+
+    try {
+      const { error } = await signIn.sso({
+        strategy: 'oauth_google',
+        redirectUrl: `${window.location.origin}${destination}`,
+        redirectCallbackUrl: `${window.location.origin}/`,
+      })
+
+      if (error) {
+        setGeneralError(
+          'No pudimos iniciar sesión con Google. Inténtalo de nuevo.',
+        )
+      }
+    } catch {
+      setGeneralError(
+        'No pudimos conectarnos con Google. Revisa tu conexión e inténtalo de nuevo.',
+      )
+    }
+  }
+
   return (
-    <main className="flex min-h-screen bg-[#f7f8fc]">
+    <main className="flex min-h-svh bg-[#f7f8fc] sm:h-svh sm:overflow-hidden">
       <AuthBrandPanel />
 
-      <section className="flex min-h-screen flex-1 items-center justify-center px-6 py-10">
-        <div className="min-h-[760px] w-full max-w-[516px] rounded-[18px] border border-[#dde2ea] bg-white px-8 py-7 shadow-sm">
+      <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-2 sm:h-full sm:min-h-0 sm:px-6 sm:py-0">
+        <div className="auth-card flex w-full max-w-[500px] flex-col rounded-2xl border border-[#dde2ea] bg-white px-5 py-4 shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:min-h-[598px] sm:px-8">
 
           {/* Logo superior */}
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#4f46e5]">
-              <CalendarDays
-                size={26}
-                className="text-white"
-              />
-            </div>
+            <AuthLogoMark size="small" />
 
-            <span className="text-[22px] font-semibold text-[#17212b]">
+            <span className="text-2xl font-semibold tracking-[-0.02em] text-[#17212b]">
               Eventger
             </span>
           </div>
 
-          <div className="mt-16">
-            <h1 className="text-[28px] font-bold text-[#17212b]">
+          <div className="auth-card__intro mt-4">
+            <h1 className="text-pretty text-[28px] font-bold tracking-[-0.025em] text-[#17212b]">
               Bienvenido de nuevo
             </h1>
 
@@ -222,7 +276,7 @@ export function LoginPage() {
               ¿No tienes una cuenta?{' '}
               <Link
                 to="/crear-cuenta"
-                className="font-medium text-[#4f46e5]"
+                className="rounded-sm font-medium text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
               >
                 Crear cuenta
               </Link>
@@ -230,7 +284,10 @@ export function LoginPage() {
 
             {/* Mensaje después de crear cuenta */}
             {accountCreated && (
-              <div className="mt-5 rounded-[8px] border border-[#abefc6] bg-[#ecfdf3] px-4 py-3">
+              <div
+                className="mt-4 rounded-[8px] border border-[#abefc6] bg-[#ecfdf3] px-4 py-3"
+                role="status"
+              >
                 <p className="text-[12px] font-semibold text-[#067647]">
                   Cuenta creada correctamente.
                 </p>
@@ -244,11 +301,11 @@ export function LoginPage() {
 
           <form
             onSubmit={handleSubmit}
-            className="mt-9 space-y-6"
+            className="auth-card__form mt-3 flex flex-1 flex-col gap-4 sm:justify-between"
             noValidate
           >
             {/* Email */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label
                 htmlFor="login-email"
                 className="text-[12px] font-medium text-[#17212b]"
@@ -257,11 +314,22 @@ export function LoginPage() {
               </label>
 
               <Input
+                ref={emailInputRef}
                 id="login-email"
+                name="email"
                 type="email"
-                placeholder="nombre@correo.com"
+                autoComplete="email"
+                spellCheck={false}
+                placeholder="nombre@correo.com…"
                 value={email}
                 disabled={isLoading}
+                required
+                aria-invalid={Boolean(emailError)}
+                aria-describedby={
+                  emailError
+                    ? 'login-email-error'
+                    : undefined
+                }
                 onChange={(event) => {
                   setEmail(
                     event.target.value,
@@ -270,7 +338,7 @@ export function LoginPage() {
                   setEmailError('')
                   setGeneralError('')
                 }}
-                className={`h-11 rounded-[8px] ${
+                className={`h-11 rounded-[10px] px-3 text-[13px] sm:h-10 ${
                   emailError
                     ? 'border-[#d92d20]'
                     : ''
@@ -278,14 +346,18 @@ export function LoginPage() {
               />
 
               {emailError && (
-                <p className="text-[11px] text-[#d92d20]">
+                <p
+                  id="login-email-error"
+                  className="text-xs text-[#b42318]"
+                  role="alert"
+                >
                   {emailError}
                 </p>
               )}
             </div>
 
             {/* Contraseña */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <label
                 htmlFor="login-password"
                 className="text-[12px] font-medium text-[#17212b]"
@@ -294,13 +366,16 @@ export function LoginPage() {
               </label>
 
               <div className="relative">
-                <LockKeyhole
-                  size={17}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]"
+                <img
+                  src={lockIcon}
+                  alt=""
+                  className="absolute left-3 top-1/2 size-5 -translate-y-1/2"
                 />
 
                 <Input
+                  ref={passwordInputRef}
                   id="login-password"
+                  name="password"
                   type={
                     showPassword
                       ? 'text'
@@ -308,6 +383,14 @@ export function LoginPage() {
                   }
                   value={password}
                   disabled={isLoading}
+                  autoComplete="current-password"
+                  required
+                  aria-invalid={Boolean(passwordError)}
+                  aria-describedby={
+                    passwordError
+                      ? 'login-password-error'
+                      : undefined
+                  }
                   onChange={(event) => {
                     setPassword(
                       event.target.value,
@@ -316,7 +399,7 @@ export function LoginPage() {
                     setPasswordError('')
                     setGeneralError('')
                   }}
-                  className={`h-11 rounded-[8px] pl-10 pr-10 ${
+                  className={`h-11 rounded-[10px] pl-10 pr-11 text-[13px] sm:h-10 ${
                     passwordError
                       ? 'border-[#d92d20]'
                       : ''
@@ -331,44 +414,48 @@ export function LoginPage() {
                         !current,
                     )
                   }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#667085]"
+                  className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center text-[#667085] hover:text-[#3730a3] focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#4f46e5] sm:size-10"
                   aria-label={
                     showPassword
                       ? 'Ocultar contraseña'
                       : 'Mostrar contraseña'
                   }
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? (
                     <EyeOff
-                      size={17}
+                      size={20}
+                      aria-hidden="true"
                     />
                   ) : (
-                    <Eye
-                      size={17}
+                    <img
+                      src={eyeIcon}
+                      alt=""
+                      className="size-5"
                     />
                   )}
                 </button>
               </div>
 
               {passwordError && (
-                <p className="text-[11px] text-[#d92d20]">
+                <p
+                  id="login-password-error"
+                  className="text-xs text-[#b42318]"
+                  role="alert"
+                >
                   {passwordError}
                 </p>
               )}
 
-              <div className="text-right">
-                <button
-                  type="button"
-                  className="text-[12px] font-medium text-[#4f46e5]"
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
             </div>
 
             {/* Error general */}
             {generalError && (
-              <div className="rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2">
+              <div
+                className="rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
+                role="alert"
+                aria-live="polite"
+              >
                 <p className="text-[11px] leading-4 text-[#b42318]">
                   {generalError}
                 </p>
@@ -378,10 +465,10 @@ export function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="h-11 w-full rounded-[8px] bg-[#4f46e5] text-white hover:bg-[#4338ca]"
+              className="h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30 sm:h-10"
             >
               {isLoading
-                ? 'Iniciando sesión...'
+                ? 'Iniciando sesión…'
                 : 'Iniciar sesión'}
             </Button>
 
@@ -396,34 +483,31 @@ export function LoginPage() {
               <div className="h-px flex-1 bg-[#dde2ea]" />
             </div>
 
-            {/* Google todavía visual */}
             <Button
               type="button"
               variant="outline"
-              className="h-11 w-full rounded-[8px]"
+              disabled={isLoading}
+              onClick={handleGoogleSignIn}
+              className="h-11 w-full rounded-[10px] border-[#dde2ea] text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc] sm:h-10"
             >
-              <span className="mr-3 text-lg font-bold text-[#4285f4]">
-                G
-              </span>
+              <img
+                src={googleLogo}
+                alt=""
+                className="mr-2 size-6"
+              />
 
               Continuar con Google
             </Button>
 
-            <p className="pt-1 text-center text-[10px] leading-4 text-[#667085]">
+            <p className="text-center text-[11px] leading-4 text-[#667085]">
               Al continuar aceptas nuestros{' '}
-              <button
-                type="button"
-                className="text-[#4f46e5] underline"
-              >
+              <span className="font-semibold text-[#4f46e5] underline underline-offset-2">
                 Términos y condiciones
-              </button>{' '}
+              </span>{' '}
               y la{' '}
-              <button
-                type="button"
-                className="text-[#4f46e5] underline"
-              >
+              <span className="font-semibold text-[#4f46e5] underline underline-offset-2">
                 Política de privacidad.
-              </button>
+              </span>
             </p>
           </form>
         </div>

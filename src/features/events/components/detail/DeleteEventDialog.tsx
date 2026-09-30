@@ -63,7 +63,7 @@ export function DeleteEventDialog({
             type="button"
             disabled={isDeleting}
             onClick={onConfirm}
-            className="h-11 rounded-[10px] bg-[#b42318] text-white hover:bg-[#912018] sm:w-[160px]"
+            className="h-11 rounded-[10px] bg-[#c2413a] text-white hover:bg-[#a53732] focus-visible:ring-[#c2413a]/30 sm:w-[160px]"
           >
             {isDeleting
               ? 'Eliminando...'

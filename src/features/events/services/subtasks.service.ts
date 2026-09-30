@@ -1,3 +1,5 @@
+import { apiRequest } from '@/lib/api'
+
 import type {
   CreateSubtaskApiRequest,
   CreateSubtaskApiResponse,
@@ -42,8 +44,8 @@ function toDeadlineDateTime(
 }
 
 export async function getEventSubtasks(
-  requestFn: RequestFn,
   eventId: number,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Subtask[]> {
   const response =
     await requestFn<EventSubtasksApiResponse>(
@@ -62,9 +64,9 @@ export async function getEventSubtasks(
 }
 
 export async function createSubtask(
-  requestFn: RequestFn,
   eventId: number,
   data: CreateSubtaskInput,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Subtask> {
   const request: CreateSubtaskApiRequest = {
     name: data.name,
@@ -97,9 +99,9 @@ export async function createSubtask(
 }
 
 export async function updateSubtask(
-  requestFn: RequestFn,
   subtaskId: number,
   data: UpdateSubtaskInput,
+  requestFn: RequestFn = apiRequest,
 ): Promise<Subtask> {
   const request: UpdateSubtaskApiRequest = {
     name: data.name,
@@ -132,8 +134,8 @@ export async function updateSubtask(
 }
 
 export async function deleteSubtask(
-  requestFn: RequestFn,
   subtaskId: number,
+  requestFn: RequestFn = apiRequest,
 ): Promise<void> {
   await requestFn<void>(
     `/subtasks/${subtaskId}/`,

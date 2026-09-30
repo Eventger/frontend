@@ -63,11 +63,12 @@ export function useToday() {
     }
 
     if (!isSignedIn) {
-      setIsLoading(false)
       return
     }
 
-    void loadToday()
+    void Promise.resolve().then(
+      loadToday,
+    )
   }, [
     isAuthLoaded,
     isSignedIn,
@@ -76,7 +77,10 @@ export function useToday() {
 
   return {
     data,
-    isLoading,
+    isLoading:
+      isAuthLoaded && !isSignedIn
+        ? false
+        : isLoading,
     error,
     retry: loadToday,
   }

@@ -27,7 +27,10 @@ describe('useEventSubtasks', () => {
       expect(result.current.isLoading).toBe(false)
     })
 
-    expect(getEventSubtasks).toHaveBeenCalledWith(eventFixture.id)
+    expect(getEventSubtasks).toHaveBeenCalledWith(
+      eventFixture.id,
+      expect.any(Function),
+    )
     expect(result.current.subtasks).toEqual([subtaskFixture])
     expect(result.current.error).toBeNull()
   })

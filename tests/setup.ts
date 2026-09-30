@@ -1,5 +1,93 @@
 import { afterEach, beforeEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
+import type { ReactNode } from 'react'
+
+vi.stubEnv(
+  'VITE_API_URL',
+  'https://api.eventger.test',
+)
+vi.stubEnv(
+  'VITE_CLERK_PUBLISHABLE_KEY',
+  'pk_test_eventger',
+)
+
+const clerkMocks = vi.hoisted(() => ({
+  getToken: vi
+    .fn()
+    .mockResolvedValue('test-token'),
+  openUserProfile: vi.fn(),
+  signOut: vi
+    .fn()
+    .mockResolvedValue(undefined),
+}))
+
+vi.mock('@clerk/react', () => ({
+  ClerkProvider: ({
+    children,
+  }: {
+    children: ReactNode
+  }) => children,
+  useAuth: vi.fn(() => ({
+    isLoaded: true,
+    isSignedIn: true,
+    getToken: clerkMocks.getToken,
+  })),
+  useClerk: vi.fn(() => ({
+    openUserProfile:
+      clerkMocks.openUserProfile,
+    signOut: clerkMocks.signOut,
+  })),
+  useUser: vi.fn(() => ({
+    isLoaded: true,
+    isSignedIn: true,
+    user: {
+      firstName: 'Usuario',
+      lastName: 'Prueba',
+      fullName: 'Usuario Prueba',
+      primaryEmailAddress: {
+        emailAddress:
+          'usuario@eventger.test',
+      },
+    },
+  })),
+  useSignIn: vi.fn(() => ({
+    fetchStatus: 'idle',
+    errors: {
+      fields: {
+        identifier: null,
+        password: null,
+        code: null,
+      },
+    },
+    signIn: {
+      status: 'needs_identifier',
+      password: vi.fn(),
+      finalize: vi.fn(),
+      sso: vi.fn(),
+    },
+  })),
+  useSignUp: vi.fn(() => ({
+    fetchStatus: 'idle',
+    errors: {
+      fields: {
+        firstName: null,
+        lastName: null,
+        emailAddress: null,
+        password: null,
+        code: null,
+      },
+    },
+    signUp: {
+      status: 'missing_requirements',
+      password: vi.fn(),
+      sso: vi.fn(),
+      verifications: {
+        sendEmailCode: vi.fn(),
+        verifyEmailCode: vi.fn(),
+      },
+    },
+  })),
+}))
 
 Object.defineProperties(Element.prototype, {
   hasPointerCapture: {

@@ -1,3 +1,5 @@
+import { apiRequest } from '@/lib/api'
+
 import {
   getEvents,
 } from '@/features/events/services/event.service'
@@ -62,7 +64,7 @@ function sortByPriority(
 }
 
 export async function getToday(
-  requestFn: RequestFn,
+  requestFn: RequestFn = apiRequest,
 ): Promise<TodayData> {
   const [todayResponse, events] =
     await Promise.all([

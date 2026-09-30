@@ -4,11 +4,14 @@ import type {
 
 import {
   Navigate,
+  useLocation,
 } from 'react-router'
 
 import {
   useAuth,
 } from '@clerk/react'
+
+import { AuthLoadingState } from '@/features/auth/components/AuthLoadingState'
 
 type ProtectedRouteProps = {
   children: ReactNode
@@ -17,13 +20,15 @@ type ProtectedRouteProps = {
 export function ProtectedRoute({
   children,
 }: ProtectedRouteProps) {
+  const location = useLocation()
+
   const {
     isLoaded,
     isSignedIn,
   } = useAuth()
 
   if (!isLoaded) {
-    return null
+    return <AuthLoadingState />
   }
 
   if (!isSignedIn) {
@@ -31,6 +36,9 @@ export function ProtectedRoute({
       <Navigate
         to="/"
         replace
+        state={{
+          from: `${location.pathname}${location.search}${location.hash}`,
+        }}
       />
     )
   }
