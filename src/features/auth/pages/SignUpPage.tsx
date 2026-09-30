@@ -358,11 +358,11 @@ export function SignUpPage() {
 
   if (isVerifying) {
     return (
-      <main className="flex min-h-svh bg-[#f7f8fc] min-[1360px]:h-svh min-[1360px]:overflow-hidden">
+      <main className="auth-page flex min-h-svh bg-[#f7f8fc]">
         <AuthBrandPanel />
 
-        <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:h-full min-[1360px]:min-h-0 min-[1360px]:items-stretch min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:py-12">
-          <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] min-[1360px]:h-full min-[1360px]:overflow-y-auto">
+        <section className="auth-form-shell flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:py-12">
+          <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px]">
             <div className="flex items-center gap-3">
               <AuthLogoMark size="small" />
 
@@ -484,11 +484,11 @@ export function SignUpPage() {
   }
 
   return (
-    <main className="flex min-h-svh bg-[#f7f8fc] min-[1360px]:h-svh min-[1360px]:overflow-hidden">
+    <main className="auth-page flex min-h-svh bg-[#f7f8fc]">
       <AuthBrandPanel />
 
-      <section className="flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:h-full min-[1360px]:min-h-0 min-[1360px]:items-stretch min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:py-12">
-        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] min-[1360px]:h-full min-[1360px]:overflow-y-auto">
+      <section className="auth-form-shell flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:px-[clamp(32px,3.5vw,50px)] min-[1360px]:py-12">
+        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px]">
 
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -510,7 +510,7 @@ export function SignUpPage() {
               <AuthRouteLink
                 to="/"
                 direction="backward"
-                className="ml-5 rounded-sm font-semibold text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+                className="rounded-sm font-semibold text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
               >
                 Iniciar sesión
               </AuthRouteLink>
