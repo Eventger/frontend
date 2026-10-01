@@ -160,12 +160,12 @@ function TodayFixture() {
         <TodayTaskCard
           task={task}
           group="today"
-          onOpen={() => undefined}
+          onOpenTask={() => undefined}
         />
         <TodayTaskCard
           task={{ ...task, id: 2 }}
           group="upcoming"
-          onOpen={() => undefined}
+          onOpenTask={() => undefined}
         />
       </div>
     </AppShell>

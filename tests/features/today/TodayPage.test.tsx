@@ -119,12 +119,13 @@ describe('TodayPage', () => {
       ),
     ).toBeTruthy()
 
-    const todayTask = screen.getByRole('button', {
-      name: new RegExp(todayDataFixture.today[1].name),
-    })
+    const todayTask = screen.getAllByRole('button', {
+      name: `Ver tarea: ${todayDataFixture.today[1].name}`,
+    })[0]
+    expect(todayTask).toBeTruthy()
     expect(
-      within(todayTask).getByText(
-        /Conferencia Frontend · 2.25 h/,
+      within(todaySection!).getByText(
+        /Conferencia Frontend.*2.25 h/,
       ),
     ).toBeTruthy()
 
@@ -135,10 +136,8 @@ describe('TodayPage', () => {
       screen.queryByRole('heading', { name: 'Completadas' }),
     ).toBeNull()
     expect(
-      screen.getAllByRole('heading', {
-        name: 'Cómo se ordena “Hoy”',
-      }).length,
-    ).toBeGreaterThan(0)
+      screen.getByText(/Orden de Hoy: Vencidas/),
+    ).toBeTruthy()
     expect(
       screen.getAllByText('3.75 h planificadas').length,
     ).toBeGreaterThan(0)
@@ -159,7 +158,7 @@ describe('TodayPage', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'No tienes gestiones pendientes para hoy',
+        name: 'Hoy no tienes subtareas',
       }),
     ).toBeTruthy()
     expect(
@@ -204,7 +203,9 @@ describe('TodayPage', () => {
     renderPage()
 
     await user.click(
-      screen.getByRole('button', { name: new RegExp(task.name) }),
+      screen.getAllByRole('button', {
+        name: `Ver tarea: ${task.name}`,
+      })[0],
     )
 
     expect(

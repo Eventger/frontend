@@ -71,17 +71,24 @@ describe('TodayTaskCard', () => {
       <TodayTaskCard
         task={task}
         group={group}
-        actionLabel="Abrir detalle"
-        onOpen={onOpen}
+        onOpenTask={onOpen}
       />,
     )
 
     expect(screen.getByText(label)).toBeTruthy()
-    expect(screen.getByText('Abrir detalle')).toBeTruthy()
+    expect(screen.getByText('Ver tarea')).toBeTruthy()
     expect(screen.getByText(/1.2 h/)).toBeTruthy()
 
-    await user.click(screen.getByRole('button'))
-    expect(onOpen).toHaveBeenCalledOnce()
+    const taskButtons =
+      screen.getAllByRole('button', {
+        name: `Ver tarea: ${task.name}`,
+      })
+
+    await user.click(taskButtons[0])
+    await user.click(taskButtons[1])
+
+    expect(onOpen).toHaveBeenCalledTimes(2)
+    expect(onOpen).toHaveBeenCalledWith(task)
   })
 
   it('usa la etiqueta predeterminada y formatea horas enteras', () => {
@@ -89,7 +96,7 @@ describe('TodayTaskCard', () => {
       <TodayTaskCard
         task={buildTodayTask({ estimatedHours: 2 })}
         group="today"
-        onOpen={vi.fn()}
+        onOpenTask={vi.fn()}
       />,
     )
 
@@ -128,28 +135,28 @@ describe('TodayTaskSection', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button'))
+    await user.click(
+      screen.getAllByRole('button', {
+        name: `Ver tarea: ${task.name}`,
+      })[0],
+    )
     expect(onOpenTask).toHaveBeenCalledWith(task)
   })
 })
 
 describe('TodayEmptyState', () => {
-  it('ejecuta sus dos acciones', async () => {
+  it('ejecuta la acción para crear una actividad', async () => {
     const user = userEvent.setup()
-    const onSeeUpcoming = vi.fn()
     const onCreateEvent = vi.fn()
 
     render(
       <TodayEmptyState
-        onSeeUpcoming={onSeeUpcoming}
         onCreateEvent={onCreateEvent}
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Ver próximos días' }))
-    await user.click(screen.getByRole('button', { name: 'Crear evento' }))
+    await user.click(screen.getByRole('button', { name: 'Crear actividad' }))
 
-    expect(onSeeUpcoming).toHaveBeenCalledOnce()
     expect(onCreateEvent).toHaveBeenCalledOnce()
   })
 })

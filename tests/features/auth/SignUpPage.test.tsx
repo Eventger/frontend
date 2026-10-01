@@ -227,19 +227,24 @@ describe('SignUpPage', () => {
     })
     await user.click(submit)
     expect(
-      await screen.findByText(
-        'No pudimos crear tu cuenta. Revisa los datos e inténtalo de nuevo.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'No pudimos crear tu cuenta',
+      }),
     ).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Cerrar',
+      }),
+    )
 
     password.mockRejectedValueOnce(
       new Error('red'),
     )
     await user.click(submit)
     expect(
-      await screen.findByText(
-        'No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'Sin conexión',
+      }),
     ).toBeTruthy()
   })
 
@@ -332,9 +337,9 @@ describe('SignUpPage', () => {
       }),
     )
     expect(
-      await screen.findByText(
-        'No pudimos reenviar el código.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'No pudimos crear tu cuenta',
+      }),
     ).toBeTruthy()
   })
 
@@ -363,9 +368,9 @@ describe('SignUpPage', () => {
     )
 
     expect(
-      await screen.findByText(
-        'La cuenta aún no pudo completarse.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'No pudimos crear tu cuenta',
+      }),
     ).toBeTruthy()
   })
 
@@ -381,17 +386,22 @@ describe('SignUpPage', () => {
     )
     await user.click(googleButton)
     expect(
-      await screen.findByText(
-        'No pudimos continuar con Google. Inténtalo de nuevo.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'No pudimos crear tu cuenta',
+      }),
     ).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Cerrar',
+      }),
+    )
 
     sso.mockRejectedValueOnce(new Error('red'))
     await user.click(googleButton)
     expect(
-      await screen.findByText(
-        'No pudimos conectarnos con Google. Revisa tu conexión e inténtalo de nuevo.',
-      ),
+      await screen.findByRole('alertdialog', {
+        name: 'Sin conexión',
+      }),
     ).toBeTruthy()
   })
 })
