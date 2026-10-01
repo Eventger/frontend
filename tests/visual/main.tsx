@@ -1,5 +1,9 @@
 /* oxlint-disable react/only-export-components -- Entrada aislada de auditoría visual. */
-import { StrictMode, type ReactNode } from 'react'
+import {
+  StrictMode,
+  useState,
+  type ReactNode,
+} from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 
@@ -8,7 +12,10 @@ import '@/index.css'
 import { OperationFeedback } from '@/components/OperationFeedback'
 import { AppSidebar } from '@/components/layout/AppSidebar'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { PageContent } from '@/components/layout/PageContent'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PageHeaderCreateButton } from '@/components/layout/PageHeaderCreateButton'
+import { AuthFeedbackModal } from '@/features/auth/components/AuthFeedbackModal'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { SignUpPage } from '@/features/auth/pages/SignUpPage'
 import { EmptyEventsState } from '@/features/events/components/EmptyEventsState'
@@ -17,6 +24,7 @@ import { DeleteEventDialog } from '@/features/events/components/detail/DeleteEve
 import { EmptyTasksState } from '@/features/events/components/detail/EmptyTasksState'
 import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard'
 import { TodaySummary } from '@/features/today/components/TodaySummary'
+import { TodayPriorityGuide } from '@/features/today/components/TodayPriorityGuide'
 import { TodayTaskCard } from '@/features/today/components/TodayTaskCard'
 
 function AppShell({
@@ -32,7 +40,9 @@ function AppShell({
         className="min-w-0 flex-1"
       >
         <PageContainer>
-          {children}
+          <PageContent>
+            {children}
+          </PageContent>
         </PageContainer>
       </main>
     </div>
@@ -45,6 +55,11 @@ function EventsEmptyFixture() {
       <PageHeader
         title="Eventos"
         description="Todos tus eventos y su estado de preparación."
+        action={
+          <PageHeaderCreateButton
+            onClick={() => undefined}
+          />
+        }
       />
       <div className="mt-10">
         <EmptyEventsState />
@@ -67,24 +82,238 @@ function EventsErrorFixture() {
   )
 }
 
-function FeedbackFixture() {
+function FeedbackFixture({
+  status = 'error',
+}: {
+  status?: 'success' | 'error'
+}) {
+  const isSuccess =
+    status === 'success'
+
   return (
     <AppShell>
       <OperationFeedback
-        pageTitle="Cambios no guardados"
-        status="error"
-        title="No pudimos actualizar el evento"
-        description="Ocurrió un problema al guardar los cambios. Conservamos la información y las tareas que editaste para que puedas intentarlo nuevamente."
+        pageTitle={
+          isSuccess
+            ? 'Evento actualizado'
+            : 'Cambios no guardados'
+        }
+        status={status}
+        title={
+          isSuccess
+            ? 'Los cambios se guardaron correctamente'
+            : 'No pudimos actualizar el evento'
+        }
+        description={
+          isSuccess
+            ? 'La información y las tareas del evento se actualizaron correctamente.'
+            : 'Ocurrió un problema al guardar los cambios. Conservamos la información y las tareas que editaste para que puedas intentarlo nuevamente.'
+        }
         primaryAction={{
-          label: 'Intentar de nuevo',
+          label: isSuccess
+            ? 'Volver al evento'
+            : 'Intentar de nuevo',
           onClick: () => undefined,
         }}
         secondaryAction={{
-          label: 'Volver al evento',
+          label: isSuccess
+            ? 'Volver a editar'
+            : 'Volver al evento',
           onClick: () => undefined,
         }}
       />
     </AppShell>
+  )
+}
+
+type AuthFeedbackScenario =
+  | 'account-created'
+  | 'session-success'
+  | 'email-account-not-found'
+  | 'email-general-error'
+  | 'email-network-error'
+  | 'google-general-error'
+  | 'google-network-error'
+
+const authFeedbackScenarios: Record<
+  AuthFeedbackScenario,
+  {
+    source: 'Correo' | 'Google'
+    label: string
+    variant: 'error' | 'success'
+    title: string
+    description: string
+    primaryLabel: string
+  }
+> = {
+  'account-created': {
+    source: 'Correo',
+    label: 'Cuenta creada',
+    variant: 'success',
+    title: 'Cuenta creada correctamente',
+    description: 'Tu cuenta está lista. Ya puedes iniciar sesión con tu correo y contraseña.',
+    primaryLabel: 'Iniciar sesión',
+  },
+  'session-success': {
+    source: 'Correo',
+    label: 'Sesión iniciada',
+    variant: 'success',
+    title: 'Sesión iniciada correctamente',
+    description: 'Todo está listo. Puedes continuar al organizador de eventos.',
+    primaryLabel: 'Continuar',
+  },
+  'email-account-not-found': {
+    source: 'Correo',
+    label: 'Cuenta no encontrada',
+    variant: 'error',
+    title: 'No encontramos tu cuenta',
+    description: 'Verifica tu correo electrónico o crea una cuenta nueva.',
+    primaryLabel: 'Crear cuenta',
+  },
+  'email-general-error': {
+    source: 'Correo',
+    label: 'Error general',
+    variant: 'error',
+    title: 'No pudimos iniciar sesión',
+    description: 'Ocurrió un problema al iniciar sesión. Conservamos tus datos para que puedas revisarlos e intentarlo nuevamente.',
+    primaryLabel: 'Intentar de nuevo',
+  },
+  'email-network-error': {
+    source: 'Correo',
+    label: 'Sin conexión',
+    variant: 'error',
+    title: 'Sin conexión',
+    description: 'Revisa tu conexión a internet e inténtalo nuevamente.',
+    primaryLabel: 'Reintentar',
+  },
+  'google-general-error': {
+    source: 'Google',
+    label: 'Error de Google',
+    variant: 'error',
+    title: 'No pudimos iniciar sesión',
+    description: 'Ocurrió un problema al iniciar sesión. Conservamos tus datos para que puedas revisarlos e intentarlo nuevamente.',
+    primaryLabel: 'Intentar de nuevo',
+  },
+  'google-network-error': {
+    source: 'Google',
+    label: 'Google sin conexión',
+    variant: 'error',
+    title: 'Sin conexión',
+    description: 'Revisa tu conexión a internet e inténtalo nuevamente.',
+    primaryLabel: 'Reintentar',
+  },
+}
+
+function AuthFeedbackReviewFixture() {
+  const [
+    activeScenario,
+    setActiveScenario,
+  ] = useState<AuthFeedbackScenario | null>(
+    null,
+  )
+  const [lastAction, setLastAction] =
+    useState(
+      'Selecciona un estado para verlo en acción.',
+    )
+
+  const activeFeedback =
+    activeScenario
+      ? authFeedbackScenarios[
+          activeScenario
+        ]
+      : null
+
+  return (
+    <main className="min-h-svh bg-[#f7f8fc] px-4 py-10 sm:px-8">
+      <section className="mx-auto max-w-[920px] rounded-[18px] border border-[#dde2ea] bg-white p-6 shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:p-8">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[#4f46e5]">
+          Revisión local
+        </p>
+        <h1 className="mt-2 text-[28px] font-bold text-[#17212b]">
+          Mensajes de acceso
+        </h1>
+        <p className="mt-2 text-[14px] leading-6 text-[#667085]">
+          Abre cada escenario para revisar su contenido y sus acciones. Los errores de Google reutilizan el diseño general, pero su botón de reintento vuelve a ejecutar Google.
+        </p>
+
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          {(['Correo', 'Google'] as const).map(
+            (source) => (
+              <div key={source}>
+                <h2 className="text-[16px] font-semibold text-[#17212b]">
+                  {source}
+                </h2>
+                <div className="mt-3 grid gap-3">
+                  {Object.entries(
+                    authFeedbackScenarios,
+                  )
+                    .filter(
+                      ([, scenario]) =>
+                        scenario.source ===
+                        source,
+                    )
+                    .map(
+                      ([key, scenario]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => {
+                            setLastAction(
+                              `Abierto: ${scenario.label}`,
+                            )
+                            setActiveScenario(
+                              key as AuthFeedbackScenario,
+                            )
+                          }}
+                          className="flex min-h-11 items-center justify-between rounded-[10px] border border-[#dde2ea] px-4 text-left text-[13px] font-semibold text-[#17212b] transition-colors hover:border-[#a5b4fc] hover:bg-[#f8faff]"
+                        >
+                          {scenario.label}
+                          <span className="text-[#4f46e5]">
+                            Ver →
+                          </span>
+                        </button>
+                      ),
+                    )}
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+
+        <output className="mt-8 block rounded-[10px] bg-[#eef2ff] px-4 py-3 text-[13px] text-[#3730a3]">
+          {lastAction}
+        </output>
+      </section>
+
+      {activeFeedback && (
+        <AuthFeedbackModal
+          open
+          variant={
+            activeFeedback.variant
+          }
+          title={activeFeedback.title}
+          description={
+            activeFeedback.description
+          }
+          secondaryLabel="Cerrar"
+          primaryLabel={
+            activeFeedback.primaryLabel
+          }
+          onSecondary={() => {
+            setLastAction(
+              `Cerrado: ${activeFeedback.label}`,
+            )
+            setActiveScenario(null)
+          }}
+          onPrimary={() => {
+            setLastAction(
+              `Acción ejecutada: ${activeFeedback.primaryLabel} (${activeFeedback.source})`,
+            )
+            setActiveScenario(null)
+          }}
+        />
+      )}
+    </main>
   )
 }
 
@@ -123,8 +352,6 @@ function EventTaskFixture() {
             estimatedHours: 12.5,
             details: 'Confirmar conductores, rutas, teléfonos de contacto y alternativas ante retrasos.',
           }}
-          onEdit={() => undefined}
-          onDelete={() => undefined}
         />
       </div>
     </AppShell>
@@ -146,6 +373,11 @@ function TodayFixture() {
       <PageHeader
         title="Hoy"
         description="Miércoles, 30 de septiembre · Organiza primero lo que requiere atención"
+        action={
+          <PageHeaderCreateButton
+            onClick={() => undefined}
+          />
+        }
       />
       <div className="mt-7">
         <TodaySummary
@@ -156,7 +388,10 @@ function TodayFixture() {
           dailyLimitHours={16}
         />
       </div>
-      <div className="mt-8 max-w-[790px] space-y-3">
+      <div className="mt-3">
+        <TodayPriorityGuide />
+      </div>
+      <div className="mt-6 max-w-[790px] space-y-3">
         <TodayTaskCard
           task={task}
           group="today"
@@ -199,6 +434,10 @@ const fixtures: Record<string, ReactNode> = {
   'events-empty': <EventsEmptyFixture />,
   'events-error': <EventsErrorFixture />,
   feedback: <FeedbackFixture />,
+  'feedback-success': (
+    <FeedbackFixture status="success" />
+  ),
+  'auth-feedback-review': <AuthFeedbackReviewFixture />,
   'empty-tasks': <EmptyTasksFixture />,
   'event-task': <EventTaskFixture />,
   today: <TodayFixture />,

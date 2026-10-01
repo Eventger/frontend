@@ -403,7 +403,7 @@ describe('EventDetailPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))
 
-    let dialog = await screen.findByRole('dialog')
+    let dialog = await screen.findByRole('alertdialog')
     expect(
       within(dialog).getByRole('heading', { name: '¿Eliminar evento?' }),
     ).toBeTruthy()
@@ -413,7 +413,7 @@ describe('EventDetailPage', () => {
     expect(deleteEvent).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))
-    dialog = await screen.findByRole('dialog')
+    dialog = await screen.findByRole('alertdialog')
     await user.click(
       within(dialog).getByRole('button', { name: 'Eliminar evento' }),
     )
@@ -445,7 +445,7 @@ describe('EventDetailPage', () => {
     renderPage()
 
     await user.click(screen.getByRole('button', { name: 'Eliminar' }))
-    const dialog = await screen.findByRole('dialog')
+    const dialog = await screen.findByRole('alertdialog')
     await user.click(
       within(dialog).getByRole('button', { name: 'Eliminar evento' }),
     )
@@ -471,140 +471,25 @@ describe('EventDetailPage', () => {
     )
   })
 
-  it('edita una subtarea y muestra el feedback de éxito', async () => {
-    const user = userEvent.setup()
-    const updatedSubtask = {
-      ...subtaskFixture,
-      name: 'Coordinar transporte actualizado',
-    }
+  it('mantiene la gestión de subtareas fuera de las tarjetas del detalle', () => {
     showSubtasks()
-    vi.mocked(updateSubtask).mockResolvedValue(updatedSubtask)
     renderPage()
 
-    await user.click(getTaskCard().getByRole('button', { name: 'Editar' }))
-
-    const dialog = await screen.findByRole('dialog')
     expect(
-      within(dialog).getByRole('heading', { name: 'Editar tarea' }),
+      screen.getByText(
+        'Las tareas se gestionan desde Editar evento.',
+      ),
     ).toBeTruthy()
-    const nameInput = within(dialog).getByLabelText('Nombre de la tarea *')
-    await user.clear(nameInput)
-    await user.type(nameInput, updatedSubtask.name)
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Guardar cambios' }),
-    )
-
-    expect(updateSubtask).toHaveBeenCalledOnce()
-    expect(updateSubtask).toHaveBeenCalledWith(subtaskFixture.id, {
-      name: updatedSubtask.name,
-      targetDate: subtaskFixture.targetDate,
-      estimatedHours: subtaskFixture.estimatedHours,
-      details: subtaskFixture.details,
-    }, expect.any(Function))
     expect(
-      await screen.findByRole('heading', { name: 'Tarea actualizada' }),
-    ).toBeTruthy()
-    expect(refreshSubtasks).toHaveBeenCalledOnce()
-  })
-
-  it('muestra el error de edición de subtarea y reintenta los mismos datos', async () => {
-    const user = userEvent.setup()
-    showSubtasks()
-    vi.mocked(updateSubtask).mockRejectedValue(
-      new Error('No se pudo actualizar'),
-    )
-    renderPage()
-
-    await user.click(getTaskCard().getByRole('button', { name: 'Editar' }))
-    const dialog = await screen.findByRole('dialog')
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Guardar cambios' }),
-    )
-
+      getTaskCard().queryByRole('button', {
+        name: 'Editar',
+      }),
+    ).toBeNull()
     expect(
-      await screen.findByRole('heading', { name: 'Cambios no guardados' }),
-    ).toBeTruthy()
-    await user.click(
-      screen.getByRole('button', { name: 'Intentar de nuevo' }),
-    )
-
-    expect(updateSubtask).toHaveBeenCalledTimes(2)
-    expect(updateSubtask).toHaveBeenNthCalledWith(
-      1,
-      subtaskFixture.id,
-      createSubtaskInputFixture,
-      expect.any(Function),
-    )
-    expect(updateSubtask).toHaveBeenNthCalledWith(
-      2,
-      subtaskFixture.id,
-      createSubtaskInputFixture,
-      expect.any(Function),
-    )
-  })
-
-  it('cancela o confirma la eliminación de una subtarea', async () => {
-    const user = userEvent.setup()
-    showSubtasks()
-    vi.mocked(deleteSubtask).mockResolvedValue(undefined)
-    renderPage()
-
-    await user.click(getTaskCard().getByRole('button', { name: 'Eliminar' }))
-    let dialog = await screen.findByRole('dialog')
-    expect(deleteSubtask).not.toHaveBeenCalled()
-
-    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
-    expect(deleteSubtask).not.toHaveBeenCalled()
-
-    await user.click(getTaskCard().getByRole('button', { name: 'Eliminar' }))
-    dialog = await screen.findByRole('dialog')
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Eliminar tarea' }),
-    )
-
-    expect(deleteSubtask).toHaveBeenCalledOnce()
-    expect(deleteSubtask).toHaveBeenCalledWith(
-      subtaskFixture.id,
-      expect.any(Function),
-    )
-    expect(
-      await screen.findByRole('heading', { name: 'Tarea eliminada' }),
-    ).toBeTruthy()
-    expect(refreshSubtasks).toHaveBeenCalledOnce()
-  })
-
-  it('muestra el error al eliminar subtarea y reintenta el DELETE', async () => {
-    const user = userEvent.setup()
-    showSubtasks()
-    vi.mocked(deleteSubtask).mockRejectedValue(
-      new Error('No se pudo eliminar'),
-    )
-    renderPage()
-
-    await user.click(getTaskCard().getByRole('button', { name: 'Eliminar' }))
-    const dialog = await screen.findByRole('dialog')
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Eliminar tarea' }),
-    )
-
-    expect(
-      await screen.findByRole('heading', { name: 'Tarea no eliminada' }),
-    ).toBeTruthy()
-    await user.click(
-      screen.getByRole('button', { name: 'Intentar de nuevo' }),
-    )
-
-    expect(deleteSubtask).toHaveBeenCalledTimes(2)
-    expect(deleteSubtask).toHaveBeenNthCalledWith(
-      1,
-      subtaskFixture.id,
-      expect.any(Function),
-    )
-    expect(deleteSubtask).toHaveBeenNthCalledWith(
-      2,
-      subtaskFixture.id,
-      expect.any(Function),
-    )
+      getTaskCard().queryByRole('button', {
+        name: 'Eliminar',
+      }),
+    ).toBeNull()
   })
 
   it('crea una subtarea, refresca y permite volver al evento', async () => {

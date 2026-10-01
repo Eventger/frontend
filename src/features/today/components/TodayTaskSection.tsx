@@ -24,13 +24,13 @@ const countStyles: Record<
   string
 > = {
   overdue:
-    'bg-[#fef3f2] text-[#b42318]',
+    'bg-[#b42318] text-white',
 
   today:
-    'bg-[#fffaeb] text-[#b54708]',
+    'bg-[#b54708] text-white',
 
   upcoming:
-    'bg-[#eff8ff] text-[#175cd3]',
+    'bg-[#175cd3] text-white',
 }
 
 export function TodayTaskSection({
@@ -47,7 +47,7 @@ export function TodayTaskSection({
   return (
     <section>
       <div className="mb-[7px] flex items-center gap-2">
-        <h2 className="text-[18px] font-semibold leading-[25px] text-[#17212b]">
+        <h2 className="text-[21px] font-semibold leading-[25px] text-[#17212b]">
           {title}
         </h2>
 

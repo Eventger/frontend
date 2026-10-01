@@ -10,10 +10,8 @@ describe('EventTaskCard', () => {
     vi.useRealTimers()
   })
 
-  it('renderiza los datos, el estado completado y las acciones', async () => {
+  it('renderiza los datos, el estado completado y la nota', async () => {
     const user = userEvent.setup()
-    const onEdit = vi.fn()
-    const onDelete = vi.fn()
     const subtask = {
       ...subtaskFixture,
       state: 'completed' as const,
@@ -21,8 +19,6 @@ describe('EventTaskCard', () => {
     render(
       <EventTaskCard
         subtask={subtask}
-        onEdit={onEdit}
-        onDelete={onDelete}
       />,
     )
 
@@ -36,13 +32,8 @@ describe('EventTaskCard', () => {
     expect(screen.getByText(subtask.details)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Ocultar' })).toBeTruthy()
 
-    await user.click(screen.getByRole('button', { name: 'Editar' }))
-    await user.click(screen.getByRole('button', { name: 'Eliminar' }))
-
-    expect(onEdit).toHaveBeenCalledOnce()
-    expect(onEdit).toHaveBeenCalledWith(subtask)
-    expect(onDelete).toHaveBeenCalledOnce()
-    expect(onDelete).toHaveBeenCalledWith(subtask)
+    expect(screen.queryByRole('button', { name: 'Editar' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Eliminar' })).toBeNull()
   })
 
   it('muestra Pendiente para una subtarea pendiente con fecha futura', () => {
@@ -56,8 +47,6 @@ describe('EventTaskCard', () => {
           state: 'pending',
           targetDate: '2026-09-25T12:00:00.000Z',
         }}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
       />,
     )
 
@@ -75,8 +64,6 @@ describe('EventTaskCard', () => {
           state: 'pending',
           targetDate: '2026-09-23T12:00:00.000Z',
         }}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
       />,
     )
 
@@ -94,8 +81,6 @@ describe('EventTaskCard', () => {
           state: 'pending',
           targetDate: '2026-09-24T12:00:00.000Z',
         }}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
       />,
     )
 
@@ -109,8 +94,6 @@ describe('EventTaskCard', () => {
           ...subtaskFixture,
           details: '',
         }}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
       />,
     )
 
@@ -124,8 +107,6 @@ describe('EventTaskCard', () => {
           ...subtaskFixture,
           details: '   ',
         }}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
       />,
     )
 

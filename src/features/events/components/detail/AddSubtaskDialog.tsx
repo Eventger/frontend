@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { Button } from '@/components/ui/button'
+import { FieldError } from '@/components/feedback/FieldError'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -251,6 +252,11 @@ export function AddSubtaskDialog({
                 aria-invalid={Boolean(
                   errors.name,
                 )}
+                aria-describedby={
+                  errors.name
+                    ? 'add-subtask-name-error'
+                    : undefined
+                }
                 onChange={(event) =>
                   updateField(
                     'name',
@@ -261,9 +267,9 @@ export function AddSubtaskDialog({
               />
 
               {errors.name && (
-                <p className="text-xs text-destructive">
+                <FieldError id="add-subtask-name-error">
                   {errors.name}
-                </p>
+                </FieldError>
               )}
             </div>
           </section>
@@ -293,6 +299,11 @@ export function AddSubtaskDialog({
                   aria-invalid={Boolean(
                     errors.targetDate,
                   )}
+                  aria-describedby={
+                    errors.targetDate
+                      ? 'add-subtask-date-hint add-subtask-date-error'
+                      : 'add-subtask-date-hint'
+                  }
                   onChange={(event) =>
                     updateField(
                       'targetDate',
@@ -302,15 +313,18 @@ export function AddSubtaskDialog({
                   className="h-11 rounded-[9px]"
                 />
 
-                <p className="text-[12px] leading-[15px] text-[#667085]">
+                <p
+                  id="add-subtask-date-hint"
+                  className="text-[12px] leading-[15px] text-[#667085]"
+                >
                   Debe completarse antes del{' '}
                   {formatEventDate(eventDate)}.
                 </p>
 
                 {errors.targetDate && (
-                  <p className="text-xs text-destructive">
+                  <FieldError id="add-subtask-date-error">
                     {errors.targetDate}
-                  </p>
+                  </FieldError>
                 )}
               </div>
 
@@ -335,6 +349,11 @@ export function AddSubtaskDialog({
                   aria-invalid={Boolean(
                     errors.estimatedHours,
                   )}
+                  aria-describedby={
+                    errors.estimatedHours
+                      ? 'add-subtask-hours-hint add-subtask-hours-error'
+                      : 'add-subtask-hours-hint'
+                  }
                   onChange={(event) =>
                     updateField(
                       'estimatedHours',
@@ -344,17 +363,20 @@ export function AddSubtaskDialog({
                   className="h-11 rounded-[9px]"
                 />
 
-                <p className="text-[12px] text-[#667085]">
+                <p
+                  id="add-subtask-hours-hint"
+                  className="text-[12px] text-[#667085]"
+                >
                   Se usa para calcular tu
                   carga diaria.
                 </p>
 
                 {errors.estimatedHours && (
-                  <p className="text-xs text-destructive">
+                  <FieldError id="add-subtask-hours-error">
                     {
                       errors.estimatedHours
                     }
-                  </p>
+                  </FieldError>
                 )}
               </div>
             </div>

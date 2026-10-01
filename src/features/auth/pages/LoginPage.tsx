@@ -29,6 +29,8 @@ import { isValidEmail } from '@/features/auth/utils/isValidEmail'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { FieldError } from '@/components/feedback/FieldError'
+import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 
 import eyeIcon from '@/assets/auth/eye.svg'
 import googleLogo from '@/assets/auth/google.svg'
@@ -41,6 +43,11 @@ type LoginFeedback =
   | 'success'
   | 'account-created'
   | null
+
+type LoginAttempt =
+  | 'password'
+  | 'google'
+  | 'finalize'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -103,6 +110,13 @@ export function LoginPage() {
         ? 'account-created'
         : null,
     )
+
+  const [
+    lastAttempt,
+    setLastAttempt,
+  ] = useState<LoginAttempt>(
+    'password',
+  )
 
   const [
     recoveryStep,
@@ -190,6 +204,7 @@ export function LoginPage() {
 
   const finalizeSuccessfulLogin =
     async () => {
+      setLastAttempt('finalize')
       setFeedback(null)
 
       let finalizeError:
@@ -261,6 +276,7 @@ export function LoginPage() {
 
   const performLogin =
     async () => {
+      setLastAttempt('password')
       setGeneralError('')
       setFeedback(null)
 
@@ -337,6 +353,7 @@ export function LoginPage() {
 
   const handleGoogleSignIn =
     async () => {
+      setLastAttempt('google')
       setGeneralError('')
       setFeedback(null)
 
@@ -363,6 +380,23 @@ export function LoginPage() {
           'network-error',
         )
       }
+    }
+
+  const handleRetryAuthentication =
+    () => {
+      if (lastAttempt === 'google') {
+        void handleGoogleSignIn()
+
+        return
+      }
+
+      if (lastAttempt === 'finalize') {
+        void finalizeSuccessfulLogin()
+
+        return
+      }
+
+      void performLogin()
     }
 
   const handleStartPasswordRecovery =
@@ -698,14 +732,11 @@ export function LoginPage() {
                 />
 
                 {generalError && (
-                  <div
-                    className="mt-4 rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
-                    role="alert"
+                  <InlineFeedback
+                    className="mt-4"
                   >
-                    <p className="text-[11px] leading-4 text-[#b42318]">
-                      {generalError}
-                    </p>
-                  </div>
+                    {generalError}
+                  </InlineFeedback>
                 )}
 
                 <Button
@@ -812,13 +843,11 @@ export function LoginPage() {
                   />
 
                   {emailError && (
-                    <p
+                    <FieldError
                       id="login-email-error"
-                      className="text-xs text-[#b42318]"
-                      role="alert"
                     >
                       {emailError}
-                    </p>
+                    </FieldError>
                   )}
                 </div>
 
@@ -932,13 +961,11 @@ export function LoginPage() {
                   </div>
 
                   {passwordError && (
-                    <p
+                    <FieldError
                       id="login-password-error"
-                      className="text-xs text-[#b42318]"
-                      role="alert"
                     >
                       {passwordError}
-                    </p>
+                    </FieldError>
                   )}
 
                   <div className="mt-[9px] flex justify-end">
@@ -955,15 +982,11 @@ export function LoginPage() {
                 </div>
 
                 {generalError && (
-                  <div
-                    className="mt-4 rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
-                    role="alert"
-                    aria-live="polite"
+                  <InlineFeedback
+                    className="mt-4"
                   >
-                    <p className="text-[11px] leading-4 text-[#b42318]">
-                      {generalError}
-                    </p>
-                  </div>
+                    {generalError}
+                  </InlineFeedback>
                 )}
 
                 <Button
@@ -1072,7 +1095,7 @@ export function LoginPage() {
           setFeedback(null)
         }
         onPrimary={() => {
-          void performLogin()
+          handleRetryAuthentication()
         }}
       />
 
@@ -1090,7 +1113,7 @@ export function LoginPage() {
           setFeedback(null)
         }
         onPrimary={() => {
-          void performLogin()
+          handleRetryAuthentication()
         }}
       />
 
@@ -1100,18 +1123,21 @@ export function LoginPage() {
           'invalid-credentials'
         }
         variant="error"
-        title="Credenciales inválidas"
-        description="No pudimos iniciar sesión con las credenciales ingresadas. Verifica tu correo y contraseña e inténtalo nuevamente."
+        title="No encontramos tu cuenta"
+        description="Verifica tu correo electrónico o crea una cuenta nueva."
         secondaryLabel="Cerrar"
-        primaryLabel="Intentar de nuevo"
+        primaryLabel="Crear cuenta"
         onSecondary={() =>
           setFeedback(null)
         }
         onPrimary={() => {
           setFeedback(null)
-
-          passwordInputRef.current
-            ?.focus()
+          navigate(
+            '/crear-cuenta',
+            {
+              viewTransition: true,
+            },
+          )
         }}
       />
 

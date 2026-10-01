@@ -158,9 +158,19 @@ describe('TodayPage', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Hoy no tienes subtareas',
+        name: 'No tienes gestiones pendientes para hoy',
       }),
     ).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: 'Ver próximos días',
+      }),
+    ).toBeTruthy()
+    expect(
+      screen.queryByText(
+        'No tienes tareas pendientes para hoy',
+      ),
+    ).toBeNull()
     expect(
       screen.queryByText(todayDataFixture.completed[0].name),
     ).toBeNull()
@@ -195,6 +205,30 @@ describe('TodayPage', () => {
       screen.getByRole('heading', { name: 'Crear evento destino' }),
     ).toBeTruthy()
     expect(screen.getByTestId('location').textContent).toBe('/crear')
+  })
+
+  it('navega a eventos desde el estado vacío', async () => {
+    const user = userEvent.setup()
+    vi.mocked(useToday).mockReturnValue({
+      data: emptyTodayData(),
+      isLoading: false,
+      error: null,
+      retry,
+    })
+
+    renderPage()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Ver próximos días',
+      }),
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Eventos destino',
+      }),
+    ).toBeTruthy()
   })
 
   it('navega al evento de la tarea seleccionada', async () => {

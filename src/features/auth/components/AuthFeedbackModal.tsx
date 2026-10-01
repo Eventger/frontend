@@ -1,3 +1,12 @@
+import { FeedbackIcon } from '@/components/feedback/FeedbackIcon'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog'
+
 type AuthFeedbackVariant =
   | 'error'
   | 'success'
@@ -34,83 +43,71 @@ export function AuthFeedbackModal({
     variant === 'success'
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#101828]/45 px-4"
-      role="presentation"
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onSecondary?.()
+        }
+      }}
     >
-      <section
+      <DialogContent
         role={
           isSuccess
-            ? 'status'
+            ? 'dialog'
             : 'alertdialog'
         }
-        aria-modal="true"
-        aria-labelledby="auth-feedback-title"
-        aria-describedby="auth-feedback-description"
-        className="relative w-full max-w-[760px] rounded-[16px] border border-[#dde2ea] bg-white px-6 pb-8 pt-[47px] shadow-[0_24px_48px_rgba(16,24,40,0.18)] sm:px-[56px]"
+        className="z-[101] flex min-h-[430px] w-full max-w-[calc(100%-2rem)] flex-col rounded-[16px] border border-[#dde2ea] bg-white px-6 pb-[66px] pt-[47px] sm:block sm:max-w-[760px] sm:p-0"
+        overlayClassName="z-[100] bg-[#101828]/45 backdrop-blur-none"
+        showCloseButton={false}
       >
-        <div
-          className={[
-            'mx-auto flex size-16 items-center justify-center rounded-full',
+        <FeedbackIcon
+          variant={
             isSuccess
-              ? 'bg-[#ecfdf3]'
-              : 'bg-[#feeeec]',
-          ].join(' ')}
-        >
-          <span
-            className={[
-              'text-[34px] font-bold leading-none',
-              isSuccess
-                ? 'text-[#067647]'
-                : 'text-[#b42318]',
-            ].join(' ')}
-            aria-hidden="true"
-          >
-            {isSuccess
-              ? '✓'
-              : '×'}
-          </span>
-        </div>
+              ? 'success'
+              : 'error'
+          }
+          className="mx-auto sm:absolute sm:left-1/2 sm:top-[47px] sm:-translate-x-1/2"
+        />
 
-        <h2
-          id="auth-feedback-title"
-          className="mt-7 text-center text-[24px] font-bold leading-8 text-[#17212b]"
+        <DialogTitle
+          className="mt-7 text-center text-[24px] font-bold leading-8 text-[#17212b] sm:absolute sm:left-[117px] sm:right-[113px] sm:top-[139px] sm:mt-0 sm:text-left"
         >
           {title}
-        </h2>
+        </DialogTitle>
 
-        <p
-          id="auth-feedback-description"
-          className="mx-auto mt-5 max-w-[540px] text-center text-[15px] leading-[22px] text-[#667085]"
+        <DialogDescription
+          className="mx-auto mt-8 max-w-[540px] text-center text-[15px] leading-[22px] text-[#667085] sm:absolute sm:left-[109px] sm:right-[111px] sm:top-[219px] sm:mt-0 sm:max-w-none sm:text-left"
         >
           {description}
-        </p>
+        </DialogDescription>
 
         {(secondaryLabel ||
           primaryLabel) && (
-          <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row sm:gap-5">
-            {secondaryLabel && (
-              <button
-                type="button"
-                onClick={onSecondary}
-                className="h-11 w-full rounded-[10px] border border-[#dde2ea] bg-white px-5 text-[14px] font-semibold text-[#17212b] transition-colors hover:bg-[#f9fafb] sm:w-[180px]"
-              >
-                {secondaryLabel}
-              </button>
-            )}
-
+          <div className="mt-auto flex flex-col justify-center gap-3 pt-8 sm:absolute sm:left-0 sm:right-0 sm:top-[319px] sm:mt-0 sm:flex-row-reverse sm:gap-5 sm:pt-0">
             {primaryLabel && (
-              <button
+              <Button
                 type="button"
                 onClick={onPrimary}
                 className="h-11 w-full rounded-[10px] bg-[#4f46e5] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338ca] sm:w-[190px]"
               >
                 {primaryLabel}
-              </button>
+              </Button>
+            )}
+
+            {secondaryLabel && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onSecondary}
+                className="h-11 w-full rounded-[10px] border-[#dde2ea] bg-white px-5 text-[14px] font-semibold text-[#17212b] hover:bg-[#f9fafb] sm:w-[180px]"
+              >
+                {secondaryLabel}
+              </Button>
             )}
           </div>
         )}
-      </section>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

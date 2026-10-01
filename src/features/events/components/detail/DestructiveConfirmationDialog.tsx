@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { FeedbackIcon } from '@/components/feedback/FeedbackIcon'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,16 +38,17 @@ export function DestructiveConfirmationDialog({
       }}
     >
       <DialogContent
+        role="alertdialog"
+        aria-busy={
+          isDeleting || undefined
+        }
         className="flex max-h-[calc(100svh-2rem)] min-h-[430px] flex-col items-center gap-0 overflow-y-auto rounded-[16px] border-[#dde2ea] bg-white px-6 py-10 shadow-none sm:max-w-[760px] sm:px-10 sm:pb-12 sm:pt-12 xl:left-[calc(50%+120px)]"
         overlayClassName="bg-[#17212b]/36 backdrop-blur-none xl:left-[var(--app-sidebar-width)]"
         showCloseButton={false}
       >
-        <div
-          aria-hidden="true"
-          className="flex size-16 shrink-0 items-center justify-center rounded-full bg-[#feeeec] text-[34px] font-bold leading-none text-[#b42318]"
-        >
-          <span className="-translate-y-px">!</span>
-        </div>
+        <FeedbackIcon
+          variant="warning"
+        />
 
         <DialogTitle className="mt-7 w-full max-w-[530px] text-center text-[clamp(1.35rem,3vw,1.5rem)] font-bold leading-8 text-[#17212b] sm:text-left">
           {title}

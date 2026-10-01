@@ -66,6 +66,10 @@ function renderLogin(
           path="/eventos"
           element={<h1>Eventos privados</h1>}
         />
+        <Route
+          path="/crear-cuenta"
+          element={<h1>Crear cuenta destino</h1>}
+        />
       </Routes>
     </MemoryRouter>,
   )
@@ -155,7 +159,7 @@ describe('LoginPage', () => {
       password: 'una-clave-segura',
     })
     expect(
-      await screen.findByRole('status', {
+      await screen.findByRole('dialog', {
         name: 'Sesión iniciada correctamente',
       }),
     ).toBeTruthy()
@@ -264,7 +268,7 @@ describe('LoginPage', () => {
     )
     expect(
       await screen.findByRole('alertdialog', {
-        name: 'Credenciales inválidas',
+        name: 'No encontramos tu cuenta',
       }),
     ).toBeTruthy()
     await user.click(
@@ -284,6 +288,41 @@ describe('LoginPage', () => {
     expect(
       await screen.findByRole('alertdialog', {
         name: 'Sin conexión',
+      }),
+    ).toBeTruthy()
+  })
+
+  it('ofrece crear una cuenta cuando no encuentra las credenciales', async () => {
+    const user = userEvent.setup()
+    password.mockResolvedValue({
+      error: new Error(
+        'credenciales',
+      ),
+    })
+    renderLogin()
+
+    await fillLoginForm(user)
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Iniciar sesión',
+      }),
+    )
+
+    expect(
+      await screen.findByText(
+        'Verifica tu correo electrónico o crea una cuenta nueva.',
+      ),
+    ).toBeTruthy()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Crear cuenta',
+      }),
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Crear cuenta destino',
       }),
     ).toBeTruthy()
   })
@@ -337,6 +376,8 @@ describe('LoginPage', () => {
     const user = userEvent.setup()
     sso.mockResolvedValueOnce({
       error: new Error('oauth'),
+    }).mockResolvedValueOnce({
+      error: null,
     })
     renderLogin()
     const googleButton = screen.getByRole(
@@ -349,6 +390,20 @@ describe('LoginPage', () => {
         name: 'No pudimos iniciar sesión',
       }),
     ).toBeTruthy()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Intentar de nuevo',
+      }),
+    )
+
+    expect(sso).toHaveBeenCalledTimes(2)
+    expect(password).not.toHaveBeenCalled()
+
+    sso.mockResolvedValueOnce({
+      error: new Error('oauth'),
+    })
+    await user.click(googleButton)
     await user.click(
       screen.getByRole('button', {
         name: 'Cerrar',

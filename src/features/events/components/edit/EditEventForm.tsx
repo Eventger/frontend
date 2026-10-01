@@ -13,6 +13,8 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { FieldError } from '@/components/feedback/FieldError'
+import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 import {
   Select,
   SelectContent,
@@ -414,6 +416,11 @@ export function EditEventForm({
                   aria-invalid={Boolean(
                     errors.name,
                   )}
+                  aria-describedby={
+                    errors.name
+                      ? 'edit-event-name-error'
+                      : undefined
+                  }
                   onChange={(inputEvent) =>
                     updateField(
                       'name',
@@ -424,9 +431,9 @@ export function EditEventForm({
                 />
 
                 {errors.name && (
-                  <p className="text-[11px] text-[#b42318]">
+                  <FieldError id="edit-event-name-error">
                     {errors.name}
-                  </p>
+                  </FieldError>
                 )}
               </div>
 
@@ -458,6 +465,11 @@ export function EditEventForm({
                     aria-invalid={Boolean(
                       errors.typeId,
                     )}
+                    aria-describedby={
+                      errors.typeId
+                        ? 'edit-event-type-error'
+                        : undefined
+                    }
                   >
                     <SelectValue placeholder="Selecciona un tipo de evento" />
                   </SelectTrigger>
@@ -479,9 +491,9 @@ export function EditEventForm({
                 </Select>
 
                 {errors.typeId && (
-                  <p className="text-[11px] text-[#b42318]">
+                  <FieldError id="edit-event-type-error">
                     {errors.typeId}
-                  </p>
+                  </FieldError>
                 )}
               </div>
             </div>
@@ -509,6 +521,11 @@ export function EditEventForm({
                   aria-invalid={Boolean(
                     errors.eventDate,
                   )}
+                  aria-describedby={
+                    errors.eventDate
+                      ? 'edit-event-date-error'
+                      : undefined
+                  }
                   onChange={(inputEvent) =>
                     updateField(
                       'eventDate',
@@ -519,9 +536,9 @@ export function EditEventForm({
                 />
 
                 {errors.eventDate && (
-                  <p className="text-[11px] text-[#b42318]">
+                  <FieldError id="edit-event-date-error">
                     {errors.eventDate}
-                  </p>
+                  </FieldError>
                 )}
               </div>
 
@@ -540,6 +557,11 @@ export function EditEventForm({
                   aria-invalid={Boolean(
                     errors.location,
                   )}
+                  aria-describedby={
+                    errors.location
+                      ? 'edit-event-location-error'
+                      : undefined
+                  }
                   onChange={(inputEvent) =>
                     updateField(
                       'location',
@@ -550,9 +572,9 @@ export function EditEventForm({
                 />
 
                 {errors.location && (
-                  <p className="text-[11px] text-[#b42318]">
+                  <FieldError id="edit-event-location-error">
                     {errors.location}
-                  </p>
+                  </FieldError>
                 )}
               </div>
             </div>
@@ -593,12 +615,11 @@ export function EditEventForm({
               />
 
               {errors.contact && (
-                <p
+                <FieldError
                   id="event-contact-error"
-                  className="text-[11px] text-[#b42318]"
                 >
                   {errors.contact}
-                </p>
+                </FieldError>
               )}
             </div>
           </div>
@@ -635,6 +656,11 @@ export function EditEventForm({
                   aria-invalid={Boolean(
                     subtaskErrors.name,
                   )}
+                  aria-describedby={
+                    subtaskErrors.name
+                      ? 'edit-event-task-name-error'
+                      : undefined
+                  }
                   onChange={(inputEvent) =>
                     updateSubtaskField(
                       'name',
@@ -645,9 +671,9 @@ export function EditEventForm({
                 />
 
                 {subtaskErrors.name && (
-                  <p className="text-[11px] text-[#b42318]">
+                  <FieldError id="edit-event-task-name-error">
                     {subtaskErrors.name}
-                  </p>
+                  </FieldError>
                 )}
               </div>
 
@@ -672,6 +698,11 @@ export function EditEventForm({
                   aria-invalid={Boolean(
                     subtaskErrors.targetDate,
                   )}
+                  aria-describedby={
+                    subtaskErrors.targetDate
+                      ? 'edit-event-task-date-error'
+                      : undefined
+                  }
                   onChange={(inputEvent) =>
                     updateSubtaskField(
                       'targetDate',
@@ -682,9 +713,9 @@ export function EditEventForm({
                 />
 
                 {subtaskErrors.targetDate && (
-                  <p className="text-[11px] text-[#b42318]">
+                  <FieldError id="edit-event-task-date-error">
                     {subtaskErrors.targetDate}
-                  </p>
+                  </FieldError>
                 )}
               </div>
 
@@ -708,6 +739,11 @@ export function EditEventForm({
                   aria-invalid={Boolean(
                     subtaskErrors.estimatedHours,
                   )}
+                  aria-describedby={
+                    subtaskErrors.estimatedHours
+                      ? 'edit-event-task-hours-error'
+                      : undefined
+                  }
                   onChange={(inputEvent) =>
                     updateSubtaskField(
                       'estimatedHours',
@@ -718,9 +754,9 @@ export function EditEventForm({
                 />
 
                 {subtaskErrors.estimatedHours && (
-                  <p className="text-[11px] text-[#b42318]">
+                  <FieldError id="edit-event-task-hours-error">
                     {subtaskErrors.estimatedHours}
-                  </p>
+                  </FieldError>
                 )}
               </div>
             </div>
@@ -782,12 +818,11 @@ export function EditEventForm({
             </div>
 
             {taskActionError && (
-              <p
-                role="alert"
-                className="mt-3 text-[12px] text-[#b42318]"
+              <InlineFeedback
+                className="mt-3"
               >
                 {taskActionError}
-              </p>
+              </InlineFeedback>
             )}
           </div>
 
