@@ -185,23 +185,6 @@ body {
     min-height: 1.875rem;
     height: 1.875rem;
   }
-
-  .event-task-card .event-task-actions {
-    position: absolute;
-    z-index: 10;
-    top: 50%;
-    right: 0.75rem;
-    pointer-events: none;
-    margin-left: 0;
-    transform: translateY(-50%);
-    opacity: 0;
-  }
-
-  .event-task-card:hover .event-task-actions,
-  .event-task-card .event-task-actions:focus-within {
-    pointer-events: auto;
-    opacity: 1;
-  }
 }
 
 @media (min-width: 640px) {

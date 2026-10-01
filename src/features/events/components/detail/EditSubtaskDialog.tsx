@@ -4,6 +4,7 @@ import {
 } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { FieldError } from '@/components/feedback/FieldError'
 import {
   Dialog,
   DialogContent,
@@ -210,6 +211,11 @@ export function EditSubtaskDialog({
                 aria-invalid={Boolean(
                   errors.name,
                 )}
+                aria-describedby={
+                  errors.name
+                    ? 'edit-subtask-name-error'
+                    : undefined
+                }
                 onChange={(event) =>
                   updateField(
                     'name',
@@ -220,9 +226,9 @@ export function EditSubtaskDialog({
               />
 
               {errors.name && (
-                <p className="text-xs text-[#b42318]">
+                <FieldError id="edit-subtask-name-error">
                   {errors.name}
-                </p>
+                </FieldError>
               )}
             </div>
           </section>
@@ -255,6 +261,11 @@ export function EditSubtaskDialog({
                   aria-invalid={Boolean(
                     errors.targetDate,
                   )}
+                  aria-describedby={
+                    errors.targetDate
+                      ? 'edit-subtask-date-hint edit-subtask-date-error'
+                      : 'edit-subtask-date-hint'
+                  }
                   onChange={(event) =>
                     updateField(
                       'targetDate',
@@ -264,7 +275,10 @@ export function EditSubtaskDialog({
                   className="h-11 rounded-[9px]"
                 />
 
-                <p className="text-[12px] leading-[15px] text-[#667085]">
+                <p
+                  id="edit-subtask-date-hint"
+                  className="text-[12px] leading-[15px] text-[#667085]"
+                >
                   Debe completarse antes
                   del{' '}
                   {formatEventDate(
@@ -274,11 +288,11 @@ export function EditSubtaskDialog({
                 </p>
 
                 {errors.targetDate && (
-                  <p className="text-xs text-[#b42318]">
+                  <FieldError id="edit-subtask-date-error">
                     {
                       errors.targetDate
                     }
-                  </p>
+                  </FieldError>
                 )}
               </div>
 
@@ -304,6 +318,11 @@ export function EditSubtaskDialog({
                   aria-invalid={Boolean(
                     errors.estimatedHours,
                   )}
+                  aria-describedby={
+                    errors.estimatedHours
+                      ? 'edit-subtask-hours-hint edit-subtask-hours-error'
+                      : 'edit-subtask-hours-hint'
+                  }
                   onChange={(event) =>
                     updateField(
                       'estimatedHours',
@@ -313,17 +332,20 @@ export function EditSubtaskDialog({
                   className="h-11 rounded-[9px]"
                 />
 
-                <p className="text-[12px] text-[#667085]">
+                <p
+                  id="edit-subtask-hours-hint"
+                  className="text-[12px] text-[#667085]"
+                >
                   Se usa para calcular tu
                   carga diaria.
                 </p>
 
                 {errors.estimatedHours && (
-                  <p className="text-xs text-[#b42318]">
+                  <FieldError id="edit-subtask-hours-error">
                     {
                       errors.estimatedHours
                     }
-                  </p>
+                  </FieldError>
                 )}
               </div>
             </div>

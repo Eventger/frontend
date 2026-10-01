@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router'
 
 import { PageContainer } from '@/components/layout/PageContainer'
+import { PageContent } from '@/components/layout/PageContent'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageHeaderCreateButton } from '@/components/layout/PageHeaderCreateButton'
 import { EmptyEventsState } from '@/features/events/components/EmptyEventsState'
@@ -29,6 +30,7 @@ export function EventsPage() {
 
   return (
     <PageContainer>
+      <PageContent>
         <PageHeader
           title="Eventos"
           description="Todos tus eventos y su estado de preparación."
@@ -60,7 +62,7 @@ export function EventsPage() {
             !error &&
             hasEvents && (
               <section
-                className="grid max-w-[1040px] gap-y-[30px] lg:grid-cols-2 lg:gap-x-10"
+                className="grid gap-y-[30px] lg:grid-cols-2 lg:gap-x-10"
                 aria-label="Lista de eventos"
               >
                 {events.map((event) => (
@@ -72,6 +74,7 @@ export function EventsPage() {
               </section>
             )}
         </div>
+      </PageContent>
     </PageContainer>
   )
 }

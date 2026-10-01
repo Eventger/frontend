@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { TodayEmptyState } from '@/features/today/components/TodayEmptyState'
+import { TodayPriorityGuide } from '@/features/today/components/TodayPriorityGuide'
 import { TodaySummary } from '@/features/today/components/TodaySummary'
 import { TodayTaskCard } from '@/features/today/components/TodayTaskCard'
 import { TodayTaskSection } from '@/features/today/components/TodayTaskSection'
@@ -54,6 +55,30 @@ describe('TodaySummary', () => {
     )
 
     expect(screen.getAllByText('0 h disponibles')).toHaveLength(2)
+  })
+
+  it('muestra el resumen definido en Figma cuando los filtros no coinciden', () => {
+    render(
+      <TodaySummary
+        overdueCount={0}
+        todayCount={0}
+        upcomingCount={0}
+        plannedHours={0}
+        dailyLimitHours={6}
+        isFiltered
+      />,
+    )
+
+    expect(
+      screen.getAllByText(
+        'Sin coincidencias',
+      ),
+    ).toHaveLength(3)
+    expect(
+      screen.getAllByText(
+        '0 h con estos filtros',
+      ),
+    ).toHaveLength(2)
   })
 })
 
@@ -144,19 +169,71 @@ describe('TodayTaskSection', () => {
   })
 })
 
+describe('TodayPriorityGuide', () => {
+  it('muestra y oculta la regla de prioridad de forma accesible', async () => {
+    const user = userEvent.setup()
+
+    render(<TodayPriorityGuide />)
+
+    const trigger = screen.getByRole(
+      'button',
+      {
+        name: '¿Cómo funciona?',
+      },
+    )
+
+    expect(
+      trigger.getAttribute(
+        'aria-expanded',
+      ),
+    ).toBe('false')
+
+    await user.click(trigger)
+
+    expect(
+      screen.getByRole('dialog', {
+        name: 'Regla de prioridad',
+      }),
+    ).toBeTruthy()
+    expect(
+      trigger.getAttribute(
+        'aria-expanded',
+      ),
+    ).toBe('true')
+
+    await user.click(trigger)
+
+    expect(
+      screen.queryByRole('dialog'),
+    ).toBeNull()
+  })
+})
+
 describe('TodayEmptyState', () => {
-  it('ejecuta la acción para crear una actividad', async () => {
+  it('ejecuta las acciones del estado vacío', async () => {
     const user = userEvent.setup()
     const onCreateEvent = vi.fn()
+    const onViewUpcoming = vi.fn()
 
     render(
       <TodayEmptyState
+        onViewUpcoming={onViewUpcoming}
         onCreateEvent={onCreateEvent}
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Crear actividad' }))
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Ver próximos días',
+      }),
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: '+ Crear evento',
+      }),
+    )
 
+    expect(onViewUpcoming).toHaveBeenCalledOnce()
     expect(onCreateEvent).toHaveBeenCalledOnce()
   })
 })

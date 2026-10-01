@@ -12,8 +12,6 @@ import type { Subtask } from '@/features/events/types/subtask.types'
 
 type EventTaskCardProps = {
   subtask: Subtask
-  onEdit: (subtask: Subtask) => void
-  onDelete: (subtask: Subtask) => void
 }
 
 type VisualTaskStatus =
@@ -114,8 +112,6 @@ function getVisualStatus(
 
 export function EventTaskCard({
   subtask,
-  onEdit,
-  onDelete,
 }: EventTaskCardProps) {
   const [isNoteOpen, setIsNoteOpen] =
     useState(false)
@@ -199,29 +195,6 @@ export function EventTaskCard({
             </Button>
           )}
 
-          <div className="event-task-actions ml-auto flex gap-1.5 rounded-[9px] bg-white/95 py-1 pl-2 shadow-[-10px_0_16px_4px_rgba(255,255,255,0.96)] transition-opacity">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                onEdit(subtask)
-              }
-              className="event-task-control rounded-[8px] bg-[#f8fafc] px-2.5 text-[12px] font-semibold text-[#17212b]"
-            >
-              Editar
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                onDelete(subtask)
-              }
-              className="event-task-control rounded-[8px] border-[#c2413a] bg-white px-2.5 text-[12px] font-semibold text-[#c2413a] hover:bg-[#fdf2f1] hover:text-[#c2413a] focus-visible:ring-[#c2413a]/25"
-            >
-              Eliminar
-            </Button>
-          </div>
         </div>
       </div>
 

@@ -1,10 +1,9 @@
 import {
-  Check,
   LoaderCircle,
-  X,
 } from 'lucide-react'
 import { useId } from 'react'
 
+import { FeedbackIcon } from '@/components/feedback/FeedbackIcon'
 import { Button } from '@/components/ui/button'
 
 export type FeedbackAction = {
@@ -65,27 +64,13 @@ export function OperationFeedback({
             aria-atomic="true"
             className="flex w-full flex-col items-center"
           >
-            <div
-              className={
+            <FeedbackIcon
+              variant={
                 isSuccess
-                  ? 'flex size-16 shrink-0 items-center justify-center rounded-full bg-[#ecfdf3]'
-                  : 'flex size-16 shrink-0 items-center justify-center rounded-full bg-[#feeeec]'
+                  ? 'success'
+                  : 'error'
               }
-            >
-              {isSuccess ? (
-                <Check
-                  aria-hidden="true"
-                  className="size-8 text-[#027a48]"
-                  strokeWidth={3}
-                />
-              ) : (
-                <X
-                  aria-hidden="true"
-                  className="size-8 text-[#b42318]"
-                  strokeWidth={3}
-                />
-              )}
-            </div>
+            />
 
             <h2
               id={titleId}

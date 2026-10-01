@@ -15,6 +15,7 @@ import {
 import { useClerk, useUser } from '@clerk/react'
 
 import { Button } from '@/components/ui/button'
+import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 
 import {
   Sheet,
@@ -217,12 +218,11 @@ function SidebarContent({
         </button>
 
         {signOutError && (
-          <p
-            className="mt-2 text-xs leading-4 text-[#b42318]"
-            role="alert"
+          <InlineFeedback
+            className="mt-2 px-2.5"
           >
             {signOutError}
-          </p>
+          </InlineFeedback>
         )}
       </div>
     </div>

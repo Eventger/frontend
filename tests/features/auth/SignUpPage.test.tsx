@@ -404,4 +404,120 @@ describe('SignUpPage', () => {
       }),
     ).toBeTruthy()
   })
+
+  it('reintenta con Google cuando falla la conexión de Google', async () => {
+    const user = userEvent.setup()
+    sso
+      .mockRejectedValueOnce(
+        new Error('red'),
+      )
+      .mockResolvedValueOnce({
+        error: null,
+      })
+    renderSignUp()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Registrarme con Google',
+      }),
+    )
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Reintentar',
+      }),
+    )
+
+    expect(sso).toHaveBeenCalledTimes(2)
+    expect(password).not.toHaveBeenCalled()
+  })
+
+  it('reanuda el envío del código sin volver a crear la cuenta', async () => {
+    const user = userEvent.setup()
+    password.mockResolvedValue({
+      error: null,
+    })
+    sendEmailCode
+      .mockRejectedValueOnce(
+        new Error('red'),
+      )
+      .mockResolvedValueOnce({
+        error: null,
+      })
+    renderSignUp()
+    await fillSignUpForm(user)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Crear cuenta',
+      }),
+    )
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Reintentar',
+      }),
+    )
+
+    expect(password).toHaveBeenCalledOnce()
+    expect(sendEmailCode).toHaveBeenCalledTimes(2)
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Verifica tu correo',
+      }),
+    ).toBeTruthy()
+  })
+
+  it('reintenta la verificación con el mismo código tras un fallo de red', async () => {
+    const user = userEvent.setup()
+    password.mockResolvedValue({
+      error: null,
+    })
+    sendEmailCode.mockResolvedValue({
+      error: null,
+    })
+    verifyEmailCode
+      .mockRejectedValueOnce(
+        new Error('red'),
+      )
+      .mockResolvedValueOnce({
+        error: new Error('código'),
+      })
+    renderSignUp()
+    await fillSignUpForm(user)
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Crear cuenta',
+      }),
+    )
+    await user.type(
+      await screen.findByLabelText(
+        'Código de verificación',
+      ),
+      '123456',
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Verificar correo',
+      }),
+    )
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Reintentar',
+      }),
+    )
+
+    expect(
+      verifyEmailCode,
+    ).toHaveBeenCalledTimes(2)
+    expect(
+      verifyEmailCode,
+    ).toHaveBeenLastCalledWith({
+      code: '123456',
+    })
+    expect(
+      await screen.findByText(
+        'El código no es válido. Inténtalo de nuevo.',
+      ),
+    ).toBeTruthy()
+  })
 })

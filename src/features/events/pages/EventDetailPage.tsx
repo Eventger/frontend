@@ -24,13 +24,6 @@ import { EventDetailLoadingState } from '@/features/events/components/detail/Eve
 import { EventNotFoundState } from '@/features/events/components/detail/EventNotFoundState'
 
 import {
-  DeleteSubtaskError,
-  DeleteSubtaskSuccess,
-  EditSubtaskError,
-  EditSubtaskSuccess,
-} from '@/features/events/components/detail/SubtaskOperationFeedback'
-
-import {
   DeleteEventError,
   DeleteEventSuccess,
   EditEventError,
@@ -60,9 +53,6 @@ import type {
   UpdateSubtaskInput,
 } from '@/features/events/types/subtask.types'
 
-import { DeleteSubtaskDialog } from '../components/detail/DeleteSubtaskDialog'
-import { EditSubtaskDialog } from '../components/detail/EditSubtaskDialog'
-
 import { useEventTypes } from '../hooks/useEventTypes'
 
 import type {
@@ -74,10 +64,6 @@ type DetailFlowView =
   | 'detail'
   | 'create-success'
   | 'create-error'
-  | 'edit-success'
-  | 'edit-error'
-  | 'delete-success'
-  | 'delete-error'
   | 'event-edit'
   | 'event-edit-success'
   | 'event-edit-error'
@@ -169,40 +155,6 @@ export function EventDetailPage() {
       refreshSubtasks(),
     ])
   }
-
-  const [
-    submittedEditData,
-    setSubmittedEditData,
-  ] =
-    useState<UpdateSubtaskInput | null>(
-      null,
-    )
-
-  const [
-    updatedSubtask,
-    setUpdatedSubtask,
-  ] =
-    useState<Subtask | null>(
-      null,
-    )
-
-  const [
-    deletedSubtaskName,
-    setDeletedSubtaskName,
-  ] =
-    useState<string | null>(
-      null,
-    )
-
-  const [
-    isUpdating,
-    setIsUpdating,
-  ] = useState(false)
-
-  const [
-    isDeleting,
-    setIsDeleting,
-  ] = useState(false)
 
   const [
     submittedEventData,
@@ -309,13 +261,6 @@ export function EventDetailPage() {
   const handleReturnToEvent = () => {
     setView('detail')
 
-    setSubtaskAction(null)
-    setSelectedSubtask(null)
-
-    setSubmittedEditData(null)
-    setUpdatedSubtask(null)
-    setDeletedSubtaskName(null)
-
     void refreshSubtasks()
   }
 
@@ -328,136 +273,6 @@ export function EventDetailPage() {
 
     setIsAddSubtaskOpen(true)
   }
-
-  const [
-    selectedSubtask,
-    setSelectedSubtask,
-  ] =
-    useState<Subtask | null>(
-      null,
-    )
-
-  const [
-    subtaskAction,
-    setSubtaskAction,
-  ] =
-    useState<
-      'edit' | 'delete' | null
-    >(null)
-
-  const handleEditTask = (
-    subtask: Subtask,
-  ) => {
-    setSelectedSubtask(subtask)
-    setSubtaskAction('edit')
-  }
-
-  const closeSubtaskAction = () => {
-    setSelectedSubtask(null)
-    setSubtaskAction(null)
-  }
-
-  const handleUpdateSubtask = async (
-    data: UpdateSubtaskInput,
-  ) => {
-    if (!selectedSubtask) {
-      return
-    }
-
-    setSubmittedEditData(data)
-    setIsUpdating(true)
-
-    try {
-      const updated =
-        await updateSubtask(
-          selectedSubtask.id,
-          data,
-          authenticatedRequest,
-        )
-
-      setUpdatedSubtask(updated)
-      setSelectedSubtask(updated)
-
-      setSubtaskAction(null)
-      setView('edit-success')
-
-      void refreshSubtasks()
-    } catch {
-      setSubtaskAction(null)
-      setView('edit-error')
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  const handleRetryUpdate = async () => {
-    if (
-      !selectedSubtask ||
-      !submittedEditData
-    ) {
-      return
-    }
-
-    await handleUpdateSubtask(
-      submittedEditData,
-    )
-  }
-
-  const handleContinueEditing = () => {
-    if (!updatedSubtask) {
-      return
-    }
-
-    setSelectedSubtask(
-      updatedSubtask,
-    )
-
-    setView('detail')
-    setSubtaskAction('edit')
-  }
-
-  const handleDeleteTask = (
-    subtask: Subtask,
-  ) => {
-    setSelectedSubtask(subtask)
-    setSubtaskAction('delete')
-  }
-
-  const handleConfirmDelete =
-    async () => {
-      if (!selectedSubtask) {
-        return
-      }
-
-      setIsDeleting(true)
-
-      try {
-        const name =
-          selectedSubtask.name
-
-        await deleteSubtask(
-          selectedSubtask.id,
-          authenticatedRequest,
-        )
-
-        setDeletedSubtaskName(name)
-
-        setSubtaskAction(null)
-        setView('delete-success')
-
-        void refreshSubtasks()
-      } catch {
-        setSubtaskAction(null)
-        setView('delete-error')
-      } finally {
-        setIsDeleting(false)
-      }
-    }
-
-  const handleRetryDelete =
-    async () => {
-      await handleConfirmDelete()
-    }
 
   const handleUpdateEvent = async (
     data: UpdateEventInput,
@@ -663,61 +478,6 @@ export function EventDetailPage() {
             />
           )}
 
-        {view === 'edit-success' &&
-          updatedSubtask && (
-            <EditSubtaskSuccess
-              subtaskName={
-                updatedSubtask.name
-              }
-              onContinueEditing={
-                handleContinueEditing
-              }
-              onReturnToEvent={
-                handleReturnToEvent
-              }
-            />
-          )}
-
-        {view === 'edit-error' && (
-          <EditSubtaskError
-            isRetrying={isUpdating}
-            onRetry={
-              handleRetryUpdate
-            }
-            onReturnToEvent={
-              handleReturnToEvent
-            }
-          />
-        )}
-
-        {view === 'delete-success' &&
-          deletedSubtaskName && (
-            <DeleteSubtaskSuccess
-              subtaskName={
-                deletedSubtaskName
-              }
-              onReturnToEvent={
-                handleReturnToEvent
-              }
-            />
-          )}
-
-        {view === 'delete-error' &&
-          selectedSubtask && (
-            <DeleteSubtaskError
-              subtaskName={
-                selectedSubtask.name
-              }
-              isRetrying={isDeleting}
-              onRetry={
-                handleRetryDelete
-              }
-              onReturnToEvent={
-                handleReturnToEvent
-              }
-            />
-          )}
-
         {view ===
             'event-edit-success' &&
           updatedEvent && (
@@ -771,6 +531,8 @@ export function EventDetailPage() {
                 eventTypesError && (
                   <div className="mt-4">
                     <EventDetailErrorState
+                      title="No pudimos cargar los tipos de evento"
+                      description="Ocurrió un problema al cargar las opciones del formulario. Intenta nuevamente."
                       onRetry={
                         retryEventTypes
                       }
@@ -887,12 +649,6 @@ export function EventDetailPage() {
                         true,
                       )
                     }
-                    onEditTask={
-                      handleEditTask
-                    }
-                    onDeleteTask={
-                      handleDeleteTask
-                    }
                     onEditEvent={() =>
                       setView('event-edit')
                     }
@@ -900,50 +656,6 @@ export function EventDetailPage() {
                       handleOpenDeleteEvent
                     }
                   />
-
-                  {selectedSubtask &&
-                    subtaskAction ===
-                      'edit' && (
-                      <EditSubtaskDialog
-                        key={
-                          selectedSubtask.id
-                        }
-                        subtask={
-                          selectedSubtask
-                        }
-                        eventDate={
-                          currentEvent.eventDate
-                        }
-                        isSubmitting={
-                          isUpdating
-                        }
-                        onClose={
-                          closeSubtaskAction
-                        }
-                        onSubmit={
-                          handleUpdateSubtask
-                        }
-                      />
-                    )}
-
-                  {selectedSubtask &&
-                    subtaskAction ===
-                      'delete' && (
-                      <DeleteSubtaskDialog
-                        subtask={
-                          selectedSubtask
-                        }
-                        isDeleting={
-                          isDeleting
-                        }
-                        onClose={
-                          closeSubtaskAction
-                        }
-                        onConfirm={
-                          handleConfirmDelete
-                        }
-                      />
-                    )}
 
                   <DeleteEventDialog
                     open={

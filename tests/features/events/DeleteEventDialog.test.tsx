@@ -29,6 +29,11 @@ describe('DeleteEventDialog', () => {
       screen.getByRole('heading', { name: '¿Eliminar evento?' }),
     ).toBeTruthy()
     expect(
+      screen.getByRole('alertdialog', {
+        name: '¿Eliminar evento?',
+      }),
+    ).toBeTruthy()
+    expect(
       screen.getByText(/Se eliminarán el evento y todas sus tareas/),
     ).toBeTruthy()
     expect(onConfirm).not.toHaveBeenCalled()

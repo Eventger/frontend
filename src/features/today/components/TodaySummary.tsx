@@ -6,6 +6,7 @@ type TodaySummaryProps = {
   upcomingCount: number
   plannedHours: number
   dailyLimitHours?: number
+  isFiltered?: boolean
 }
 
 function formatHours(
@@ -26,6 +27,7 @@ export function TodaySummary({
   upcomingCount,
   plannedHours,
   dailyLimitHours,
+  isFiltered = false,
 }: TodaySummaryProps) {
   const availableHours =
     dailyLimitHours !== undefined
@@ -48,7 +50,11 @@ export function TodaySummary({
         )} h`
 
   const capacityDescription =
-    availableHours !== null
+    isFiltered
+      ? `${formatHours(
+          plannedHours,
+        )} h con estos filtros`
+      : availableHours !== null
       ? `${formatHours(
           availableHours,
         )} h disponibles`
@@ -62,7 +68,9 @@ export function TodaySummary({
           value={overdueCount}
           description={
             overdueCount === 0
-              ? 'sin pendientes'
+              ? isFiltered
+                ? 'Sin coincidencias'
+                : 'sin pendientes'
               : 'requieren atención'
           }
           tone="danger"
@@ -73,7 +81,9 @@ export function TodaySummary({
           value={todayCount}
           description={
             todayCount === 0
-              ? 'sin tareas'
+              ? isFiltered
+                ? 'Sin coincidencias'
+                : 'sin tareas'
               : `${formatHours(
                   plannedHours,
                 )} h planificadas`
@@ -86,8 +96,10 @@ export function TodaySummary({
           value={upcomingCount}
           description={
             upcomingCount === 0
-              ? 'sin tareas próximas'
-              : 'vencen pronto'
+              ? isFiltered
+                ? 'Sin coincidencias'
+                : 'sin tareas próximas'
+              : 'vencen en 48 h'
           }
           tone="info"
         />
@@ -103,7 +115,7 @@ export function TodaySummary({
       </section>
 
       <section className="md:hidden">
-        <div className="rounded-[10px] border border-[#dde2ea] bg-white p-4">
+        <div className="min-h-[100px] rounded-[14px] border border-[#dde2ea] bg-white p-4">
           <p className="text-base font-semibold text-[#17212b]">
             {dailyLimitHours !==
             undefined
@@ -117,12 +129,19 @@ export function TodaySummary({
                 )} h planificadas`}
           </p>
 
-          <p className="mt-3 text-[13px] text-[#667085]">
-            {availableHours !== null
-              ? `${formatHours(
-                  availableHours,
-                )} h disponibles`
-              : 'Capacidad diaria pendiente de configuración'}
+          <p
+            className={[
+              'mt-3 text-[13px]',
+              availableHours !== null &&
+              !isFiltered
+                ? 'font-semibold text-[#027a48]'
+                : 'text-[#667085]',
+            ].join(' ')}
+          >
+            {availableHours === null &&
+            !isFiltered
+              ? 'Capacidad diaria pendiente de configuración'
+              : capacityDescription}
           </p>
         </div>
       </section>

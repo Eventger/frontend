@@ -9,8 +9,6 @@ describe('EventDetailContent', () => {
   it('muestra el estado vacío y permite agregar una tarea', async () => {
     const user = userEvent.setup()
     const onAddTask = vi.fn()
-    const onEditTask = vi.fn()
-    const onDeleteTask = vi.fn()
     const onEditEvent = vi.fn()
 
     render(
@@ -18,8 +16,6 @@ describe('EventDetailContent', () => {
         event={eventFixture}
         subtasks={[]}
         onAddTask={onAddTask}
-        onEditTask={onEditTask}
-        onDeleteTask={onDeleteTask}
         onEditEvent={onEditEvent}
       />,
     )
@@ -40,8 +36,6 @@ describe('EventDetailContent', () => {
   it('renderiza una tarjeta por subtarea y el progreso real', async () => {
     const user = userEvent.setup()
     const onAddTask = vi.fn()
-    const onEditTask = vi.fn()
-    const onDeleteTask = vi.fn()
     const onEditEvent = vi.fn()
     const subtasks = [
       {
@@ -63,8 +57,6 @@ describe('EventDetailContent', () => {
         event={eventFixture}
         subtasks={subtasks}
         onAddTask={onAddTask}
-        onEditTask={onEditTask}
-        onDeleteTask={onDeleteTask}
         onEditEvent={onEditEvent}
       />,
     )
@@ -88,26 +80,15 @@ describe('EventDetailContent', () => {
     await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
     expect(onAddTask).toHaveBeenCalledOnce()
 
-    const firstTaskCard = screen
-      .getByRole('heading', { name: subtasks[0].name })
-      .closest('article')
-    const secondTaskCard = screen
-      .getByRole('heading', { name: subtasks[1].name })
-      .closest('article')
-
-    expect(firstTaskCard).not.toBeNull()
-    expect(secondTaskCard).not.toBeNull()
-
-    await user.click(
-      within(firstTaskCard!).getByRole('button', { name: 'Editar' }),
-    )
-    await user.click(
-      within(secondTaskCard!).getByRole('button', { name: 'Eliminar' }),
-    )
-
-    expect(onEditTask).toHaveBeenCalledOnce()
-    expect(onEditTask).toHaveBeenCalledWith(subtasks[0])
-    expect(onDeleteTask).toHaveBeenCalledOnce()
-    expect(onDeleteTask).toHaveBeenCalledWith(subtasks[1])
+    expect(
+      within(taskList).queryByRole('button', {
+        name: 'Editar',
+      }),
+    ).toBeNull()
+    expect(
+      within(taskList).queryByRole('button', {
+        name: 'Eliminar',
+      }),
+    ).toBeNull()
   })
 })

@@ -1,7 +1,8 @@
 import {
-  AlertTriangle,
   CalendarDays,
 } from 'lucide-react'
+
+import { FeedbackIcon } from '@/components/feedback/FeedbackIcon'
 
 type ConfigurationErrorProps = {
   missingVariables: string[]
@@ -14,6 +15,7 @@ export function ConfigurationError({
     <main className="flex min-h-screen items-center justify-center bg-[#f7f8fc] px-5 py-10">
       <section
         className="w-full max-w-[560px] rounded-2xl bg-white p-6 shadow-[0_16px_45px_rgba(23,33,43,0.12)] sm:p-9"
+        role="alert"
         aria-labelledby="configuration-title"
       >
         <div className="flex items-center gap-3">
@@ -29,9 +31,9 @@ export function ConfigurationError({
         </div>
 
         <div className="mt-10 flex items-start gap-3">
-          <AlertTriangle
-            className="mt-1 size-5 shrink-0 text-[#b54708]"
-            aria-hidden="true"
+          <FeedbackIcon
+            variant="warning"
+            size="small"
           />
           <div className="min-w-0">
             <h1

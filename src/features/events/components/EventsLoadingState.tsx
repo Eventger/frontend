@@ -1,7 +1,7 @@
 export function EventsLoadingState() {
   return (
     <div
-      className="grid max-w-[1040px] gap-y-[30px] lg:grid-cols-2 lg:gap-x-10"
+      className="grid gap-y-[30px] lg:grid-cols-2 lg:gap-x-10"
       role="status"
       aria-label="Cargando eventos"
       aria-live="polite"

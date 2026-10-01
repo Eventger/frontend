@@ -6,7 +6,7 @@ export function EmptyEventsState() {
   const navigate = useNavigate()
 
   return (
-    <section className="flex min-h-[460px] w-full max-w-[1024px] items-center justify-center py-5 sm:min-h-[576px]">
+    <section className="flex min-h-[460px] w-full items-center justify-center py-5 sm:min-h-[576px]">
       <div className="flex min-h-[340px] w-full max-w-[780px] flex-col items-center rounded-[12px] border border-[#dde2ea] bg-white px-6 py-10 text-center sm:min-h-[400px] sm:pb-[76px] sm:pt-[54px]">
         <span
           className="text-[52px] leading-[63px] text-[#17212b]"

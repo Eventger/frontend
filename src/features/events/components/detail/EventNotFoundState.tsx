@@ -1,34 +1,22 @@
 import { useNavigate } from 'react-router'
 
-import { Button } from '@/components/ui/button'
+import { LoadErrorState } from '@/components/LoadErrorState'
 
 export function EventNotFoundState() {
   const navigate = useNavigate()
 
   return (
-    <section className="flex min-h-[500px] items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-[#17212b]">
-          Evento no encontrado
-        </h1>
-
-        <p className="mt-3 text-sm text-[#667085]">
-          El evento que intentas consultar no existe o ya no está disponible.
-        </p>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-6"
-          onClick={() =>
-            navigate('/eventos', {
-              viewTransition: true,
-            })
-          }
-        >
-          Volver a eventos
-        </Button>
-      </div>
-    </section>
+    <LoadErrorState
+      title="Evento no encontrado"
+      description="El evento que intentas consultar no existe o ya no está disponible."
+      iconLabel="Evento no encontrado"
+      actionLabel="Volver a eventos"
+      variant="events"
+      onRetry={() =>
+        navigate('/eventos', {
+          viewTransition: true,
+        })
+      }
+    />
   )
 }

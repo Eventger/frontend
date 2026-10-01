@@ -16,13 +16,6 @@ type EventDetailContentProps = {
   eventDescription?: string
 
   onAddTask: () => void
-  onEditTask: (
-    subtask: Subtask,
-  ) => void
-  onDeleteTask: (
-    subtask: Subtask,
-  ) => void
-
   onEditEvent: () => void
   onDeleteEvent?: () => void
 }
@@ -33,8 +26,6 @@ export function EventDetailContent({
   eventTypeName,
   eventDescription,
   onAddTask,
-  onEditTask,
-  onDeleteTask,
   onEditEvent,
   onDeleteEvent,
 }: EventDetailContentProps) {
@@ -203,12 +194,6 @@ export function EventDetailContent({
                     }
                     subtask={
                       subtask
-                    }
-                    onEdit={
-                      onEditTask
-                    }
-                    onDelete={
-                      onDeleteTask
                     }
                   />
                 ),

@@ -32,6 +32,8 @@ import { isValidEmail } from '@/features/auth/utils/isValidEmail'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { FieldError } from '@/components/feedback/FieldError'
+import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 
 import eyeIcon from '@/assets/auth/eye.svg'
 import googleLogo from '@/assets/auth/google.svg'
@@ -42,6 +44,12 @@ type SignUpFeedback =
   | 'network-error'
   | 'email-registered'
   | null
+
+type SignUpAttempt =
+  | 'password'
+  | 'verify-code'
+  | 'resend-code'
+  | 'google'
 
 function looksLikeEmailAlreadyExists(
   error: unknown,
@@ -234,6 +242,13 @@ export function SignUpPage() {
       null,
     )
 
+  const [
+    lastAttempt,
+    setLastAttempt,
+  ] = useState<SignUpAttempt>(
+    'password',
+  )
+
   const firstNameInputRef =
     useRef<HTMLInputElement>(
       null,
@@ -376,6 +391,7 @@ export function SignUpPage() {
 
   const performSignUp =
     async () => {
+      setLastAttempt('password')
       setGeneralError('')
       setFeedback(null)
 
@@ -463,6 +479,10 @@ export function SignUpPage() {
         | Error
         | null
 
+      setLastAttempt(
+        'resend-code',
+      )
+
       try {
         const result =
           await signUp
@@ -507,90 +527,101 @@ export function SignUpPage() {
     await performSignUp()
   }
 
+  const verifyEmailCode =
+    async () => {
+      setLastAttempt(
+        'verify-code',
+      )
+      setCodeError('')
+      setGeneralError('')
+      setFeedback(null)
+
+      if (
+        !/^\d{6}$/.test(
+          verificationCode.trim(),
+        )
+      ) {
+        setCodeError(
+          'Ingresa el código de 6 dígitos.',
+        )
+
+        codeInputRef.current
+          ?.focus()
+
+        return
+      }
+
+      let error:
+        | Error
+        | null
+
+      try {
+        const result =
+          await signUp
+            .verifications
+            .verifyEmailCode({
+              code:
+                verificationCode.trim(),
+            })
+
+        error = result.error
+      } catch {
+        setFeedback(
+          'network-error',
+        )
+
+        return
+      }
+
+      if (error) {
+        setCodeError(
+          'El código no es válido. Inténtalo de nuevo.',
+        )
+
+        return
+      }
+
+      if (
+        signUp.status ===
+        'complete'
+      ) {
+        sessionStorage.setItem(
+          'accountCreated',
+          'true',
+        )
+
+        try {
+          await signOut()
+        } catch {
+          // La cuenta ya fue creada.
+        }
+
+        navigate('/', {
+          replace: true,
+        })
+
+        return
+      }
+
+      setFeedback(
+        'general-error',
+      )
+    }
+
   const handleVerify = async (
     event:
       FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault()
 
-    setCodeError('')
-    setGeneralError('')
-    setFeedback(null)
-
-    if (
-      !/^\d{6}$/.test(
-        verificationCode.trim(),
-      )
-    ) {
-      setCodeError(
-        'Ingresa el código de 6 dígitos.',
-      )
-
-      codeInputRef.current
-        ?.focus()
-
-      return
-    }
-
-    let error:
-      | Error
-      | null
-
-    try {
-      const result =
-        await signUp
-          .verifications
-          .verifyEmailCode({
-            code:
-              verificationCode.trim(),
-          })
-
-      error = result.error
-    } catch {
-      setFeedback(
-        'network-error',
-      )
-
-      return
-    }
-
-    if (error) {
-      setCodeError(
-        'El código no es válido. Inténtalo de nuevo.',
-      )
-
-      return
-    }
-
-    if (
-      signUp.status ===
-      'complete'
-    ) {
-      sessionStorage.setItem(
-        'accountCreated',
-        'true',
-      )
-
-      try {
-        await signOut()
-      } catch {
-        // La cuenta ya fue creada.
-      }
-
-      navigate('/', {
-        replace: true,
-      })
-
-      return
-    }
-
-    setFeedback(
-      'general-error',
-    )
+    await verifyEmailCode()
   }
 
   const handleResendCode =
     async () => {
+      setLastAttempt(
+        'resend-code',
+      )
       setCodeError('')
       setGeneralError('')
       setFeedback(null)
@@ -618,11 +649,16 @@ export function SignUpPage() {
         setFeedback(
           'general-error',
         )
+
+        return
       }
+
+      setIsVerifying(true)
     }
 
   const handleGoogleSignUp =
     async () => {
+      setLastAttempt('google')
       setGeneralError('')
       setFeedback(null)
 
@@ -664,6 +700,37 @@ export function SignUpPage() {
       }
     }
 
+  const handleRetrySignUp =
+    () => {
+      if (
+        lastAttempt === 'google'
+      ) {
+        void handleGoogleSignUp()
+
+        return
+      }
+
+      if (
+        lastAttempt ===
+        'verify-code'
+      ) {
+        void verifyEmailCode()
+
+        return
+      }
+
+      if (
+        lastAttempt ===
+        'resend-code'
+      ) {
+        void handleResendCode()
+
+        return
+      }
+
+      void performSignUp()
+    }
+
   const sharedFeedbackModals = (
     <>
       <AuthFeedbackModal
@@ -697,15 +764,9 @@ export function SignUpPage() {
         onSecondary={() =>
           setFeedback(null)
         }
-        onPrimary={() => {
-          if (isVerifying) {
-            void handleResendCode()
-
-            return
-          }
-
-          void performSignUp()
-        }}
+        onPrimary={
+          handleRetrySignUp
+        }
       />
     </>
   )
@@ -812,26 +873,18 @@ export function SignUpPage() {
                   />
 
                   {codeError && (
-                    <p
+                    <FieldError
                       id="verification-code-error"
-                      className="text-xs text-[#b42318]"
-                      role="alert"
                     >
                       {codeError}
-                    </p>
+                    </FieldError>
                   )}
                 </div>
 
                 {generalError && (
-                  <div
-                    className="rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
-                    role="alert"
-                    aria-live="polite"
-                  >
-                    <p className="text-[11px] text-[#b42318]">
-                      {generalError}
-                    </p>
-                  </div>
+                  <InlineFeedback>
+                    {generalError}
+                  </InlineFeedback>
                 )}
 
                 <Button
@@ -968,13 +1021,11 @@ export function SignUpPage() {
                   />
 
                   {firstNameError && (
-                    <p
+                    <FieldError
                       id="signup-first-name-error"
-                      className="text-xs text-[#b42318]"
-                      role="alert"
                     >
                       {firstNameError}
-                    </p>
+                    </FieldError>
                   )}
                 </div>
 
@@ -1034,13 +1085,11 @@ export function SignUpPage() {
                   />
 
                   {lastNameError && (
-                    <p
+                    <FieldError
                       id="signup-last-name-error"
-                      className="text-xs text-[#b42318]"
-                      role="alert"
                     >
                       {lastNameError}
-                    </p>
+                    </FieldError>
                   )}
                 </div>
               </div>
@@ -1103,13 +1152,11 @@ export function SignUpPage() {
                 />
 
                 {emailError && (
-                  <p
+                  <FieldError
                     id="signup-email-error"
-                    className="text-xs text-[#b42318]"
-                    role="alert"
                   >
                     {emailError}
-                  </p>
+                  </FieldError>
                 )}
               </div>
 
@@ -1157,7 +1204,11 @@ export function SignUpPage() {
                         passwordError,
                       )
                     }
-                    aria-describedby="signup-password-hint"
+                    aria-describedby={
+                      passwordError
+                        ? 'signup-password-error'
+                        : 'signup-password-hint'
+                    }
                     onChange={(
                       event,
                     ) => {
@@ -1217,17 +1268,21 @@ export function SignUpPage() {
                   </button>
                 </div>
 
-                <p
-                  id="signup-password-hint"
-                  className={`mt-2.5 text-[11px] ${
-                    passwordError
-                      ? 'text-[#d92d20]'
-                      : 'text-[#667085]'
-                  }`}
-                >
-                  {passwordError ||
-                    PASSWORD_MIN_LENGTH_HINT}
-                </p>
+                {passwordError ? (
+                  <FieldError
+                    id="signup-password-error"
+                    className="mt-2.5"
+                  >
+                    {passwordError}
+                  </FieldError>
+                ) : (
+                  <p
+                    id="signup-password-hint"
+                    className="mt-2.5 text-[11px] text-[#667085]"
+                  >
+                    {PASSWORD_MIN_LENGTH_HINT}
+                  </p>
+                )}
               </div>
 
               <div className="mt-[18px]">
@@ -1292,26 +1347,21 @@ export function SignUpPage() {
                 </label>
 
                 {termsError && (
-                  <p
+                  <FieldError
                     id="signup-terms-error"
-                    className="ml-7 mt-2 text-xs text-[#b42318]"
-                    role="alert"
+                    className="ml-7 mt-2"
                   >
                     {termsError}
-                  </p>
+                  </FieldError>
                 )}
               </div>
 
               {generalError && (
-                <div
-                  className="mt-4 rounded-[8px] border border-[#fecdca] bg-[#fef3f2] px-3 py-2"
-                  role="alert"
-                  aria-live="polite"
+                <InlineFeedback
+                  className="mt-4"
                 >
-                  <p className="text-[11px] leading-4 text-[#b42318]">
-                    {generalError}
-                  </p>
-                </div>
+                  {generalError}
+                </InlineFeedback>
               )}
 
               <div
