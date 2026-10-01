@@ -79,11 +79,15 @@ describe('TodayTaskCard', () => {
     expect(screen.getByText('Ver tarea')).toBeTruthy()
     expect(screen.getByText(/1.2 h/)).toBeTruthy()
 
-    await user.click(
+    const taskButtons =
       screen.getAllByRole('button', {
         name: `Ver tarea: ${task.name}`,
-      })[0],
-    )
+      })
+
+    await user.click(taskButtons[0])
+    await user.click(taskButtons[1])
+
+    expect(onOpen).toHaveBeenCalledTimes(2)
     expect(onOpen).toHaveBeenCalledWith(task)
   })
 

@@ -664,6 +664,52 @@ export function SignUpPage() {
       }
     }
 
+  const sharedFeedbackModals = (
+    <>
+      <AuthFeedbackModal
+        open={
+          feedback ===
+          'general-error'
+        }
+        variant="error"
+        title="No pudimos crear tu cuenta"
+        description="Conservamos la información que ingresaste para que puedas revisarla e intentarlo nuevamente."
+        secondaryLabel="Cerrar"
+        primaryLabel="Volver y revisar"
+        onSecondary={() =>
+          setFeedback(null)
+        }
+        onPrimary={() =>
+          setFeedback(null)
+        }
+      />
+
+      <AuthFeedbackModal
+        open={
+          feedback ===
+          'network-error'
+        }
+        variant="error"
+        title="Sin conexión"
+        description="Revisa tu conexión a internet e inténtalo nuevamente."
+        secondaryLabel="Cerrar"
+        primaryLabel="Reintentar"
+        onSecondary={() =>
+          setFeedback(null)
+        }
+        onPrimary={() => {
+          if (isVerifying) {
+            void handleResendCode()
+
+            return
+          }
+
+          void performSignUp()
+        }}
+      />
+    </>
+  )
+
   if (isVerifying) {
     return (
       <main className="auth-page flex min-h-svh bg-[#f7f8fc]">
@@ -817,43 +863,7 @@ export function SignUpPage() {
           </div>
         </section>
 
-        <AuthFeedbackModal
-          open={
-            feedback ===
-            'general-error'
-          }
-          variant="error"
-          title="No pudimos crear tu cuenta"
-          description="Conservamos la información que ingresaste para que puedas revisarla e intentarlo nuevamente."
-          secondaryLabel="Cerrar"
-          primaryLabel="Volver y revisar"
-          onSecondary={() =>
-            setFeedback(null)
-          }
-          onPrimary={() =>
-            setFeedback(null)
-          }
-        />
-
-        <AuthFeedbackModal
-          open={
-            feedback ===
-            'network-error'
-          }
-          variant="error"
-          title="Sin conexión"
-          description="Revisa tu conexión a internet e inténtalo nuevamente."
-          secondaryLabel="Cerrar"
-          primaryLabel="Reintentar"
-          onSecondary={() =>
-            setFeedback(null)
-          }
-          onPrimary={() => {
-            setFeedback(null)
-
-            void handleResendCode()
-          }}
-        />
+        {sharedFeedbackModals}
       </main>
     )
   }
@@ -1373,41 +1383,7 @@ export function SignUpPage() {
         </div>
       </section>
 
-      <AuthFeedbackModal
-        open={
-          feedback ===
-          'general-error'
-        }
-        variant="error"
-        title="No pudimos crear tu cuenta"
-        description="Conservamos la información que ingresaste para que puedas revisarla e intentarlo nuevamente."
-        secondaryLabel="Cerrar"
-        primaryLabel="Volver y revisar"
-        onSecondary={() =>
-          setFeedback(null)
-        }
-        onPrimary={() =>
-          setFeedback(null)
-        }
-      />
-
-      <AuthFeedbackModal
-        open={
-          feedback ===
-          'network-error'
-        }
-        variant="error"
-        title="Sin conexión"
-        description="Revisa tu conexión a internet e inténtalo nuevamente."
-        secondaryLabel="Cerrar"
-        primaryLabel="Reintentar"
-        onSecondary={() =>
-          setFeedback(null)
-        }
-        onPrimary={() => {
-          void performSignUp()
-        }}
-      />
+      {sharedFeedbackModals}
 
       <AuthFeedbackModal
         open={
