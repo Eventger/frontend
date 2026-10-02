@@ -416,6 +416,34 @@ describe('EventDetailPage', () => {
     )
   })
 
+  it('conserva los campos al volver a revisar un error y permite corregirlos', async () => {
+    vi.mocked(updateEvent)
+      .mockRejectedValueOnce(new Error('Datos rechazados'))
+      .mockResolvedValueOnce({ ...eventFixture, name: 'Nombre corregido', contact: 'Contacto conservado' })
+    renderPage()
+
+    const user = await submitEventEdit('Nombre conservado', 'Contacto conservado')
+    await screen.findByRole('heading', { name: 'Cambios no guardados' })
+    await user.click(screen.getByRole('button', { name: 'Volver y revisar' }))
+
+    const nameInput = screen.getByLabelText('Nombre del evento *') as HTMLInputElement
+    expect(nameInput.value).toBe('Nombre conservado')
+    expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto conservado')
+
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Nombre corregido')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await screen.findByRole('heading', { name: 'Evento actualizado' })
+    expect(updateEvent).toHaveBeenLastCalledWith(eventFixture.id, {
+      name: 'Nombre corregido',
+      contact: 'Contacto conservado',
+      typeId: eventFixture.typeId,
+      eventDate: '2026-10-24',
+      location: eventFixture.location,
+    }, expect.any(Function))
+  })
+
   it('cancela o confirma la eliminación del evento y navega al listado', async () => {
     const user = userEvent.setup()
     vi.mocked(deleteEvent).mockResolvedValue(undefined)

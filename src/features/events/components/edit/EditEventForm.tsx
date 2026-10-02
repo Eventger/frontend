@@ -25,6 +25,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 
 import { DeleteSubtaskDialog } from '@/features/events/components/detail/DeleteSubtaskDialog'
+import { getCalendarDate } from '@/lib/calendar'
 
 import type {
   Event,
@@ -35,6 +36,8 @@ import type {
 import type {
   CreateSubtaskInput,
   Subtask,
+  SubtaskState,
+  UpdateSubtaskInput,
 } from '@/features/events/types/subtask.types'
 
 type EditEventFormProps = {
@@ -51,7 +54,7 @@ type EditEventFormProps = {
   ) => Promise<void>
   onUpdateSubtask?: (
     subtask: Subtask,
-    data: CreateSubtaskInput,
+    data: UpdateSubtaskInput,
   ) => Promise<void>
   onDeleteSubtask?: (
     subtask: Subtask,
@@ -71,6 +74,7 @@ type FormErrors = Partial<
 >
 
 type SubtaskFormValues = {
+  state: SubtaskState
   name: string
   targetDate: string
   estimatedHours: string
@@ -82,6 +86,7 @@ type SubtaskFormErrors = Partial<
 >
 
 const emptySubtaskValues: SubtaskFormValues = {
+  state: 'pending',
   name: '',
   targetDate: '',
   estimatedHours: '',
@@ -120,7 +125,7 @@ export function EditEventForm({
       name: event.name,
       typeId: event.typeId,
       eventDate:
-        event.eventDate.slice(0, 10),
+        getCalendarDate(event.eventDate),
       location: event.location,
       contact: event.contact,
     })
@@ -273,9 +278,10 @@ export function EditEventForm({
   ) => {
     setEditingSubtask(subtask)
     setSubtaskValues({
+      state: subtask.state,
       name: subtask.name,
       targetDate:
-        subtask.targetDate.slice(0, 10),
+        getCalendarDate(subtask.targetDate),
       estimatedHours: String(
         subtask.estimatedHours,
       ),
@@ -315,7 +321,7 @@ export function EditEventForm({
       if (editingSubtask) {
         await onUpdateSubtask?.(
           editingSubtask,
-          data,
+          { ...data, state: subtaskValues.state },
         )
       } else {
         await onCreateSubtask?.(data)
@@ -627,7 +633,7 @@ export function EditEventForm({
 
         <section className="mt-2 rounded-[16px] border border-[#d9dee7] bg-white p-5">
           <p className="text-[13px] text-[#667085]">
-            Actualiza las tareas del evento o agrega nuevas si es necesario.
+            Las tareas se guardan por separado. Cancelar el formulario solo descarta los cambios del evento.
           </p>
 
           <div
@@ -761,6 +767,22 @@ export function EditEventForm({
               </div>
             </div>
 
+            {editingSubtask && (
+              <div className="mt-3 space-y-1">
+                <label htmlFor="edit-event-task-state" className="text-[11px] font-medium text-[#17212b]">Estado de la tarea</label>
+                <Select value={subtaskValues.state} disabled={isTaskBusy} onValueChange={value => {
+                  if (value === 'pending' || value === 'in_progress' || value === 'completed') updateSubtaskField('state', value)
+                }}>
+                  <SelectTrigger id="edit-event-task-state" className="h-11 w-full rounded-[8px] border-[#d9dee7] bg-white sm:max-w-[260px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="in_progress">En progreso</SelectItem>
+                    <SelectItem value="completed">Completada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end">
               <div className="min-w-0 flex-1 space-y-1">
                 <label
@@ -876,7 +898,7 @@ export function EditEventForm({
                       )
                     }
                     aria-label={`Editar ${subtask.name}`}
-                    className="size-8 text-[#667085] hover:bg-[#eef2ff] hover:text-[#4f46e5]"
+                    className="size-11 text-[#667085] hover:bg-[#eef2ff] hover:text-[#4f46e5]"
                   >
                     <Pencil size={15} />
                   </Button>
@@ -892,7 +914,7 @@ export function EditEventForm({
                       )
                     }
                     aria-label={`Eliminar ${subtask.name}`}
-                    className="size-8 text-[#d92d20] hover:bg-[#fef2f2] hover:text-[#b42318]"
+                    className="size-11 text-[#d92d20] hover:bg-[#fef2f2] hover:text-[#b42318]"
                   >
                     <Trash2 size={15} />
                   </Button>

@@ -1,13 +1,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useAuth } from '@clerk/react'
 
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageFlowSurface } from '@/components/layout/PageFlowSurface'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
+import { AuthLoadingState } from '@/features/auth/components/AuthLoadingState'
+import { OperationFeedback } from '@/components/OperationFeedback'
 import { CreateEventError } from '@/features/events/components/CreateEventError'
 import { CreateEventSuccess } from '@/features/events/components/CreateEventSuccess'
 import { EventForm } from '@/features/events/components/EventForm'
+import {
+  clearCreateEventDraft,
+  readCreateEventDraft,
+  saveCreateEventDraft,
+} from '@/features/events/utils/createEventDraft'
 import { createEvent } from '@/features/events/services/event.service'
 import { createSubtask } from '@/features/events/services/subtasks.service'
 
@@ -25,48 +33,22 @@ type CreateEventView =
   | 'success'
   | 'error'
 
-type CreateEventDraft = {
-  data: CreateEventInput
-  subtasks: CreateSubtaskInput[]
-}
-
-const createEventDraftKey =
-  'eventger:create-event-draft'
-
-function readCreateEventDraft():
-  | CreateEventDraft
-  | undefined {
-  try {
-    const storedDraft =
-      sessionStorage.getItem(
-        createEventDraftKey,
-      )
-
-    if (!storedDraft) {
-      return undefined
-    }
-
-    return JSON.parse(
-      storedDraft,
-    ) as CreateEventDraft
-  } catch {
-    sessionStorage.removeItem(
-      createEventDraftKey,
-    )
-    return undefined
-  }
-}
-
 export function CreateEventPage() {
+  const { userId } = useAuth()
+
+  return userId
+    ? <CreateEventContent key={userId} userId={userId} />
+    : <AuthLoadingState />
+}
+
+function CreateEventContent({ userId }: { userId: string }) {
   const navigate = useNavigate()
 
   const [initialDraft] =
-    useState(readCreateEventDraft)
+    useState(() => readCreateEventDraft(userId))
 
   const handleCancel = () => {
-    sessionStorage.removeItem(
-      createEventDraftKey,
-    )
+    clearCreateEventDraft(userId)
 
     navigate('/eventos', {
       viewTransition: true,
@@ -78,7 +60,7 @@ export function CreateEventPage() {
   } = useAuthenticatedApi()
 
   const [view, setView] =
-    useState<CreateEventView>('form')
+    useState<CreateEventView>(initialDraft?.createdEvent ? 'error' : 'form')
 
   const [
     isSubmitting,
@@ -103,7 +85,28 @@ export function CreateEventPage() {
   const [
     createdEvent,
     setCreatedEvent,
-  ] = useState<Event>()
+  ] = useState<Event | undefined>(initialDraft?.createdEvent)
+
+  const pendingTasksLabel = `${submittedSubtasks.length} ${
+    submittedSubtasks.length === 1 ? 'tarea pendiente' : 'tareas pendientes'
+  }`
+
+  const savePendingSubtasks = async (
+    event: Event,
+    data: CreateEventInput,
+    subtasks: CreateSubtaskInput[],
+  ) => {
+    const remaining = [...subtasks]
+    saveCreateEventDraft(userId, { data, subtasks: remaining, createdEvent: event })
+    for (const subtask of subtasks) {
+      await createSubtask(event.id, subtask, authenticatedRequest)
+      remaining.shift()
+      setSubmittedSubtasks([...remaining])
+      saveCreateEventDraft(userId, { data, subtasks: [...remaining], createdEvent: event })
+    }
+    clearCreateEventDraft(userId)
+    setView('success')
+  }
 
   const handleSubmit = async (
     data: CreateEventInput,
@@ -120,19 +123,8 @@ export function CreateEventPage() {
           authenticatedRequest,
         )
 
-      for (const subtask of subtasks) {
-        await createSubtask(
-          event.id,
-          subtask,
-          authenticatedRequest,
-        )
-      }
-
-      sessionStorage.removeItem(
-        createEventDraftKey,
-      )
       setCreatedEvent(event)
-      setView('success')
+      await savePendingSubtasks(event, data, subtasks)
     } catch {
       setView('error')
     } finally {
@@ -144,13 +136,20 @@ export function CreateEventPage() {
     data: CreateEventInput,
     subtasks: CreateSubtaskInput[],
   ) => {
-    sessionStorage.setItem(
-      createEventDraftKey,
-      JSON.stringify({
-        data,
-        subtasks,
-      } satisfies CreateEventDraft),
-    )
+    if (createdEvent) return
+    saveCreateEventDraft(userId, { data, subtasks })
+  }
+
+  const retryPendingSubtasks = async () => {
+    if (!createdEvent || !submittedData || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await savePendingSubtasks(createdEvent, submittedData, submittedSubtasks)
+    } catch {
+      setView('error')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -204,7 +203,21 @@ export function CreateEventPage() {
 
         {view === 'error' &&
           submittedData && (
-            <CreateEventError
+            createdEvent ? <OperationFeedback
+              pageTitle="Evento creado con tareas pendientes"
+              status="error"
+              title="No pudimos guardar todas las tareas"
+              description={`${createdEvent.name} ya se creó. Conservamos ${pendingTasksLabel} para que puedas reintentar sin crear otro evento.`}
+              primaryAction={{
+                label: 'Reintentar tareas',
+                onClick: () => void retryPendingSubtasks(),
+                loading: isSubmitting,
+              }}
+              secondaryAction={{
+                label: 'Ver detalle del evento',
+                onClick: () => navigate(`/evento/${createdEvent.id}`),
+              }}
+            /> : <CreateEventError
               eventName={
                 submittedData.name
               }

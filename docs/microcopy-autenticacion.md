@@ -23,6 +23,7 @@ el frontend no reemplaza la validación del proveedor de identidad.
 | Crear cuenta | Contraseña | Menos de 15 caracteres | Usa al menos 15 caracteres. |
 | Crear cuenta | Términos | Sin aceptar | Debes aceptar los Términos y condiciones y la Política de privacidad. |
 | Verificación | Código | No tiene 6 dígitos | Ingresa el código de 6 dígitos. |
+| Acceso desde un navegador nuevo / segundo factor | Código | Incorrecto o vencido | El código no es válido o ya expiró. |
 | Recuperación | Código | No tiene 6 dígitos | Ingresa el código de 6 dígitos que enviamos a tu correo. |
 | Recuperación | Nueva contraseña | Menos de 15 caracteres | La nueva contraseña debe tener al menos 15 caracteres. |
 
@@ -43,6 +44,12 @@ el frontend no reemplaza la validación del proveedor de identidad.
   cuando Clerk devuelve `status === 'complete'`. Si Clerk completa la cuenta al
   enviar el formulario, no se solicita un código adicional. Si requiere verificar
   el correo, se conserva el envío y la validación del código antes de confirmar.
+- La verificación del correo al registrar la cuenta y la confirmación de un
+  navegador nuevo son pasos distintos. `needs_client_trust` y
+  `needs_second_factor` muestran «Verifica tu acceso», no un error de credenciales.
+  El usuario puede enviar y reenviar el código o usar el factor admitido por Clerk.
+- El acceso a rutas privadas ocurre después de que `signIn.finalize()` termina
+  correctamente. No se anuncia una sesión activa antes de completar ese paso.
 
 ## Lista de sincronización
 

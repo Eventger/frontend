@@ -504,11 +504,7 @@ export function EventDetailPage() {
               handleRetryUpdateEvent
             }
             onReturnToEvent={() => {
-              setSubmittedEventData(
-                null,
-              )
-
-              setView('detail')
+              setView('event-edit')
             }}
           />
         )}
@@ -548,7 +544,9 @@ export function EventDetailPage() {
                         currentEvent.id
                       }
                       event={
-                        currentEvent
+                        submittedEventData
+                          ? { ...currentEvent, ...submittedEventData, typeId: submittedEventData.typeId ?? currentEvent.typeId }
+                          : currentEvent
                       }
                       eventTypes={
                         eventTypes

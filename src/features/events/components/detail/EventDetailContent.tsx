@@ -1,6 +1,5 @@
-import { Plus } from 'lucide-react'
-
 import { Button } from '@/components/ui/button'
+import { getCalendarDate } from '@/lib/calendar'
 import { EmptyTasksState } from '@/features/events/components/detail/EmptyTasksState'
 import { EventInfoCard } from '@/features/events/components/detail/EventInfoCard'
 import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard'
@@ -32,12 +31,7 @@ export function EventDetailContent({
   const hasTasks =
     subtasks.length > 0
 
-  const today = new Date()
-  const todayValue = Date.UTC(
-    today.getUTCFullYear(),
-    today.getUTCMonth(),
-    today.getUTCDate(),
-  )
+  const todayValue = getCalendarDate(new Date())
 
   const getTaskRank = (
     subtask: Subtask,
@@ -50,14 +44,7 @@ export function EventDetailContent({
       return 1
     }
 
-    const targetDate = new Date(
-      subtask.targetDate,
-    )
-    const targetValue = Date.UTC(
-      targetDate.getUTCFullYear(),
-      targetDate.getUTCMonth(),
-      targetDate.getUTCDate(),
-    )
+    const targetValue = getCalendarDate(subtask.targetDate)
 
     if (targetValue > todayValue) {
       return 2
@@ -149,17 +136,7 @@ export function EventDetailContent({
           </div>
 
           {hasTasks && (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onAddTask}
-                className="pointer-events-none h-11 translate-y-1 rounded-[10px] border-[#c7d2fe] bg-white px-4 text-[13px] font-semibold text-[#4f46e5] opacity-0 transition-[opacity,transform] focus-visible:pointer-events-auto focus-visible:translate-y-0 focus-visible:opacity-100"
-              >
-                <Plus className="size-4" />
-                Agregar tarea
-              </Button>
-
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <Button
                 type="button"
                 onClick={focusProgress}

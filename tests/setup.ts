@@ -30,6 +30,7 @@ vi.mock('@clerk/react', () => ({
   useAuth: vi.fn(() => ({
     isLoaded: true,
     isSignedIn: true,
+    userId: 'user-test',
     getToken: clerkMocks.getToken,
   })),
   useClerk: vi.fn(() => ({

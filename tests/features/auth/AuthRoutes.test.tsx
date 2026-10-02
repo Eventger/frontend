@@ -163,4 +163,21 @@ describe('rutas de autenticación', () => {
       }),
     ).toBeTruthy()
   })
+
+  it.each([
+    ['/eventos?estado=pendiente#tareas', '/eventos'],
+    ['//otro.example', '/hoy'],
+    ['/\\otro.example', '/hoy'],
+  ])('una sesión activada respeta un destino local seguro: %s', async (from, destination) => {
+    setAuthState(true, true)
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/', state: { from } }]}>
+        <Routes>
+          <Route path="/" element={<PublicOnlyRoute><h1>Acceso</h1></PublicOnlyRoute>} />
+          <Route path={destination} element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect((await screen.findByTestId('location')).textContent).toContain(`"pathname":"${destination}"`)
+  })
 })

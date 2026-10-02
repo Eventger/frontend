@@ -48,10 +48,10 @@ export interface CreateSubtaskApiResponse {
 }
 
 export type UpdateSubtaskInput =
-  CreateSubtaskInput
+  CreateSubtaskInput & { state?: SubtaskState }
 
 export type UpdateSubtaskApiRequest =
-  CreateSubtaskApiRequest
+  CreateSubtaskApiRequest & { state?: SubtaskState }
 
 export interface UpdateSubtaskApiResponse {
   success: boolean

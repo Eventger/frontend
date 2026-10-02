@@ -7,6 +7,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { getCalendarDate } from '@/lib/calendar'
 
 import type { Subtask } from '@/features/events/types/subtask.types'
 
@@ -59,9 +60,8 @@ const MONTHS = [
 ]
 
 function formatTaskDate(date: string) {
-  const value = new Date(date)
-
-  return `${value.getUTCDate()} ${MONTHS[value.getUTCMonth()]}`
+  const [, month, day] = getCalendarDate(date).split('-')
+  return `${Number(day)} ${MONTHS[Number(month) - 1]}`
 }
 
 function formatEstimatedHours(
@@ -76,11 +76,7 @@ function formatEstimatedHours(
 }
 
 function getDateOnly(date: Date) {
-  return Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-  )
+  return getCalendarDate(date)
 }
 
 function getVisualStatus(

@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 
 import { useEventSubtasks } from '@/features/events/hooks/useEventSubtasks'
+import { formatCalendarDate } from '@/lib/calendar'
 import type { Event } from '@/features/events/types/event.types'
 
 type EventCardProps = {
@@ -8,12 +9,11 @@ type EventCardProps = {
 }
 
 function formatEventDate(date: string) {
-  return new Intl.DateTimeFormat('es-CO', {
+  return formatCalendarDate(date, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(date))
+  })
 }
 
 export function EventCard({

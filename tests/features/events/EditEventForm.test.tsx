@@ -170,6 +170,8 @@ describe('EditEventForm', () => {
 
     await user.clear(nameInput)
     await user.type(nameInput, 'Transporte actualizado')
+    await user.click(screen.getByRole('combobox', { name: 'Estado de la tarea' }))
+    await user.click(screen.getByRole('option', { name: 'Completada' }))
     await user.click(
       screen.getByRole('button', { name: 'Guardar tarea' }),
     )
@@ -178,6 +180,7 @@ describe('EditEventForm', () => {
       expect(onUpdateSubtask).toHaveBeenCalledWith(subtaskFixture, {
         ...createSubtaskInputFixture,
         name: 'Transporte actualizado',
+        state: 'completed',
       })
     })
 

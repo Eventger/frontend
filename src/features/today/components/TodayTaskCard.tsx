@@ -65,6 +65,7 @@ function formatTaskDate(
     {
       day: 'numeric',
       month: 'short',
+      timeZone: 'America/Bogota',
     },
   )
     .format(parsedDate)

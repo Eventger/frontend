@@ -45,7 +45,7 @@ export function EditEventError({
       title="No pudimos actualizar el evento"
       description="Ocurrió un problema al guardar los cambios. Conservamos la información y las tareas que editaste para que puedas intentarlo nuevamente."
       secondaryAction={{
-        label: 'Volver al evento',
+        label: 'Volver y revisar',
         onClick:
           onReturnToEvent,
       }}
