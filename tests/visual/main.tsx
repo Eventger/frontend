@@ -26,11 +26,15 @@ import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard
 import { TodaySummary } from '@/features/today/components/TodaySummary'
 import { TodayPriorityGuide } from '@/features/today/components/TodayPriorityGuide'
 import { TodayTaskCard } from '@/features/today/components/TodayTaskCard'
+import { SettingsPage } from '@/features/settings/pages/SettingsPage'
+import { SecurityPage } from '@/features/settings/pages/SecurityPage'
 
 function AppShell({
   children,
+  fullPage = false,
 }: {
   children: ReactNode
+  fullPage?: boolean
 }) {
   return (
     <div className="min-h-svh bg-[#f7f8fc] xl:flex">
@@ -39,11 +43,11 @@ function AppShell({
         id="main-content"
         className="min-w-0 flex-1"
       >
-        <PageContainer>
+        {fullPage ? children : <PageContainer>
           <PageContent>
             {children}
           </PageContent>
-        </PageContainer>
+        </PageContainer>}
       </main>
     </div>
   )
@@ -442,6 +446,8 @@ const fixtures: Record<string, ReactNode> = {
   'event-task': <EventTaskFixture />,
   today: <TodayFixture />,
   'delete-dialog': <DeleteDialogFixture />,
+  settings: <AppShell fullPage><SettingsPage /></AppShell>,
+  security: <AppShell fullPage><SecurityPage /></AppShell>,
 }
 
 createRoot(

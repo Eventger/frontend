@@ -42,7 +42,8 @@ siguiendo la referencia de `Estados UX en _hoy.pdf`.
 ## Matriz automática
 
 `npm run test:responsive` levanta una entrada de Vite exclusiva para pruebas,
-abre Chrome con Playwright y revisa nueve composiciones en:
+abre Chrome con Playwright y revisa las composiciones de autenticación, eventos,
+Hoy, diálogos y las nuevas vistas de configuración y seguridad en:
 
 | Nombre | Viewport |
 | --- | --- |

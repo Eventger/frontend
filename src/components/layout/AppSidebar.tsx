@@ -51,7 +51,7 @@ function SidebarContent({
   const [signOutError, setSignOutError] =
     useState('')
 
-  const { openUserProfile, signOut } = useClerk()
+  const { signOut } = useClerk()
   const {
     user,
     isLoaded,
@@ -88,8 +88,8 @@ function SidebarContent({
   }
 
   const handleOpenProfile = () => {
+    navigate('/configuracion', { viewTransition: true })
     onNavigate?.()
-    openUserProfile()
   }
 
   return (
@@ -171,13 +171,17 @@ function SidebarContent({
           type="button"
           onClick={handleOpenProfile}
           disabled={!isLoaded || !isSignedIn}
-          aria-label="Abrir perfil de usuario"
-          className="group flex min-h-[68px] w-full items-center rounded-xl border border-[#dde2ea] bg-[#f9fafb] px-3 text-left transition-colors hover:border-[#c7d2fe] hover:bg-[#eef2ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label="Abrir configuración de cuenta"
+          aria-current={location.pathname.startsWith('/configuracion') ? 'page' : undefined}
+          className={cn(
+            'group flex min-h-[68px] w-full items-center rounded-xl border border-[#dde2ea] bg-[#f9fafb] px-3 text-left transition-colors hover:border-[#c7d2fe] hover:bg-[#eef2ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+            location.pathname.startsWith('/configuracion') && 'border-[#4f46e5] bg-[#eef2ff]',
+          )}
         >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#4f46e5] text-xs font-bold text-white">
               {isLoaded && isSignedIn
-                ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`
-                    .toUpperCase()
+                  ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`
+                    .toUpperCase() || 'U'
                 : 'U'}
             </span>
 

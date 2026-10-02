@@ -14,6 +14,8 @@ const coreViews = [
   'event-task',
   'today',
   'delete-dialog',
+  'settings',
+  'security',
 ] as const
 
 const viewports = [
@@ -43,6 +45,7 @@ for (const viewport of viewports) {
         )
 
         await expect(page.locator('body')).toBeVisible()
+        if (view === 'security') await expect(page.getByText('2 sesiones')).toBeVisible()
 
         const dimensions = await page.evaluate(() => ({
           viewport: document.documentElement.clientWidth,
@@ -281,6 +284,8 @@ for (const view of [
   'event-task',
   'today',
   'delete-dialog',
+  'settings',
+  'security',
 ]) {
   test(`${view} mantiene objetivos táctiles de 44 px en móvil`, async ({
     page,
@@ -360,6 +365,58 @@ test('el diálogo destructivo permanece dentro del viewport móvil', async ({
   expect(bounds!.y).toBeGreaterThanOrEqual(0)
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(640)
+})
+
+for (const scenario of [
+  { view: 'settings', button: 'Actualizar perfil', title: 'Actualizar perfil' },
+  { view: 'settings', button: 'Administrar', title: 'Administrar correo' },
+  { view: 'security', button: 'Establecer contraseña', title: 'Establecer contraseña' },
+] as const) {
+  test(`el formulario de cuenta ${scenario.title} admite teclado y scroll en móvil`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 640 })
+    await page.goto(`/tests/visual/index.html?view=${scenario.view}`)
+    await page.getByRole('button', { name: scenario.button, exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: scenario.title })
+    await expect(dialog).toBeVisible()
+    await dialog.evaluate(async (element) => {
+      await Promise.all(element.getAnimations().map((animation) => animation.finished))
+    })
+    const bounds = await dialog.boundingBox()
+    expect(bounds).not.toBeNull()
+    expect(bounds!.x).toBeGreaterThanOrEqual(0)
+    expect(bounds!.y).toBeGreaterThanOrEqual(0)
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(640)
+    await expect(dialog.locator('input').first()).toBeFocused()
+    if (scenario.title === 'Actualizar perfil') {
+      await dialog.getByLabel('Nombre', { exact: true }).fill('')
+      await dialog.getByRole('button', { name: 'Guardar perfil' }).click()
+      await expect(dialog.getByLabel('Nombre', { exact: true })).toBeFocused()
+      await expect(dialog.getByText('Ingresa tu nombre.')).toBeVisible()
+    }
+    if (scenario.title === 'Establecer contraseña') {
+      await dialog.getByRole('button', { name: 'Guardar contraseña' }).click()
+      await expect(dialog.getByLabel('Nueva contraseña', { exact: true })).toBeFocused()
+      await expect(dialog.getByText('Ingresa una contraseña.')).toBeVisible()
+    }
+    await page.screenshot({ path: testInfo.outputPath(`${scenario.view}-dialog-mobile.png`), fullPage: true })
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(page.getByRole('button', { name: scenario.button, exact: true })).toBeFocused()
+  })
+}
+
+test('la confirmación de eliminar cuenta cabe en móvil y permite cancelar', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 640 })
+  await page.goto('/tests/visual/index.html?view=security')
+  await page.getByRole('button', { name: 'Eliminar cuenta', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '¿Eliminar tu cuenta?' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Eliminar definitivamente' })).toBeDisabled()
+  await dialog.getByLabel('Escribe ELIMINAR para confirmar').fill('ELIMINAR')
+  await expect(dialog.getByRole('button', { name: 'Eliminar definitivamente' })).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Conservar mi cuenta' }).click()
+  await expect(dialog).toHaveCount(0)
 })
 
 test('la tarjeta de tarea no duplica acciones de gestión', async ({

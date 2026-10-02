@@ -4,11 +4,14 @@ import {
 } from 'react'
 
 import { useNavigate } from 'react-router'
+import { useUser } from '@clerk/react'
+import { getDailyLimitHours } from '@/features/settings/utils/preferences'
 
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageContent } from '@/components/layout/PageContent'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageHeaderCreateButton } from '@/components/layout/PageHeaderCreateButton'
+import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 
 import { TodayEmptyState } from '@/features/today/components/TodayEmptyState'
 import { TodayErrorState } from '@/features/today/components/TodayErrorState'
@@ -25,8 +28,6 @@ import { useToday } from '@/features/today/hooks/useToday'
 import type {
   TodayTaskItem,
 } from '@/features/today/types/today.types'
-
-const DAILY_LIMIT_HOURS = 6
 
 function formatTodayDate(
   month: 'long' | 'short' =
@@ -61,6 +62,8 @@ function getPlannedHours(
 
 export function TodayPage() {
   const navigate = useNavigate()
+  const { user } = useUser()
+  const dailyLimitHours = getDailyLimitHours(user?.unsafeMetadata)
 
   const {
     data,
@@ -325,13 +328,19 @@ export function TodayPage() {
                     plannedHours
                   }
                   dailyLimitHours={
-                    DAILY_LIMIT_HOURS
+                    dailyLimitHours
                   }
                   isFiltered={
                     hasActiveFilters
                   }
                 />
               </div>
+
+              {!hasActiveFilters && plannedHours > dailyLimitHours && (
+                <InlineFeedback variant="warning" className="mt-4">
+                  Tu planificación de hoy supera el límite diario de {dailyLimitHours} horas. Revisa tus tareas para reducir la sobrecarga.
+                </InlineFeedback>
+              )}
 
               <div className="mt-4">
                 <TodayFilters

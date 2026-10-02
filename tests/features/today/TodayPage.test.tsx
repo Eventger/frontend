@@ -1,4 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
+import { useUser } from '@clerk/react'
+import { settingsUserFixture } from '../settings/settings.fixtures'
 import userEvent from '@testing-library/user-event'
 import {
   MemoryRouter,
@@ -68,6 +70,15 @@ describe('TodayPage', () => {
       error: null,
       retry,
     })
+  })
+
+  it('calcula la capacidad con la preferencia de la cuenta y avisa si hay sobrecarga', () => {
+    const fixture = settingsUserFixture()
+    fixture.user.unsafeMetadata.eventger.dailyLimitHours = 2
+    vi.mocked(useUser).mockReturnValueOnce({ isLoaded: true, isSignedIn: true, user: fixture.resource })
+    renderPage()
+    expect(screen.getByText('3.75 h / 2 h')).toBeTruthy()
+    expect(screen.getByText('Tu planificación de hoy supera el límite diario de 2 horas. Revisa tus tareas para reducir la sobrecarga.')).toBeTruthy()
   })
 
   it('muestra el estado de carga', () => {
