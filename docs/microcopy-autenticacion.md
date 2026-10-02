@@ -36,6 +36,13 @@ el frontend no reemplaza la validación del proveedor de identidad.
 - Los errores de credenciales no revelan si falló el correo o la contraseña.
 - Los errores de red y del proveedor se presentan como mensajes generales, no
   como errores atribuibles a un campo concreto.
+- Los rechazos específicos de contraseña se leen desde `error.errors` en un
+  `ClerkAPIResponseError`; su código exterior `api_response_error` no identifica
+  el campo que requiere corrección.
+- El registro vuelve al inicio de sesión con la confirmación de cuenta creada
+  cuando Clerk devuelve `status === 'complete'`. Si Clerk completa la cuenta al
+  enviar el formulario, no se solicita un código adicional. Si requiere verificar
+  el correo, se conserva el envío y la validación del código antes de confirmar.
 
 ## Lista de sincronización
 

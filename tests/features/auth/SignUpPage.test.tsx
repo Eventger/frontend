@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useSignUp } from '@clerk/react'
+import { ClerkAPIResponseError } from '@clerk/react/errors'
 import {
   MemoryRouter,
   Route,
@@ -24,19 +25,23 @@ const verifyEmailCode = vi.fn()
 function mockSignUp(
   status = 'missing_requirements',
 ) {
+  const signUp = {
+    status,
+    password,
+    sso,
+    verifications: {
+      sendEmailCode,
+      verifyEmailCode,
+    },
+  }
+
   vi.mocked(useSignUp).mockReturnValue({
     fetchStatus: 'idle',
     errors: { fields: {} },
-    signUp: {
-      status,
-      password,
-      sso,
-      verifications: {
-        sendEmailCode,
-        verifyEmailCode,
-      },
-    },
+    signUp,
   } as never)
+
+  return signUp
 }
 
 function renderSignUp() {
@@ -166,13 +171,14 @@ describe('SignUpPage', () => {
 
   it('crea la cuenta, verifica el código y vuelve al login', async () => {
     const user = userEvent.setup()
-    mockSignUp('complete')
+    const signUp = mockSignUp()
     password.mockResolvedValue({ error: null })
     sendEmailCode.mockResolvedValue({
       error: null,
     })
-    verifyEmailCode.mockResolvedValue({
-      error: null,
+    verifyEmailCode.mockImplementation(async () => {
+      signUp.status = 'complete'
+      return { error: null }
     })
     renderSignUp()
 
@@ -213,6 +219,35 @@ describe('SignUpPage', () => {
         'accountCreated',
       ),
     ).toBe('true')
+  })
+
+  it('vuelve al login cuando Clerk completa el registro sin exigir un código', async () => {
+    const user = userEvent.setup()
+    const signUp = mockSignUp()
+    password.mockImplementation(async () => {
+      signUp.status = 'complete'
+      return { error: null }
+    })
+    sendEmailCode.mockResolvedValue({
+      error: new Error('La cuenta ya fue creada'),
+    })
+    renderSignUp()
+    await fillSignUpForm(user)
+    await user.click(screen.getByRole('button', { name: 'Crear cuenta' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Iniciar sesión' }),
+    ).toBeTruthy()
+    expect(password).toHaveBeenCalledWith({
+      emailAddress: 'ana@example.com',
+      password: '123456789012345',
+      firstName: 'Ana',
+      lastName: 'Rojas',
+      legalAccepted: true,
+    })
+    expect(sendEmailCode).not.toHaveBeenCalled()
+    expect(verifyEmailCode).not.toHaveBeenCalled()
+    expect(sessionStorage.getItem('accountCreated')).toBe('true')
   })
 
   it('muestra errores al crear la cuenta y al conectarse', async () => {
@@ -281,6 +316,31 @@ describe('SignUpPage', () => {
         'aria-invalid',
       ),
     ).toBe('true')
+  })
+
+  it.each([
+    ['form_password_length_too_short', 'Usa al menos 15 caracteres.'],
+    ['form_password_pwned', 'Esta contraseña apareció en una filtración de datos. Usa otra.'],
+    ['form_password_validation_failed', 'La contraseña no cumple los requisitos de seguridad. Usa otra.'],
+  ])('explica el rechazo %s dentro de la respuesta real de Clerk', async (code, message) => {
+    const user = userEvent.setup()
+    password.mockResolvedValue({
+      error: new ClerkAPIResponseError('Error de validación', {
+        status: 422,
+        data: [{ code, message: 'Invalid password', meta: { param_name: 'password' } }],
+      }),
+    })
+    renderSignUp()
+    await fillSignUpForm(user)
+    await user.click(screen.getByRole('button', { name: 'Crear cuenta' }))
+
+    expect(await screen.findByText(message)).toBeTruthy()
+    const passwordInput = screen.getByLabelText('Contraseña') as HTMLInputElement
+    expect(passwordInput.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(passwordInput)
+    expect(passwordInput.value).toBe('123456789012345')
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(sendEmailCode).not.toHaveBeenCalled()
   })
 
   it('valida, rechaza y reenvía códigos de verificación', async () => {
@@ -372,6 +432,7 @@ describe('SignUpPage', () => {
         name: 'No pudimos crear tu cuenta',
       }),
     ).toBeTruthy()
+    expect(sessionStorage.getItem('accountCreated')).toBeNull()
   })
 
   it('muestra los errores del registro con Google', async () => {
