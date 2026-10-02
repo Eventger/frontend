@@ -18,6 +18,8 @@ import {
   useSignUp,
 } from '@clerk/react'
 
+import { isClerkAPIResponseError } from '@clerk/react/errors'
+
 import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_MIN_LENGTH_HINT,
@@ -81,12 +83,17 @@ type SignUpErrorDetails = {
 function getSignUpErrorDetails(
   error: unknown,
 ): SignUpErrorDetails {
+  const apiError =
+    isClerkAPIResponseError(error)
+      ? error.errors[0]
+      : error
+
   const code =
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    typeof error.code === 'string'
-      ? error.code
+    typeof apiError === 'object' &&
+    apiError !== null &&
+    'code' in apiError &&
+    typeof apiError.code === 'string'
+      ? apiError.code
       : ''
 
   if (
@@ -389,6 +396,23 @@ export function SignUpPage() {
     return isValid
   }
 
+  const completeSignUp = async () => {
+    sessionStorage.setItem(
+      'accountCreated',
+      'true',
+    )
+
+    try {
+      await signOut()
+    } catch {
+      // La cuenta ya fue creada.
+    }
+
+    navigate('/', {
+      replace: true,
+    })
+  }
+
   const performSignUp =
     async () => {
       setLastAttempt('password')
@@ -471,6 +495,12 @@ export function SignUpPage() {
         setFeedback(
           'general-error',
         )
+
+        return
+      }
+
+      if (signUp.status === 'complete') {
+        await completeSignUp()
 
         return
       }
@@ -585,20 +615,7 @@ export function SignUpPage() {
         signUp.status ===
         'complete'
       ) {
-        sessionStorage.setItem(
-          'accountCreated',
-          'true',
-        )
-
-        try {
-          await signOut()
-        } catch {
-          // La cuenta ya fue creada.
-        }
-
-        navigate('/', {
-          replace: true,
-        })
+        await completeSignUp()
 
         return
       }
