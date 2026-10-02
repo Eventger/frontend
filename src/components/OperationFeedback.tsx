@@ -74,14 +74,14 @@ export function OperationFeedback({
 
             <h2
               id={titleId}
-              className="mt-7 w-full max-w-[530px] text-center text-[clamp(1.35rem,3vw,1.5rem)] font-bold leading-8 text-[#17212b] sm:text-left"
+              className="mt-7 w-full max-w-[530px] text-center text-[clamp(1.35rem,3vw,1.5rem)] font-bold leading-8 text-[#17212b]"
             >
               {title}
             </h2>
 
             <p
               id={descriptionId}
-              className="mt-8 w-full max-w-[540px] text-center text-[15px] leading-[22px] text-[#667085] sm:mt-12 sm:text-left"
+              className="mt-8 w-full max-w-[540px] text-center text-[15px] leading-[22px] text-[#667085] sm:mt-12"
             >
               {description}
             </p>

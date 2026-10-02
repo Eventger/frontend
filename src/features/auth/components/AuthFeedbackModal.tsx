@@ -71,13 +71,13 @@ export function AuthFeedbackModal({
         />
 
         <DialogTitle
-          className="mt-7 text-center text-[24px] font-bold leading-8 text-[#17212b] sm:absolute sm:left-[117px] sm:right-[113px] sm:top-[139px] sm:mt-0 sm:text-left"
+          className="mt-7 text-center text-[24px] font-bold leading-8 text-[#17212b] sm:absolute sm:left-[115px] sm:right-[115px] sm:top-[139px] sm:mt-0"
         >
           {title}
         </DialogTitle>
 
         <DialogDescription
-          className="mx-auto mt-8 max-w-[540px] text-center text-[15px] leading-[22px] text-[#667085] sm:absolute sm:left-[109px] sm:right-[111px] sm:top-[219px] sm:mt-0 sm:max-w-none sm:text-left"
+          className="mx-auto mt-8 max-w-[540px] text-center text-[15px] leading-[22px] text-[#667085] sm:absolute sm:left-[110px] sm:right-[110px] sm:top-[219px] sm:mt-0 sm:max-w-none"
         >
           {description}
         </DialogDescription>

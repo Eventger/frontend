@@ -35,6 +35,10 @@ estrechos.
    interno cuando el contenido crezca.
 8. Mantener visibles los indicadores de foco y respetar `prefers-reduced-motion`.
 
+Los mensajes de error, éxito y confirmación conservan el icono, título,
+descripción y grupo de acciones centrados en móvil, tableta y escritorio,
+siguiendo la referencia de `Estados UX en _hoy.pdf`.
+
 ## Matriz automática
 
 `npm run test:responsive` levanta una entrada de Vite exclusiva para pruebas,
