@@ -37,7 +37,7 @@ function toDeadlineDateTime(
   date: string,
 ) {
   const localEndOfDay = new Date(
-    `${date}T23:59:59`,
+    `${date}T23:59:59-05:00`,
   )
 
   return localEndOfDay.toISOString()
@@ -104,6 +104,7 @@ export async function updateSubtask(
   requestFn: RequestFn = apiRequest,
 ): Promise<Subtask> {
   const request: UpdateSubtaskApiRequest = {
+    ...(data.state === undefined ? {} : { state: data.state }),
     name: data.name,
     target_date: toDeadlineDateTime(
       data.targetDate,

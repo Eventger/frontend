@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useEventSubtasks } from '@/features/events/hooks/useEventSubtasks'
 import { getEventSubtasks } from '@/features/events/services/subtasks.service'
 import { eventFixture, subtaskFixture } from './subtask.fixtures'
+import { deferred } from '../../deferred'
+import type { Subtask } from '@/features/events/types/subtask.types'
 
 vi.mock('@/features/events/services/subtasks.service', () => ({
   getEventSubtasks: vi.fn(),
@@ -82,5 +84,35 @@ describe('useEventSubtasks', () => {
     expect(result.current.subtasks).toEqual([])
     expect(result.current.error).toBeNull()
     expect(getEventSubtasks).not.toHaveBeenCalled()
+  })
+
+  it('descarta el error anterior al cambiar a un evento sin tareas', async () => {
+    const previous = deferred<Subtask[]>()
+    vi.mocked(getEventSubtasks)
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce([])
+    const { result, rerender } = renderHook(({ id }) => useEventSubtasks(id), {
+      initialProps: { id: eventFixture.id },
+    })
+    await waitFor(() => expect(getEventSubtasks).toHaveBeenCalledOnce())
+    rerender({ id: 22 })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await act(async () => { previous.reject(new Error('Error anterior')) })
+
+    expect(result.current.subtasks).toEqual([])
+    expect(result.current.error).toBeNull()
+  })
+
+  it('limpia el error cuando ya no hay un evento que consultar', async () => {
+    vi.mocked(getEventSubtasks).mockRejectedValue(new Error('Error anterior'))
+    const { result, rerender } = renderHook(({ id }: { id: number | null }) => useEventSubtasks(id), {
+      initialProps: { id: eventFixture.id as number | null },
+    })
+    await waitFor(() => expect(result.current.error).not.toBeNull())
+    rerender({ id: null })
+
+    await waitFor(() => expect(result.current.error).toBeNull())
+    expect(result.current.subtasks).toEqual([])
+    expect(result.current.isLoading).toBe(false)
   })
 })

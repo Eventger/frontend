@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToday } from '@/features/today/hooks/useToday'
 import { getToday } from '@/features/today/services/today.service'
 import { todayDataFixture } from './today.fixtures'
+import { deferred } from '../../deferred'
 
 vi.mock('@/features/today/services/today.service', () => ({
   getToday: vi.fn(),
@@ -62,5 +63,22 @@ describe('useToday', () => {
     expect(result.current.isLoading).toBe(false)
     expect(result.current.error).toBeNull()
     expect(result.current.data).toEqual(todayDataFixture)
+  })
+
+  it('un error de una consulta anterior no reemplaza un reintento exitoso', async () => {
+    const previous = deferred<typeof todayDataFixture>()
+    const empty = { overdue: [], today: [], upcoming: [], completed: [] }
+    vi.mocked(getToday)
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce(empty)
+    const { result } = renderHook(() => useToday())
+    await waitFor(() => expect(getToday).toHaveBeenCalledOnce())
+
+    await act(async () => { await result.current.retry() })
+    await act(async () => { previous.reject(new Error('Fallo anterior')) })
+
+    expect(result.current.data).toEqual(empty)
+    expect(result.current.error).toBeNull()
+    expect(result.current.isLoading).toBe(false)
   })
 })

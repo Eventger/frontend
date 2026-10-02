@@ -1,9 +1,10 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useEvents } from '@/features/events/hooks/useEvents'
 import { getEvents } from '@/features/events/services/event.service'
 import type { Event } from '@/features/events/types/event.types'
+import { deferred } from '../../deferred'
 
 vi.mock('@/features/events/services/event.service', () => ({
   getEvents: vi.fn(),
@@ -50,5 +51,36 @@ describe('useEvents', () => {
 
     expect(result.current.events).toEqual([])
     expect(result.current.error).toBe('No pudimos cargar los eventos')
+  })
+
+  it('un error anterior no reemplaza una lista vacía obtenida al reintentar', async () => {
+    const previous = deferred<Event[]>()
+    vi.mocked(getEvents)
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce([])
+    const { result } = renderHook(() => useEvents())
+    await waitFor(() => expect(getEvents).toHaveBeenCalledOnce())
+
+    await act(async () => { await result.current.retry() })
+    await act(async () => { previous.reject(new Error('Fallo anterior')) })
+
+    expect(result.current.events).toEqual([])
+    expect(result.current.error).toBeNull()
+    expect(result.current.isLoading).toBe(false)
+  })
+
+  it('una respuesta anterior no reemplaza los datos del reintento más reciente', async () => {
+    const previous = deferred<Event[]>()
+    vi.mocked(getEvents)
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce([])
+    const { result } = renderHook(() => useEvents())
+    await waitFor(() => expect(getEvents).toHaveBeenCalledOnce())
+
+    await act(async () => { await result.current.retry() })
+    await act(async () => { previous.resolve([event]) })
+
+    expect(result.current.events).toEqual([])
+    expect(result.current.error).toBeNull()
   })
 })

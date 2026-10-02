@@ -89,7 +89,7 @@ describe('createSubtask', () => {
       createSubtaskInputFixture,
     )
     const expectedTargetDate = new Date(
-      `${createSubtaskInputFixture.targetDate}T23:59:59`,
+      `${createSubtaskInputFixture.targetDate}T23:59:59-05:00`,
     ).toISOString()
 
     expect(apiRequest).toHaveBeenCalledOnce()
@@ -150,6 +150,22 @@ describe('createSubtask', () => {
 })
 
 describe('updateSubtask', () => {
+  it('envía el estado elegido y conserva el estado devuelto por la API', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({
+      success: true,
+      data: { ...subtaskApiFixture, state: 'completed' },
+    })
+
+    const result = await updateSubtask(subtaskApiFixture.id, {
+      ...createSubtaskInputFixture,
+      state: 'completed',
+    })
+
+    const options = vi.mocked(apiRequest).mock.calls[0][1]
+    expect(JSON.parse(String(options?.body))).toMatchObject({ state: 'completed' })
+    expect(result.state).toBe('completed')
+  })
+
   it('actualiza la subtarea y transforma la respuesta', async () => {
     const input = {
       ...createSubtaskInputFixture,
@@ -169,7 +185,7 @@ describe('updateSubtask', () => {
 
     const result = await updateSubtask(subtaskApiFixture.id, input)
     const expectedTargetDate = new Date(
-      `${input.targetDate}T23:59:59`,
+      `${input.targetDate}T23:59:59-05:00`,
     ).toISOString()
 
     expect(apiRequest).toHaveBeenCalledOnce()

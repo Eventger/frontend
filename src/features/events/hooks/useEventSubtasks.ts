@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -26,10 +27,15 @@ export function useEventSubtasks(
   const [error, setError] =
     useState<string | null>(null)
 
+  const requestVersion = useRef(0)
+
   const loadSubtasks = useCallback(
     async () => {
+      const version = ++requestVersion.current
+
       if (eventId === null) {
         setSubtasks([])
+        setError(null)
         setIsLoading(false)
         return
       }
@@ -44,15 +50,21 @@ export function useEventSubtasks(
             authenticatedRequest,
           )
 
-        setSubtasks(data)
+        if (version === requestVersion.current) {
+          setSubtasks(data)
+        }
       } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : 'No se pudieron cargar las subtareas',
-        )
+        if (version === requestVersion.current) {
+          setError(
+            error instanceof Error
+              ? error.message
+              : 'No se pudieron cargar las subtareas',
+          )
+        }
       } finally {
-        setIsLoading(false)
+        if (version === requestVersion.current) {
+          setIsLoading(false)
+        }
       }
     },
     [
@@ -70,9 +82,16 @@ export function useEventSubtasks(
       return
     }
 
-    void Promise.resolve().then(
-      loadSubtasks,
-    )
+    const requests = requestVersion
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) void loadSubtasks()
+    })
+
+    return () => {
+      active = false
+      requests.current++
+    }
   }, [
     isAuthLoaded,
     isSignedIn,

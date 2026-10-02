@@ -75,7 +75,7 @@ describe('EventOperationFeedback', () => {
       screen.getByRole('button', { name: 'Intentar de nuevo' }),
     )
     await user.click(
-      screen.getByRole('button', { name: 'Volver al evento' }),
+      screen.getByRole('button', { name: 'Volver y revisar' }),
     )
 
     expect(onRetry).toHaveBeenCalledOnce()

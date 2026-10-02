@@ -106,7 +106,7 @@ export function EventDetailPage() {
     isLoading: isLoadingSubtasks,
     error: subtasksError,
     refresh: refreshSubtasks,
-  } = useEventSubtasks(eventId)
+  } = useEventSubtasks(event?.id ?? null)
 
   const [view, setView] =
     useState<DetailFlowView>('detail')
@@ -144,10 +144,10 @@ export function EventDetailPage() {
 
   const isLoading =
     isLoadingEvent ||
-    isLoadingSubtasks
+    (event !== null && isLoadingSubtasks)
 
   const error =
-    eventError ?? subtasksError
+    eventError ?? (event ? subtasksError : null)
 
   const retry = async () => {
     await Promise.all([
@@ -504,11 +504,7 @@ export function EventDetailPage() {
               handleRetryUpdateEvent
             }
             onReturnToEvent={() => {
-              setSubmittedEventData(
-                null,
-              )
-
-              setView('detail')
+              setView('event-edit')
             }}
           />
         )}
@@ -548,7 +544,9 @@ export function EventDetailPage() {
                         currentEvent.id
                       }
                       event={
-                        currentEvent
+                        submittedEventData
+                          ? { ...currentEvent, ...submittedEventData, typeId: submittedEventData.typeId ?? currentEvent.typeId }
+                          : currentEvent
                       }
                       eventTypes={
                         eventTypes

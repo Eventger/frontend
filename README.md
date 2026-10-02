@@ -37,6 +37,8 @@ trunk-based, resultados, Sonar, protección de main y Vercel. Las verificaciones
 locales y límites están en [el informe de verificación](docs/verificacion-ci.md).
 La redacción exacta de validaciones y la regla de contraseña están en la
 [guía de microcopy de autenticación](docs/microcopy-autenticacion.md).
+Los criterios para distinguir listas vacías y errores están en la
+[guía de estados de carga](docs/estados-carga.md).
 
 ## Comandos
 

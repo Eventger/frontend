@@ -33,8 +33,7 @@ describe('EventDetailContent', () => {
     expect(onAddTask).toHaveBeenCalledOnce()
   })
 
-  it('renderiza una tarjeta por subtarea y el progreso real', async () => {
-    const user = userEvent.setup()
+  it('renderiza una tarjeta por subtarea y el progreso real', () => {
     const onAddTask = vi.fn()
     const onEditEvent = vi.fn()
     const subtasks = [
@@ -77,14 +76,12 @@ describe('EventDetailContent', () => {
     expect(taskList.classList.contains('event-task-list')).toBe(true)
     expect(taskList.getAttribute('tabindex')).toBe('0')
 
-    await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
-    expect(onAddTask).toHaveBeenCalledOnce()
-
     expect(
       within(taskList).queryByRole('button', {
         name: 'Editar',
       }),
     ).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Agregar tarea' })).toBeNull()
     expect(
       within(taskList).queryByRole('button', {
         name: 'Eliminar',

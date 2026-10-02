@@ -24,7 +24,7 @@ describe('getToday', () => {
     vi.mocked(getEvents).mockResolvedValue(todayEvents)
   })
 
-  it('consulta GET /hoy y transforma todos los grupos', async () => {
+  it('consulta GET /hoy/ y transforma todos los grupos', async () => {
     const response: TodayApiResponse = {
       success: true,
       data: {
@@ -68,7 +68,7 @@ describe('getToday', () => {
     const result = await getToday()
 
     expect(apiRequest).toHaveBeenCalledOnce()
-    expect(apiRequest).toHaveBeenCalledWith('/hoy')
+    expect(apiRequest).toHaveBeenCalledWith('/hoy/')
     expect(getEvents).toHaveBeenCalledOnce()
     expect(result).toEqual({
       overdue: [
@@ -181,5 +181,24 @@ describe('getToday', () => {
     const result = await getToday()
 
     expect(result.today[0].eventName).toBe('')
+  })
+
+  it('devuelve los grupos vacíos sin depender de la carga de eventos', async () => {
+    const data = { overdue: [], today: [], upcoming: [], completed: [] }
+    vi.mocked(apiRequest).mockResolvedValue({ success: true, data })
+    vi.mocked(getEvents).mockRejectedValue(new Error('Eventos no disponibles'))
+
+    await expect(getToday()).resolves.toEqual(data)
+    expect(getEvents).not.toHaveBeenCalled()
+  })
+
+  it('rechaza una respuesta fallida aunque contenga grupos vacíos', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({
+      success: false,
+      data: { overdue: [], today: [], upcoming: [], completed: [] },
+    })
+
+    await expect(getToday()).rejects.toThrow('No pudimos cargar tus tareas.')
+    expect(getEvents).not.toHaveBeenCalled()
   })
 })

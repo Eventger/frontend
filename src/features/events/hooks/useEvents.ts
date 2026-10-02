@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -24,8 +25,12 @@ export function useEvents() {
   const [error, setError] =
     useState<string | null>(null)
 
+  const requestVersion = useRef(0)
+
   const loadEvents = useCallback(
     async () => {
+      const version = ++requestVersion.current
+
       try {
         setIsLoading(true)
         setError(null)
@@ -35,15 +40,21 @@ export function useEvents() {
             authenticatedRequest,
           )
 
-        setEvents(data)
+        if (version === requestVersion.current) {
+          setEvents(data)
+        }
       } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : 'No pudimos cargar los eventos',
-        )
+        if (version === requestVersion.current) {
+          setError(
+            error instanceof Error
+              ? error.message
+              : 'No pudimos cargar los eventos',
+          )
+        }
       } finally {
-        setIsLoading(false)
+        if (version === requestVersion.current) {
+          setIsLoading(false)
+        }
       }
     },
     [authenticatedRequest],
@@ -58,9 +69,16 @@ export function useEvents() {
       return
     }
 
-    void Promise.resolve().then(
-      loadEvents,
-    )
+    const requests = requestVersion
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) void loadEvents()
+    })
+
+    return () => {
+      active = false
+      requests.current++
+    }
   }, [
     isAuthLoaded,
     isSignedIn,

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useAuth } from '@clerk/react'
 import {
   MemoryRouter,
   Route,
@@ -27,7 +28,7 @@ const submittedInput: CreateEventInput = {
 }
 
 const createEventDraftKey =
-  'eventger:create-event-draft'
+  'eventger:create-event-draft:user-test'
 
 vi.mock('@/features/events/services/event.service', () => ({
   createEvent: vi.fn(),
@@ -64,6 +65,9 @@ vi.mock('@/features/events/components/EventForm', () => ({
       >
         Enviar formulario de prueba
       </button>
+      <button type="button" onClick={() => onSubmit(submittedInput, initialSubtasks)}>
+        Enviar con tareas de prueba
+      </button>
       <button
         type="button"
         onClick={() =>
@@ -98,6 +102,7 @@ function renderPage() {
 
 describe('CreateEventPage', () => {
   beforeEach(() => {
+    vi.mocked(useAuth).mockReturnValue({ isLoaded: true, isSignedIn: true, userId: 'user-test', getToken: vi.fn().mockResolvedValue('test-token') } as never)
     sessionStorage.clear()
     vi.mocked(createEvent).mockReset()
     vi.mocked(createSubtask).mockReset()
@@ -118,6 +123,7 @@ describe('CreateEventPage', () => {
     sessionStorage.setItem(
       createEventDraftKey,
       JSON.stringify({
+        version: 1,
         data: submittedInput,
         subtasks: [],
       }),
@@ -188,6 +194,7 @@ describe('CreateEventPage', () => {
     sessionStorage.setItem(
       createEventDraftKey,
       JSON.stringify({
+        version: 1,
         data: submittedInput,
         subtasks: [],
       }),
@@ -237,6 +244,7 @@ describe('CreateEventPage', () => {
     sessionStorage.setItem(
       createEventDraftKey,
       JSON.stringify({
+        version: 1,
         data: submittedInput,
         subtasks: [savedSubtask],
       }),
@@ -273,8 +281,49 @@ describe('CreateEventPage', () => {
         ) ?? '{}',
       ),
     ).toEqual({
+      version: 1,
       data: submittedInput,
       subtasks: [],
     })
+  })
+
+  it('reanuda solo las tareas pendientes después de un fallo y una recarga, sin crear otro evento', async () => {
+    const user = userEvent.setup()
+    const tasks = ['Primera', 'Segunda', 'Tercera'].map(name => ({ name, targetDate: '2099-12-20', estimatedHours: 2, details: '' }))
+    sessionStorage.setItem(createEventDraftKey, JSON.stringify({ version: 1, data: submittedInput, subtasks: tasks }))
+    vi.mocked(createEvent).mockResolvedValue({ ...submittedInput, typeId: 0, id: 21 })
+    vi.mocked(createSubtask).mockResolvedValue({} as never)
+    vi.mocked(createSubtask).mockResolvedValueOnce({} as never).mockRejectedValueOnce(new Error('No se guardó la segunda'))
+    const mounted = renderPage()
+    await user.click(screen.getByRole('button', { name: 'Enviar con tareas de prueba' }))
+    expect(await screen.findByRole('heading', { name: 'Evento creado con tareas pendientes' })).toBeTruthy()
+    expect(createEvent).toHaveBeenCalledOnce()
+    expect(createSubtask).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(sessionStorage.getItem(createEventDraftKey) ?? '{}').subtasks).toEqual(tasks.slice(1))
+    mounted.unmount()
+    renderPage()
+    await user.click(screen.getByRole('button', { name: 'Reintentar tareas' }))
+    expect(await screen.findByRole('heading', { name: 'Evento creado' })).toBeTruthy()
+    expect(createEvent).toHaveBeenCalledOnce()
+    expect(createSubtask).toHaveBeenCalledTimes(4)
+    expect(createSubtask).toHaveBeenNthCalledWith(3, 21, tasks[1], expect.any(Function))
+    expect(createSubtask).toHaveBeenNthCalledWith(4, 21, tasks[2], expect.any(Function))
+    expect(sessionStorage.getItem(createEventDraftKey)).toBeNull()
+  })
+
+  it('no muestra el borrador de una cuenta al cambiar a otra sin desmontar la ruta', () => {
+    sessionStorage.setItem(createEventDraftKey, JSON.stringify({ version: 1, data: submittedInput, subtasks: [] }))
+    const { rerender } = renderPage()
+    expect(screen.getByTestId('initial-event-name').textContent).toBe(submittedInput.name)
+    vi.mocked(useAuth).mockReturnValue({ isLoaded: true, isSignedIn: true, userId: 'other-user', getToken: vi.fn() } as never)
+    rerender(<MemoryRouter><CreateEventPage /></MemoryRouter>)
+    expect(screen.getByTestId('initial-event-name').textContent).toBe('')
+  })
+
+  it('descarta un borrador con JSON válido pero campos incompatibles', () => {
+    sessionStorage.setItem(createEventDraftKey, JSON.stringify({ version: 1, data: {}, subtasks: [] }))
+    renderPage()
+    expect(screen.getByTestId('initial-event-name').textContent).toBe('')
+    expect(sessionStorage.getItem(createEventDraftKey)).toBeNull()
   })
 })

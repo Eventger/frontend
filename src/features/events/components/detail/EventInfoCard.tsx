@@ -1,4 +1,5 @@
 import { EventProgressCard } from '@/features/events/components/detail/EventProgressCard'
+import { formatCalendarDate } from '@/lib/calendar'
 
 import type { Subtask } from '@/features/events/types/subtask.types'
 
@@ -14,15 +15,11 @@ type EventInfoCardProps = {
 function formatEventDate(
   date: string,
 ) {
-  return new Intl.DateTimeFormat(
-    'es-CO',
-    {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'UTC',
-    },
-  ).format(new Date(date))
+  return formatCalendarDate(date, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 }
 
 type EventInfoItemProps = {
@@ -40,7 +37,7 @@ function EventInfoItem({
         {label}
       </p>
 
-      <p className="mt-1.5 truncate text-[16px] font-semibold text-[#17212b]">
+      <p className="mt-1.5 break-words text-[16px] font-semibold text-[#17212b]">
         {value}
       </p>
     </div>

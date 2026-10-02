@@ -9,7 +9,7 @@ export const eventFixture: Event = {
   id: 21,
   name: 'Boda Backend',
   typeId: 0,
-  eventDate: '2026-10-24T00:00:00.000Z',
+  eventDate: '2026-10-24T23:59:59-05:00',
   location: 'Cali',
   contact: 'Laura 3001234567',
 }

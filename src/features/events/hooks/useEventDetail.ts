@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -15,6 +16,7 @@ import {
 import {
   useAuthenticatedApi,
 } from '@/features/auth/hooks/useAuthenticatedApi'
+import { ApiError } from '@/lib/api'
 
 export function useEventDetail(
   eventId: number | null,
@@ -34,10 +36,15 @@ export function useEventDetail(
   const [error, setError] =
     useState<string | null>(null)
 
+  const requestVersion = useRef(0)
+
   const loadEvent =
     useCallback(async () => {
+      const version = ++requestVersion.current
+
       if (eventId === null) {
         setEvent(null)
+        setError(null)
         setIsLoading(false)
         return
       }
@@ -52,15 +59,27 @@ export function useEventDetail(
             authenticatedRequest,
           )
 
-        setEvent(data)
+        if (version === requestVersion.current) {
+          setEvent(data)
+        }
       } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : 'No se pudo cargar el evento',
-        )
+        if (version === requestVersion.current) {
+          setEvent(null)
+
+          if (error instanceof ApiError && error.status === 404) {
+            setError(null)
+          } else {
+            setError(
+              error instanceof Error
+                ? error.message
+                : 'No se pudo cargar el evento',
+            )
+          }
+        }
       } finally {
-        setIsLoading(false)
+        if (version === requestVersion.current) {
+          setIsLoading(false)
+        }
       }
     }, [
       eventId,
@@ -76,9 +95,16 @@ export function useEventDetail(
       return
     }
 
-    void Promise.resolve().then(
-      loadEvent,
-    )
+    const requests = requestVersion
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) void loadEvent()
+    })
+
+    return () => {
+      active = false
+      requests.current++
+    }
   }, [
     isAuthLoaded,
     isSignedIn,

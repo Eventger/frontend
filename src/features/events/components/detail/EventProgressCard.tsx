@@ -1,4 +1,5 @@
 import { CalendarDays } from 'lucide-react'
+import { getCalendarDay } from '@/lib/calendar'
 
 import type { Subtask } from '@/features/events/types/subtask.types'
 
@@ -29,25 +30,13 @@ function getDailyLoad(
     return 0
   }
 
-  const today = new Date()
-  const event = new Date(eventDate)
-
-  const todayUtc = Date.UTC(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  )
-  const eventUtc = Date.UTC(
-    event.getUTCFullYear(),
-    event.getUTCMonth(),
-    event.getUTCDate(),
-  )
+  const todayDay = getCalendarDay(new Date())
+  const eventDay = getCalendarDay(eventDate)
 
   const daysRemaining = Math.max(
     1,
     Math.ceil(
-      (eventUtc - todayUtc) /
-        86_400_000,
+      eventDay - todayDay,
     ),
   )
 

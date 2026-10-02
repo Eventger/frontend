@@ -24,8 +24,10 @@ import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
 import { AuthFeedbackModal } from '@/features/auth/components/AuthFeedbackModal'
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark'
 import { AuthRouteLink } from '@/features/auth/components/AuthRouteLink'
+import { SignInVerificationForm } from '@/features/auth/components/SignInVerificationForm'
 
 import { isValidEmail } from '@/features/auth/utils/isValidEmail'
+import { getAuthDestination } from '@/features/auth/utils/getAuthDestination'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,7 +42,6 @@ type LoginFeedback =
   | 'general-error'
   | 'network-error'
   | 'invalid-credentials'
-  | 'success'
   | 'account-created'
   | null
 
@@ -53,18 +54,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const requestedPath = (
-    location.state as {
-      from?: unknown
-    } | null
-  )?.from
-
-  const destination =
-    typeof requestedPath === 'string' &&
-    requestedPath.startsWith('/') &&
-    !requestedPath.startsWith('//')
-      ? requestedPath
-      : '/hoy'
+  const destination = getAuthDestination(location.state)
 
   const accountCreated =
     sessionStorage.getItem(
@@ -125,6 +115,9 @@ export function LoginPage() {
     'code' | 'password' | null
   >(null)
 
+  const [verificationStep, setVerificationStep] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
+
   const [
     recoveryCode,
     setRecoveryCode,
@@ -151,7 +144,7 @@ export function LoginPage() {
     )
 
   const isLoading =
-    fetchStatus === 'fetching'
+    fetchStatus === 'fetching' || isCompleting
 
   const validate = () => {
     let isValid = true
@@ -206,10 +199,8 @@ export function LoginPage() {
     async () => {
       setLastAttempt('finalize')
       setFeedback(null)
-
-      let finalizeError:
-        | Error
-        | null
+      setIsCompleting(true)
+      let destinationUrl: string | undefined
 
       try {
         const result =
@@ -221,56 +212,30 @@ export function LoginPage() {
               if (
                 session?.currentTask
               ) {
-                setFeedback(
-                  'general-error',
-                )
-
                 return
               }
-
-              sessionStorage.removeItem(
-                'accountCreated',
-              )
-
-              const url =
-                decorateUrl(
-                  destination,
-                )
-
-              if (
-                url.startsWith(
-                  'http',
-                )
-              ) {
-                window.location.href =
-                  url
-
-                return
-              }
-
-              navigate(
-                url,
-                {
-                  replace: true,
-                },
-              )
+              destinationUrl = decorateUrl(destination)
             },
           })
 
-        finalizeError =
-          result.error
+        if (result.error || !destinationUrl) {
+          setFeedback('general-error')
+          return
+        }
+
+        sessionStorage.removeItem('accountCreated')
+        if (destinationUrl.startsWith('http')) {
+          window.location.href = destinationUrl
+        } else {
+          navigate(destinationUrl, { replace: true })
+        }
       } catch {
         setFeedback(
           'general-error',
         )
 
-        return
-      }
-
-      if (finalizeError) {
-        setFeedback(
-          'general-error',
-        )
+      } finally {
+        setIsCompleting(false)
       }
     }
 
@@ -313,9 +278,7 @@ export function LoginPage() {
         signIn.status ===
         'complete'
       ) {
-        setFeedback(
-          'success',
-        )
+        await finalizeSuccessfulLogin()
 
         return
       }
@@ -326,9 +289,7 @@ export function LoginPage() {
         signIn.status ===
           'needs_client_trust'
       ) {
-        setFeedback(
-          'general-error',
-        )
+        setVerificationStep(true)
 
         return
       }
@@ -620,13 +581,17 @@ export function LoginPage() {
           <div className="auth-card__content flex flex-1 flex-col">
             <div className="auth-card__intro mt-[60px]">
               <h1 className="text-pretty text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
-                {recoveryStep
+                {verificationStep
+                  ? 'Verifica tu acceso'
+                  : recoveryStep
                   ? 'Recupera tu cuenta'
                   : 'Bienvenido de nuevo'}
               </h1>
 
               <p className="mt-2 text-[13px] text-[#667085]">
-                {recoveryStep ? (
+                {verificationStep ? (
+                  'Confirma tu identidad para completar el inicio de sesión.'
+                ) : recoveryStep ? (
                   recoveryStep ===
                   'code'
                     ? `Escribe el código enviado a ${email.trim()}.`
@@ -647,7 +612,16 @@ export function LoginPage() {
               </p>
             </div>
 
-            {recoveryStep ? (
+            {verificationStep ? (
+              <SignInVerificationForm
+                onVerified={finalizeSuccessfulLogin}
+                onBack={() => {
+                  setVerificationStep(false)
+                  setGeneralError('')
+                  setFeedback(null)
+                }}
+              />
+            ) : recoveryStep ? (
               <form
                 onSubmit={
                   handlePasswordRecovery
@@ -1141,23 +1115,6 @@ export function LoginPage() {
         }}
       />
 
-      <AuthFeedbackModal
-        open={
-          feedback ===
-          'success'
-        }
-        variant="success"
-        title="Sesión iniciada correctamente"
-        description="Todo está listo. Puedes continuar al organizador de eventos."
-        secondaryLabel="Cerrar"
-        primaryLabel="Continuar"
-        onSecondary={() =>
-          setFeedback(null)
-        }
-        onPrimary={() => {
-          void finalizeSuccessfulLogin()
-        }}
-      />
     </main>
   )
 }

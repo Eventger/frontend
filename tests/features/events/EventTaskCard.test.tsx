@@ -87,6 +87,14 @@ describe('EventTaskCard', () => {
     expect(screen.getByText('Hoy')).toBeTruthy()
   })
 
+  it.each(['2026-10-02T15:00:00Z', '2026-10-03T02:30:00Z', '2026-10-03T04:59:00Z'])('mantiene el día y la prioridad de Bogotá a las %s', (now) => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(now))
+    render(<EventTaskCard subtask={{ ...subtaskFixture, targetDate: '2026-10-03T04:59:59Z' }} />)
+    expect(screen.getByText('2 oct · 2,5 h')).toBeTruthy()
+    expect(screen.getByText('Hoy')).toBeTruthy()
+  })
+
   it('no renderiza el botón Nota cuando la subtarea no tiene detalles', () => {
     render(
       <EventTaskCard

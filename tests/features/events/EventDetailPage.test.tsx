@@ -248,6 +248,26 @@ describe('EventDetailPage', () => {
     ).toBeTruthy()
   })
 
+  it('el estado inexistente no queda oculto por un error anterior de subtareas', () => {
+    vi.mocked(useEventDetail).mockReturnValue({
+      event: null,
+      isLoading: false,
+      error: null,
+      retry: retryEvent,
+    })
+    vi.mocked(useEventSubtasks).mockReturnValue({
+      subtasks: [],
+      isLoading: false,
+      error: 'Error anterior de subtareas',
+      refresh: refreshSubtasks,
+    })
+
+    renderPage()
+
+    expect(screen.getByRole('heading', { name: 'Evento no encontrado' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'No pudimos cargar el evento' })).toBeNull()
+  })
+
   it('muestra el detalle y el estado vacío de subtareas', () => {
     renderPage()
 
@@ -394,6 +414,34 @@ describe('EventDetailPage', () => {
       expectedInput,
       expect.any(Function),
     )
+  })
+
+  it('conserva los campos al volver a revisar un error y permite corregirlos', async () => {
+    vi.mocked(updateEvent)
+      .mockRejectedValueOnce(new Error('Datos rechazados'))
+      .mockResolvedValueOnce({ ...eventFixture, name: 'Nombre corregido', contact: 'Contacto conservado' })
+    renderPage()
+
+    const user = await submitEventEdit('Nombre conservado', 'Contacto conservado')
+    await screen.findByRole('heading', { name: 'Cambios no guardados' })
+    await user.click(screen.getByRole('button', { name: 'Volver y revisar' }))
+
+    const nameInput = screen.getByLabelText('Nombre del evento *') as HTMLInputElement
+    expect(nameInput.value).toBe('Nombre conservado')
+    expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto conservado')
+
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Nombre corregido')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await screen.findByRole('heading', { name: 'Evento actualizado' })
+    expect(updateEvent).toHaveBeenLastCalledWith(eventFixture.id, {
+      name: 'Nombre corregido',
+      contact: 'Contacto conservado',
+      typeId: eventFixture.typeId,
+      eventDate: '2026-10-24',
+      location: eventFixture.location,
+    }, expect.any(Function))
   })
 
   it('cancela o confirma la eliminación del evento y navega al listado', async () => {
