@@ -51,7 +51,7 @@ export function TodayFilters({
             event.target.value,
           )
         }
-        className="h-11 rounded-[8px] border border-[#dde2ea] bg-white px-[13px] text-[13px] text-[#17212b] outline-none focus:border-[#4f46e5] md:w-[360px]"
+        className="h-11 rounded-[8px] border border-[#dde2ea] bg-white px-[13px] text-[13px] text-[#17212b] outline-none transition-colors hover:border-[#c7d2fe] focus:border-[#4f46e5] md:w-[360px]"
       >
         <option value="all">
           Todos los eventos
@@ -83,7 +83,7 @@ export function TodayFilters({
               .value as TodayStateFilter,
           )
         }
-        className="h-11 rounded-[8px] border border-[#dde2ea] bg-white px-[13px] text-[13px] text-[#17212b] outline-none focus:border-[#4f46e5] md:w-[310px]"
+        className="h-11 rounded-[8px] border border-[#dde2ea] bg-white px-[13px] text-[13px] text-[#17212b] outline-none transition-colors hover:border-[#c7d2fe] focus:border-[#4f46e5] md:w-[310px]"
       >
         <option value="all">
           Todos
@@ -106,7 +106,7 @@ export function TodayFilters({
         type="button"
         onClick={onClear}
         disabled={!hasActiveFilters}
-        className="text-left text-[12px] font-semibold text-[#4f46e5] transition-opacity disabled:cursor-default disabled:opacity-40 md:ml-auto md:w-[120px] md:text-center"
+        className="min-h-11 rounded-[8px] px-2 text-left text-[12px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#eef2ff] hover:text-[#3730a3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#4f46e5] md:ml-auto md:w-[120px] md:text-center"
       >
         Limpiar filtros
       </button>

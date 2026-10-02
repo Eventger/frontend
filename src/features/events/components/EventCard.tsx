@@ -43,7 +43,7 @@ export function EventCard({
     <Link
       to={`/evento/${event.id}`}
       viewTransition
-      className="block min-h-[190px] w-full rounded-[16px] border border-[#dde2ea] bg-white p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5]"
+      className="block min-h-[190px] w-full rounded-[16px] border border-[#dde2ea] bg-white p-5 transition-[border-color,box-shadow,transform] hover:border-[#c7d2fe] hover:shadow-[0_10px_24px_rgba(23,33,43,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none"
     >
       <h2 className="break-words text-[20px] font-semibold leading-6 text-[#17212b]">
         {event.name}
