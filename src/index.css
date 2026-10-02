@@ -107,6 +107,20 @@ body {
   margin: 0;
 }
 
+@layer base {
+  button:enabled,
+  select:enabled,
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
 ::selection {
   background: rgb(79 70 229 / 22%);
   color: #17212b;
