@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -36,8 +37,12 @@ export function useToday() {
   const [error, setError] =
     useState<string | null>(null)
 
+  const requestVersion = useRef(0)
+
   const loadToday =
     useCallback(async () => {
+      const version = ++requestVersion.current
+
       try {
         setIsLoading(true)
         setError(null)
@@ -47,13 +52,19 @@ export function useToday() {
             authenticatedRequest,
           )
 
-        setData(today)
+        if (version === requestVersion.current) {
+          setData(today)
+        }
       } catch {
-        setError(
-          'No pudimos cargar tus tareas.',
-        )
+        if (version === requestVersion.current) {
+          setError(
+            'No pudimos cargar tus tareas.',
+          )
+        }
       } finally {
-        setIsLoading(false)
+        if (version === requestVersion.current) {
+          setIsLoading(false)
+        }
       }
     }, [authenticatedRequest])
 
@@ -66,9 +77,16 @@ export function useToday() {
       return
     }
 
-    void Promise.resolve().then(
-      loadToday,
-    )
+    const requests = requestVersion
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) void loadToday()
+    })
+
+    return () => {
+      active = false
+      requests.current++
+    }
   }, [
     isAuthLoaded,
     isSignedIn,

@@ -106,7 +106,7 @@ export function EventDetailPage() {
     isLoading: isLoadingSubtasks,
     error: subtasksError,
     refresh: refreshSubtasks,
-  } = useEventSubtasks(eventId)
+  } = useEventSubtasks(event?.id ?? null)
 
   const [view, setView] =
     useState<DetailFlowView>('detail')
@@ -144,10 +144,10 @@ export function EventDetailPage() {
 
   const isLoading =
     isLoadingEvent ||
-    isLoadingSubtasks
+    (event !== null && isLoadingSubtasks)
 
   const error =
-    eventError ?? subtasksError
+    eventError ?? (event ? subtasksError : null)
 
   const retry = async () => {
     await Promise.all([

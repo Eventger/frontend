@@ -248,6 +248,26 @@ describe('EventDetailPage', () => {
     ).toBeTruthy()
   })
 
+  it('el estado inexistente no queda oculto por un error anterior de subtareas', () => {
+    vi.mocked(useEventDetail).mockReturnValue({
+      event: null,
+      isLoading: false,
+      error: null,
+      retry: retryEvent,
+    })
+    vi.mocked(useEventSubtasks).mockReturnValue({
+      subtasks: [],
+      isLoading: false,
+      error: 'Error anterior de subtareas',
+      refresh: refreshSubtasks,
+    })
+
+    renderPage()
+
+    expect(screen.getByRole('heading', { name: 'Evento no encontrado' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'No pudimos cargar el evento' })).toBeNull()
+  })
+
   it('muestra el detalle y el estado vacío de subtareas', () => {
     renderPage()
 

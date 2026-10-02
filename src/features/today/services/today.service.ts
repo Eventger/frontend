@@ -66,13 +66,32 @@ function sortByPriority(
 export async function getToday(
   requestFn: RequestFn = apiRequest,
 ): Promise<TodayData> {
-  const [todayResponse, events] =
-    await Promise.all([
-      requestFn<TodayApiResponse>(
-        '/hoy',
-      ),
-      getEvents(requestFn),
-    ])
+  const todayResponse =
+    await requestFn<TodayApiResponse>(
+      '/hoy/',
+    )
+
+  if (!todayResponse.success) {
+    throw new Error('No pudimos cargar tus tareas.')
+  }
+
+  const groups = todayResponse.data
+
+  if (
+    groups.overdue.length === 0 &&
+    groups.today.length === 0 &&
+    groups.upcoming.length === 0 &&
+    groups.completed.length === 0
+  ) {
+    return {
+      overdue: [],
+      today: [],
+      upcoming: [],
+      completed: [],
+    }
+  }
+
+  const events = await getEvents(requestFn)
 
   const eventNames = new Map(
     events.map((event) => [
