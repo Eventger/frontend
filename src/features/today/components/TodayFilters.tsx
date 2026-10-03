@@ -1,3 +1,5 @@
+import { FilterSelect } from '@/components/FilterSelect'
+
 type TodayStateFilter =
   | 'all'
   | 'today'
@@ -35,78 +37,56 @@ export function TodayFilters({
     selectedState !== 'all'
 
   return (
-    <div className="flex min-h-[56px] flex-col gap-3 rounded-[10px] md:flex-row md:items-center md:gap-0">
-      <label
-        htmlFor="today-event-filter"
-        className="text-[12px] font-semibold text-[#17212b] md:w-[66px]"
-      >
-        Evento
-      </label>
+    <div className="flex min-h-[56px] flex-col gap-3 rounded-[10px] md:flex-row md:items-center md:gap-7">
+      <div className="flex min-w-0 flex-col gap-3 md:flex-1 md:flex-row md:items-center md:gap-3">
+        <label
+          htmlFor="today-event-filter"
+          className="shrink-0 text-[12px] font-semibold text-[#17212b] md:w-[66px]"
+        >
+          Evento
+        </label>
 
-      <select
-        id="today-event-filter"
-        value={selectedEventId}
-        onChange={(event) =>
-          onEventChange(
-            event.target.value,
-          )
-        }
-        className="h-11 rounded-[8px] border border-[#dde2ea] bg-white px-[13px] text-[13px] text-[#17212b] outline-none transition-colors hover:border-[#c7d2fe] focus:border-[#4f46e5] md:w-[360px]"
-      >
-        <option value="all">
-          Todos los eventos
-        </option>
+        <FilterSelect
+          id="today-event-filter"
+          value={selectedEventId}
+          onValueChange={onEventChange}
+          className="md:max-w-[360px] md:flex-1"
+          options={[
+            { value: 'all', label: 'Todos los eventos' },
+            ...events.map(event => ({ value: String(event.id), label: event.name })),
+          ]}
+        />
+      </div>
+      <div className="flex min-w-0 flex-col gap-3 md:flex-1 md:flex-row md:items-center md:gap-3">
+        <label
+          htmlFor="today-state-filter"
+          className="shrink-0 text-[12px] font-semibold text-[#17212b] md:w-[76px]"
+        >
+          Estado
+        </label>
 
-        {events.map((event) => (
-          <option
-            key={event.id}
-            value={String(event.id)}
-          >
-            {event.name}
-          </option>
-        ))}
-      </select>
-
-      <label
-        htmlFor="today-state-filter"
-        className="text-[12px] font-semibold text-[#17212b] md:ml-7 md:w-[76px]"
-      >
-        Estado
-      </label>
-
-      <select
-        id="today-state-filter"
-        value={selectedState}
-        onChange={(event) =>
-          onStateChange(
-            event.target
-              .value as TodayStateFilter,
-          )
-        }
-        className="h-11 rounded-[8px] border border-[#dde2ea] bg-white px-[13px] text-[13px] text-[#17212b] outline-none transition-colors hover:border-[#c7d2fe] focus:border-[#4f46e5] md:w-[310px]"
-      >
-        <option value="all">
-          Todos
-        </option>
-
-        <option value="today">
-          Para hoy
-        </option>
-
-        <option value="upcoming">
-          Próximas
-        </option>
-
-        <option value="overdue">
-          Vencidas
-        </option>
-      </select>
-
+        <FilterSelect
+          id="today-state-filter"
+          value={selectedState}
+          onValueChange={value => {
+            if (value === 'all' || value === 'today' || value === 'upcoming' || value === 'overdue') {
+              onStateChange(value)
+            }
+          }}
+          className="md:max-w-[310px] md:flex-1"
+          options={[
+            { value: 'all', label: 'Todos' },
+            { value: 'today', label: 'Para hoy' },
+            { value: 'upcoming', label: 'Próximas' },
+            { value: 'overdue', label: 'Vencidas' },
+          ]}
+        />
+      </div>
       <button
         type="button"
         onClick={onClear}
         disabled={!hasActiveFilters}
-        className="min-h-11 rounded-[8px] px-2 text-left text-[12px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#eef2ff] hover:text-[#3730a3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#4f46e5] md:ml-auto md:w-[120px] md:text-center"
+        className="min-h-11 shrink-0 rounded-[8px] px-2 text-left text-[12px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#eef2ff] hover:text-[#3730a3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#4f46e5] md:ml-auto md:w-[120px] md:text-center"
       >
         Limpiar filtros
       </button>

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { PageTitle } from '@/components/layout/PageTitle'
 import { getCalendarDate } from '@/lib/calendar'
 import { EmptyTasksState } from '@/features/events/components/detail/EmptyTasksState'
 import { EventInfoCard } from '@/features/events/components/detail/EventInfoCard'
@@ -76,9 +77,7 @@ export function EventDetailContent({
   return (
     <>
       <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-        <h1 className="text-[28px] font-bold leading-9 tracking-[-0.02em] text-[#17212b] md:text-[30px]">
-          {event.name}
-        </h1>
+        <PageTitle>{event.name}</PageTitle>
 
         <div className="flex shrink-0 items-center gap-4">
           <Button

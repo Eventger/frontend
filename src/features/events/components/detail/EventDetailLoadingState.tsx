@@ -7,10 +7,10 @@ export function EventDetailLoadingState() {
       aria-live="polite"
       aria-busy="true"
     >
-      <div className="flex items-start justify-between gap-5">
+      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
         <div className="h-9 w-64 max-w-[55%] rounded bg-[#eaecf0]" />
 
-        <div className="hidden gap-4 sm:flex">
+        <div className="flex gap-4">
           <div className="h-11 w-[138px] rounded-[10px] bg-[#eaecf0]" />
           <div className="h-11 w-[118px] rounded-[10px] bg-[#eaecf0]" />
         </div>

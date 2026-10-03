@@ -1,7 +1,7 @@
 import type { Event } from '@/features/events/types/event.types'
-import type { SubtaskApiData } from '@/features/events/types/subtask.types'
 import type {
   TodayData,
+  TodaySubtaskApiData,
   TodayTaskItem,
 } from '@/features/today/types/today.types'
 
@@ -25,11 +25,12 @@ export const todayEvents: Event[] = [
 ]
 
 export function buildTodayApiTask(
-  overrides: Partial<SubtaskApiData> = {},
-): SubtaskApiData {
+  overrides: Partial<TodaySubtaskApiData> = {},
+): TodaySubtaskApiData {
   return {
     id: 31,
     event: todayEvents[0].id,
+    event_name: todayEvents.find(event => event.id === (overrides.event ?? todayEvents[0].id))?.name ?? '',
     state: 'pending',
     name: 'Confirmar proveedores',
     target_date: '2026-10-20T23:59:59.000Z',

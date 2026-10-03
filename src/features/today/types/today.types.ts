@@ -8,10 +8,14 @@ export type TodayTaskGroup =
   | 'upcoming'
 
 export interface TodayApiData {
-  overdue: SubtaskApiData[]
-  today: SubtaskApiData[]
-  upcoming: SubtaskApiData[]
-  completed: SubtaskApiData[]
+  overdue: TodaySubtaskApiData[]
+  today: TodaySubtaskApiData[]
+  upcoming: TodaySubtaskApiData[]
+  completed: TodaySubtaskApiData[]
+}
+
+export interface TodaySubtaskApiData extends SubtaskApiData {
+  event_name: string
 }
 
 export interface TodayApiResponse {

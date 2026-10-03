@@ -2,6 +2,240 @@ import {
   expect,
   test,
 } from '@playwright/test'
+import { dayPlan } from '../features/events/planning.fixtures'
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/event-types/', route => route.fulfill({ json: { success: true, data: [
+    { id: 1, name: 'Boda', description: '' }, { id: 2, name: 'Social', description: '' },
+    { id: 3, name: 'Corporativo', description: '' }, { id: 4, name: 'Cumpleaños', description: '' },
+    { id: 5, name: 'Otro', description: '' },
+  ] } }))
+  await page.route('**/api/auth/preferences/', route => route.fulfill({ json: { success: true, data: { daily_limit_hours: '6.00', daily_limit_configured: true } } }))
+  await page.route('**/subtasks/70/reschedule-preview/', route => {
+    const input = route.request().postDataJSON()
+    return route.fulfill({ json: { success: true, data: dayPlan(input.target_date, Number(input.estimated_hours)) } })
+  })
+  await page.route('**/subtasks/70/', route => {
+    const input = route.request().postDataJSON()
+    const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(input.target_date))
+    return route.fulfill({ json: { success: true, data: {}, planning: dayPlan(date, Number(input.estimated_hours)) } })
+  })
+})
+
+type NavigationFrame = {
+  phase: 'today' | 'loading' | 'ready' | 'empty' | 'blank'
+  mainWidth: number
+}
+type NavigationWindow = Window & typeof globalThis & {
+  taskNavigation: { frames: NavigationFrame[]; transitions: number; animationFrame: number }
+}
+
+const taskNavigationScenarios = [
+  { name: 'escritorio', width: 1440, height: 900, motion: 'no-preference', nativeTransition: true },
+  { name: 'móvil', width: 390, height: 844, motion: 'no-preference', nativeTransition: true },
+  { name: 'escritorio con movimiento reducido', width: 1440, height: 900, motion: 'reduce', nativeTransition: true },
+  { name: 'móvil con movimiento reducido', width: 390, height: 844, motion: 'reduce', nativeTransition: true },
+  { name: 'navegador sin View Transitions', width: 1440, height: 900, motion: 'no-preference', nativeTransition: false },
+] as const
+
+for (const scenario of taskNavigationScenarios) {
+  test(`Ver tarea navega sin parpadeos en ${scenario.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: scenario.width, height: scenario.height })
+    await page.emulateMedia({ reducedMotion: scenario.motion })
+
+    const event = { id: 21, type: 0, name: 'Boda Backend', date: '2026-10-24T23:59:59-05:00', location: 'Cali', contact: 'Laura 3001234567' }
+    const task = { id: 31, event: 21, event_name: event.name, name: 'Coordinar transporte', target_date: '2026-10-20T23:59:59-05:00', estimated_hours: '2.50', state: 'pending', details: 'Confirmar disponibilidad.' }
+    const precedingTasks = Array.from({ length: 12 }, (_, index) => ({ ...task, id: 100 + index, name: `Seguimiento ${index + 1}`, estimated_hours: '1.00' }))
+    let releaseTasks = () => {}
+    const pendingTasks = new Promise<void>(resolve => { releaseTasks = resolve })
+
+    await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: { overdue: [], today: [...precedingTasks, task], upcoming: [], completed: [] } } }))
+    await page.route(url => url.pathname === '/events/', route => route.fulfill({ json: { success: true, data: [event], pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 } } }))
+    await page.route('**/event-types/', route => route.fulfill({ json: { success: true, data: [{ id: 0, name: 'Boda', description: 'Evento de boda.' }] } }))
+    await page.route('**/events/21/', async route => {
+      await new Promise(resolve => setTimeout(resolve, 300))
+      await route.fulfill({ json: { success: true, data: event } })
+    })
+    await page.route('**/events/21/subtasks/', async route => {
+      await pendingTasks
+      await route.fulfill({ json: { success: true, data: [task] } })
+    })
+
+    await page.goto('/tests/visual/index.html?view=today-navigation')
+    const openTask = page.getByRole('button', { name: `Ver tarea: ${task.name}` })
+    await openTask.scrollIntoViewIfNeeded()
+    const previousScroll = await page.evaluate(() => window.scrollY)
+    expect(previousScroll).toBeGreaterThan(0)
+
+    await page.evaluate(({ nativeTransition, taskName }) => {
+      const navigationWindow = window as NavigationWindow
+      const trace = { frames: [] as NavigationFrame[], transitions: 0, animationFrame: 0 }
+      navigationWindow.taskNavigation = trace
+      if (nativeTransition) {
+        const startTransition = document.startViewTransition.bind(document)
+        document.startViewTransition = options => {
+          trace.transitions++
+          return startTransition(options)
+        }
+      } else {
+        Object.defineProperty(document, 'startViewTransition', { value: undefined, configurable: true })
+      }
+
+      const record = () => {
+        const main = document.querySelector('main')!
+        const isToday = main.querySelector('h1')?.textContent === 'Hoy'
+        const isLoading = Boolean(main.querySelector('[aria-label="Cargando evento"]'))
+        const isReady = Array.from(main.querySelectorAll('h2, h3')).some(heading => heading.textContent === taskName)
+        const isEmpty = main.textContent?.includes('Aún no tienes tareas para este evento')
+        trace.frames.push({
+          phase: isToday ? 'today' : isLoading ? 'loading' : isReady ? 'ready' : isEmpty ? 'empty' : 'blank',
+          mainWidth: main.getBoundingClientRect().width,
+        })
+        trace.animationFrame = requestAnimationFrame(record)
+      }
+      record()
+    }, { nativeTransition: scenario.nativeTransition, taskName: task.name })
+
+    try {
+      const taskRequest = page.waitForRequest('**/events/21/subtasks/')
+      await openTask.click()
+      await taskRequest
+      await expect(page.getByRole('status', { name: 'Cargando evento' })).toBeVisible()
+      await page.screenshot({ path: testInfo.outputPath('ver-tarea-cargando.png') })
+      releaseTasks()
+      await expect(page.getByRole('heading', { name: task.name, exact: true })).toBeVisible()
+      await page.screenshot({ path: testInfo.outputPath('ver-tarea-evento.png') })
+
+      const trace = await page.evaluate(() => {
+        const trace = (window as NavigationWindow).taskNavigation
+        cancelAnimationFrame(trace.animationFrame)
+        return { frames: trace.frames, transitions: trace.transitions, scroll: window.scrollY }
+      })
+      const phases = trace.frames.filter((frame, index, frames) => index === 0 || frame.phase !== frames[index - 1].phase).map(frame => frame.phase)
+      expect(phases).toEqual(['today', 'loading', 'ready'])
+      expect(trace.transitions).toBe(scenario.nativeTransition ? 1 : 0)
+      expect(trace.scroll).toBe(0)
+      expect(Math.max(...trace.frames.map(frame => frame.mainWidth)) - Math.min(...trace.frames.map(frame => frame.mainWidth))).toBeLessThanOrEqual(1)
+      await expect(page.locator('#main-content')).toBeFocused()
+      await page.goBack()
+      await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible()
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(previousScroll, 0)
+    } finally {
+      releaseTasks()
+    }
+  })
+}
+
+for (const viewport of [
+  { name: 'móvil pequeño', width: 320, height: 568 },
+  { name: 'móvil', width: 390, height: 844 },
+  { name: 'tableta', width: 768, height: 1024 },
+  { name: 'escritorio', width: 1440, height: 900 },
+  { name: 'escritorio amplio', width: 1920, height: 1080 },
+]) {
+  for (const longName of [false, true]) {
+    test(`alineación entre vistas en ${viewport.name} con nombre ${longName ? 'largo' : 'corto'}`, async ({ page }, testInfo) => {
+      await page.setViewportSize(viewport)
+      const event = { id: 21, type: 0, name: longName ? 'Encuentro internacional de organizadores de eventos y proveedores de varias ciudades' : 'Boda Laura y Daniel', date: '2099-12-31T23:59:59-05:00', location: 'Cali', contact: 'Laura 3001234567' }
+      const task = { id: 31, event: 21, event_name: event.name, name: 'Coordinar transporte', target_date: '2099-12-20T23:59:59-05:00', estimated_hours: '2.50', state: 'pending', details: 'Confirmar disponibilidad.' }
+      let failCreate = true
+      let failUpdate = true
+      await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: { overdue: [], today: [task], upcoming: [], completed: [] } } }))
+      await page.route(url => url.pathname === '/events/', route => {
+        if (route.request().method() === 'POST') {
+          return failCreate
+            ? route.fulfill({ status: 503, json: { success: false, message: 'No se pudo crear el evento.' } })
+            : route.fulfill({ json: { success: true, data: { ...event, ...route.request().postDataJSON(), id: 22 } } })
+        }
+        return route.fulfill({ json: { success: true, data: [event], pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 } } })
+      })
+      await page.route('**/event-types/', route => route.fulfill({ json: { success: true, data: [{ id: 0, name: 'Boda', description: 'Evento de boda.' }] } }))
+      await page.route('**/events/21/', async route => {
+        if (route.request().method() === 'PATCH') {
+          if (failUpdate) return route.fulfill({ status: 503, json: { success: false, message: 'No se pudo guardar.' } })
+          Object.assign(event, route.request().postDataJSON())
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 300))
+        }
+        await route.fulfill({ json: { success: true, data: event } })
+      })
+      await page.route('**/events/21/subtasks/', route => route.fulfill({ json: { success: true, data: [task] } }))
+      await page.goto('/tests/visual/index.html?view=layout-navigation')
+      await expect(page.getByRole('button', { name: `Ver tarea: ${task.name}` })).toBeVisible()
+
+      const main = page.locator('main')
+      const baseline = await main.getByRole('heading', { name: 'Hoy', exact: true }).boundingBox()
+      const breadcrumbBaseline = await main.getByRole('navigation', { name: 'Miga de pan' }).boundingBox()
+      expect(baseline).not.toBeNull()
+      expect(breadcrumbBaseline).not.toBeNull()
+
+      const checkAlignment = async (title: string, screenshotName?: string) => {
+        const heading = main.getByRole('heading', { name: title, exact: true })
+        await expect(heading).toBeVisible()
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+        const bounds = await heading.boundingBox()
+        const breadcrumb = await main.getByRole('navigation', { name: 'Miga de pan' }).boundingBox()
+        expect(bounds!.x).toBeCloseTo(baseline!.x, 1)
+        expect(bounds!.y).toBeCloseTo(baseline!.y, 1)
+        expect(breadcrumb!.y).toBeCloseTo(breadcrumbBaseline!.y, 1)
+        expect(breadcrumb!.height).toBe(44)
+        expect(await heading.evaluate(element => getComputedStyle(element).lineHeight)).toBe('36px')
+        const dimensions = await page.evaluate(() => ({ width: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+        expect(dimensions.content).toBeLessThanOrEqual(dimensions.width)
+        if (screenshotName) await page.screenshot({ path: testInfo.outputPath(`${screenshotName}.png`) })
+      }
+
+      if (viewport.width < 1280) await page.getByRole('button', { name: 'Abrir menú' }).click()
+      await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Eventos', exact: true }).click()
+      await expect(main.getByRole('heading', { name: event.name, exact: true })).toBeVisible()
+      await checkAlignment('Eventos')
+      await main.getByRole('button', { name: 'Crear evento', exact: true }).click()
+      await checkAlignment('Crear evento', 'crear-alineado')
+      await page.getByLabel('Nombre del evento *', { exact: true }).fill(event.name)
+      await page.getByRole('combobox', { name: 'Tipo de evento *', exact: true }).click()
+      await page.getByRole('option', { name: 'Boda', exact: true }).click()
+      await page.getByLabel('Fecha del evento *', { exact: true }).fill('2099-12-31')
+      await page.getByLabel('Lugar *', { exact: true }).fill(event.location)
+      await page.getByLabel('Contacto *', { exact: true }).fill(event.contact)
+      await main.getByRole('button', { name: 'Crear evento', exact: true }).click()
+      await checkAlignment('Evento no creado')
+      await expect(main.getByRole('heading', { name: 'Evento no creado', exact: true })).toBeFocused()
+      await page.getByRole('button', { name: 'Volver y revisar', exact: true }).click()
+      await checkAlignment('Crear evento')
+      await expect(page.getByLabel('Nombre del evento *', { exact: true })).toHaveValue(event.name)
+      failCreate = false
+      await main.getByRole('button', { name: 'Crear evento', exact: true }).click()
+      await checkAlignment('Evento creado', 'creado-alineado')
+      await page.getByRole('button', { name: 'Volver a eventos', exact: true }).click()
+      await expect(main.getByRole('heading', { name: event.name, exact: true })).toBeVisible()
+      await main.getByRole('link', { name: new RegExp(event.name) }).click()
+      const loading = main.getByRole('status', { name: 'Cargando evento' })
+      await expect(loading).toBeVisible()
+      const loadingBounds = await loading.boundingBox()
+      expect(loadingBounds!.x).toBeCloseTo(baseline!.x, 1)
+      expect(loadingBounds!.y).toBeCloseTo(baseline!.y, 1)
+      await expect(main.getByRole('heading', { name: task.name, exact: true })).toBeVisible()
+      await checkAlignment(event.name, 'detalle-alineado')
+      await main.getByRole('button', { name: 'Editar evento', exact: true }).click()
+      await checkAlignment('Editar evento', 'editar-alineado')
+      await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
+      await checkAlignment('Cambios no guardados')
+      await expect(main.getByRole('heading', { name: 'Cambios no guardados', exact: true })).toBeFocused()
+      failUpdate = false
+      await page.getByRole('button', { name: 'Intentar de nuevo', exact: true }).click()
+      await checkAlignment('Evento actualizado', 'actualizado-alineado')
+      await page.getByRole('button', { name: 'Volver al evento', exact: true }).click()
+      await expect(main.getByRole('heading', { name: task.name, exact: true })).toBeVisible()
+      await checkAlignment(event.name)
+      if (viewport.width < 1280) await page.getByRole('button', { name: 'Abrir menú' }).click()
+      await page.getByRole('button', { name: 'Abrir configuración de cuenta' }).click()
+      await checkAlignment('Configuración de cuenta')
+      await page.getByRole('link', { name: 'Administrar seguridad', exact: true }).click()
+      await expect(page.getByText('2 sesiones', { exact: true })).toBeVisible()
+      await checkAlignment('Seguridad de la cuenta', 'seguridad-alineada')
+    })
+  }
+}
 
 const coreViews = [
   'login',
@@ -16,6 +250,9 @@ const coreViews = [
   'delete-dialog',
   'settings',
   'security',
+  'reschedule',
+  'conflict',
+  'breadcrumbs',
 ] as const
 
 const viewports = [
@@ -46,6 +283,8 @@ for (const viewport of viewports) {
 
         await expect(page.locator('body')).toBeVisible()
         if (view === 'security') await expect(page.getByText('2 sesiones')).toBeVisible()
+        if (view === 'reschedule') await expect(page.getByRole('button', { name: 'Reprogramar', exact: true })).toBeEnabled()
+        if (view === 'conflict') await expect(page.getByText('7 h / 6 h')).toBeVisible()
 
         const dimensions = await page.evaluate(() => ({
           viewport: document.documentElement.clientWidth,
@@ -66,6 +305,24 @@ for (const viewport of viewports) {
     }
   })
 }
+
+test('Sprint 3 permite resolver por teclado en móvil y conserva foco al cancelar', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 640 })
+  await page.goto('/tests/visual/index.html?view=conflict')
+  await page.getByRole('button', { name: 'Cancelar reprogramación' }).click()
+  await page.getByRole('button', { name: 'Abrir reprogramación' }).click()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Abrir reprogramación' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await page.getByRole('button', { name: 'Resolver conflicto' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeEnabled()
+  expect(await dialog.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1)
+  await page.screenshot({ path: testInfo.outputPath('sprint3-resolucion-mobile.png'), fullPage: true })
+  await dialog.getByRole('button', { name: 'Aplicar opción' }).click()
+  await expect(page.getByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('sprint3-resuelto-mobile.png'), fullPage: true })
+})
 
 test('cambia entre navegación móvil y sidebar sin comprimir el contenido', async ({
   page,
@@ -122,6 +379,8 @@ test('Hoy y Eventos mantienen alineados el encabezado y su acción', async ({
     const header = headingLocator.locator(
       'xpath=ancestor::header',
     )
+    await expect(headingLocator).toBeVisible()
+    await page.evaluate(() => document.fonts.ready)
     const heading = await headingLocator.boundingBox()
     const action = await header
       .getByRole('button', {
@@ -655,3 +914,436 @@ test('los formularios comparten el patrón accesible de error de campo', async (
     ).toBe(true)
   }
 })
+
+const paginationEvents = Array.from({ length: 13 }, (_, index) => ({
+  id: index + 21, type: 0, name: `Evento ${index + 1}`,
+  date: '2099-12-31T23:59:59-05:00', location: 'Cali', contact: 'Contacto',
+}))
+
+function paginationResponse(requestedPage: number) {
+  const page = Math.min(requestedPage, 3)
+  return {
+    success: true,
+    data: paginationEvents.slice((page - 1) * 6, page * 6),
+    pagination: { page, page_size: 6, total: 13, total_pages: 3 },
+  }
+}
+
+for (const viewport of [
+  { name: 'móvil pequeño', width: 320, height: 568 },
+  { name: 'móvil', width: 390, height: 844 },
+  { name: 'tableta', width: 768, height: 1024 },
+  { name: 'escritorio', width: 1440, height: 900 },
+]) {
+  test(`paginación de eventos limita tarjetas y conserva navegación en ${viewport.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    const requestedPages: number[] = []
+    const requestedProgress: number[] = []
+    await page.route(url => url.pathname === '/events/', async route => {
+      const requestedPage = Number(new URL(route.request().url()).searchParams.get('page'))
+      requestedPages.push(requestedPage)
+      await route.fulfill({ json: paginationResponse(requestedPage) })
+    })
+    await page.route(/\/events\/\d+\/subtasks\/$/, route => {
+      requestedProgress.push(Number(new URL(route.request().url()).pathname.split('/')[2]))
+      return route.fulfill({ json: { success: true, data: [] } })
+    })
+    await page.route('**/events/27/', route => route.fulfill({ json: { success: true, data: paginationEvents[6] } }))
+    await page.goto('/tests/visual/index.html?view=events-pagination')
+    const main = page.locator('main')
+    const list = main.getByRole('region', { name: 'Lista de eventos' })
+    const nav = main.getByRole('navigation', { name: 'Paginación de eventos' })
+    await expect(list.getByRole('link')).toHaveCount(6)
+    await expect(main.getByText('Página 1 de 3', { exact: true })).toBeVisible()
+    await expect(nav.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    await expect.poll(() => requestedProgress.length).toBe(6)
+    expect(requestedProgress).toEqual(paginationEvents.slice(0, 6).map(event => event.id))
+    await page.evaluate(() => document.fonts.ready)
+    const heading = main.getByRole('heading', { name: 'Eventos', exact: true })
+    const baseline = await heading.boundingBox()
+
+    await nav.getByRole('button', { name: 'Siguiente' }).click()
+    await expect(main.getByText('Página 2 de 3', { exact: true })).toBeAttached()
+    await expect(list.getByRole('link')).toHaveCount(6)
+    await expect(list.getByRole('heading', { name: 'Evento 1', exact: true })).toHaveCount(0)
+    await expect(page).toHaveURL(/page=2/)
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+    const secondHeading = await heading.boundingBox()
+    expect(secondHeading!.x).toBeCloseTo(baseline!.x, 1)
+    expect(secondHeading!.y).toBeCloseTo(baseline!.y, 1)
+    await expect(main).toBeFocused()
+    await page.screenshot({ path: testInfo.outputPath('eventos-pagina-2.png') })
+    await nav.screenshot({ path: testInfo.outputPath('paginacion-eventos.png') })
+
+    await nav.getByRole('button', { name: 'Siguiente' }).click()
+    await expect(main.getByText('Página 3 de 3', { exact: true })).toBeAttached()
+    await expect(list.getByRole('link')).toHaveCount(1)
+    await expect(nav.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+    await expect(main.getByText('13–13 de 13 eventos', { exact: true })).toBeAttached()
+    await nav.getByRole('button', { name: 'Anterior' }).click()
+    await expect(main.getByText('Página 2 de 3', { exact: true })).toBeAttached()
+    await list.getByRole('link', { name: /Evento 7 / }).click()
+    await expect(main.getByRole('heading', { name: 'Evento 7', exact: true })).toBeVisible()
+    await page.goBack()
+    await expect(main.getByText('Página 2 de 3', { exact: true })).toBeAttached()
+    await expect(list.getByRole('link')).toHaveCount(6)
+    await expect(page).toHaveURL(/page=2/)
+    expect(requestedPages).toEqual([1, 2, 3, 2, 2])
+    const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+    expect(width.content).toBeLessThanOrEqual(width.viewport)
+  })
+}
+
+test('paginación de eventos mantiene carga y reintento en la página solicitada', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  let attempts = 0
+  let release = () => {}
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route(url => url.pathname === '/events/', async route => {
+    const requestedPage = Number(new URL(route.request().url()).searchParams.get('page'))
+    if (requestedPage === 2 && attempts++ === 0) {
+      await pending
+      return route.fulfill({ status: 503, json: { success: false, message: 'Servicio temporalmente no disponible.' } })
+    }
+    return route.fulfill({ json: paginationResponse(requestedPage) })
+  })
+  await page.route(/\/events\/\d+\/subtasks\/$/, route => route.fulfill({ json: { success: true, data: [] } }))
+  await page.goto('/tests/visual/index.html?view=events-pagination')
+  await expect(page.getByRole('region', { name: 'Lista de eventos' }).getByRole('link')).toHaveCount(6)
+  await page.getByRole('button', { name: 'Siguiente' }).click()
+  try {
+    const loading = page.getByRole('status', { name: 'Cargando eventos' })
+    await expect(loading).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Lista de eventos' })).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Aún no tienes eventos' })).toHaveCount(0)
+    await page.screenshot({ path: testInfo.outputPath('eventos-carga-pagina-2.png') })
+    release()
+    await expect(page.getByRole('heading', { name: 'No pudimos cargar tus eventos' })).toBeVisible()
+    await expect(page).toHaveURL(/page=2/)
+    await page.getByRole('button', { name: 'Reintentar' }).click()
+    await expect(page.getByText('Página 2 de 3', { exact: true })).toBeAttached()
+    await expect(page.getByRole('region', { name: 'Lista de eventos' }).getByRole('link')).toHaveCount(6)
+    expect(attempts).toBe(2)
+  } finally { release() }
+})
+
+test('paginación de eventos abre un enlace a una página antigua sin mostrar un vacío falso', async ({ page }) => {
+  await page.route(url => url.pathname === '/events/', route => route.fulfill({ json: paginationResponse(Number(new URL(route.request().url()).searchParams.get('page'))) }))
+  await page.route(/\/events\/\d+\/subtasks\/$/, route => route.fulfill({ json: { success: true, data: [] } }))
+  await page.goto('/tests/visual/index.html?view=events-pagination&page=99')
+  await expect(page.getByText('Página 3 de 3', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Lista de eventos' }).getByRole('link')).toHaveCount(1)
+  await expect(page.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+  await expect(page.getByRole('heading', { name: 'Aún no tienes eventos' })).toHaveCount(0)
+})
+
+for (const viewport of [
+  { name: 'móvil pequeño', width: 320, height: 568 },
+  { name: 'móvil', width: 390, height: 844 },
+  { name: 'tableta', width: 768, height: 1024 },
+  { name: 'escritorio estrecho', width: 1024, height: 768 },
+  { name: 'escritorio', width: 1440, height: 900 },
+  { name: 'escritorio de la captura', width: 1557, height: 768 },
+]) {
+  test(`filtro por tipo de evento integra paginación y vacíos en ${viewport.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    const events = paginationEvents.map((event, index) => ({ ...event, type: index % 2 === 0 ? 1 : 2 }))
+    const requests: { page: number; type: string | null }[] = []
+    await page.route(url => url.pathname === '/events/', route => {
+      const query = new URL(route.request().url()).searchParams
+      const type = query.get('type')
+      const filtered = type === null ? events : events.filter(event => event.type === Number(type))
+      const requestedPage = Number(query.get('page'))
+      const totalPages = Math.max(1, Math.ceil(filtered.length / 6))
+      const currentPage = Math.min(requestedPage, totalPages)
+      requests.push({ page: requestedPage, type })
+      return route.fulfill({ json: {
+        success: true, data: filtered.slice((currentPage - 1) * 6, currentPage * 6),
+        pagination: { page: currentPage, page_size: 6, total: filtered.length, total_pages: totalPages },
+      } })
+    })
+    await page.route(/\/events\/\d+\/subtasks\/$/, route => route.fulfill({ json: { success: true, data: [] } }))
+    await page.route('**/events/33/', route => route.fulfill({ json: { success: true, data: events[12] } }))
+    await page.goto('/tests/visual/index.html?view=events-pagination&page=2')
+    const main = page.locator('main')
+    const filter = main.getByRole('combobox', { name: 'Tipo de evento' })
+    const list = main.getByRole('region', { name: 'Lista de eventos' })
+    await expect(list.getByRole('link')).toHaveCount(6)
+    await expect(filter).toBeEnabled()
+    await page.evaluate(() => document.fonts.ready)
+    const heading = main.getByRole('heading', { name: 'Eventos', exact: true })
+    const baseline = await heading.boundingBox()
+
+    await filter.click()
+    const menu = page.getByRole('listbox')
+    await expect(menu).toBeVisible()
+    const triggerBox = await page.locator('#events-type-filter').boundingBox()
+    const menuBox = await menu.boundingBox()
+    if (viewport.height - triggerBox!.y - triggerBox!.height >= menuBox!.height + 24) {
+      expect(menuBox!.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height)
+    }
+    expect(menuBox!.y).toBeGreaterThanOrEqual(16)
+    expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(viewport.height - 16)
+    expect(menuBox!.x).toBeCloseTo(triggerBox!.x, 0)
+    expect(menuBox!.width).toBeCloseTo(triggerBox!.width, 0)
+    expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(viewport.width)
+    expect((await main.locator('h1').boundingBox())!.x).toBeCloseTo(baseline!.x, 1)
+    await page.screenshot({ path: testInfo.outputPath('menu-tipos-abierto.png') })
+    await page.getByRole('option', { name: 'Boda', exact: true }).click()
+    await expect(main.getByText('Página 1 de 2', { exact: true })).toBeAttached()
+    await expect(list.getByRole('heading')).toHaveText(['Evento 1', 'Evento 3', 'Evento 5', 'Evento 7', 'Evento 9', 'Evento 11'])
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+    expect(new URL(page.url()).searchParams.get('page')).toBeNull()
+    expect(new URL(page.url()).searchParams.get('type')).toBe('1')
+    const filteredHeading = await heading.boundingBox()
+    expect(filteredHeading!.x).toBeCloseTo(baseline!.x, 1)
+    expect(filteredHeading!.y).toBeCloseTo(baseline!.y, 1)
+    await page.screenshot({ path: testInfo.outputPath('eventos-filtrados.png') })
+    await page.getByRole('button', { name: 'Siguiente' }).click()
+    await expect(main.getByText('Página 2 de 2', { exact: true })).toBeAttached()
+    await expect(list.getByRole('link')).toHaveCount(1)
+    await expect(list.getByRole('heading')).toHaveText(['Evento 13'])
+    await expect(filter).toHaveText('Boda')
+    await list.getByRole('link').click()
+    await expect(main.getByRole('heading', { name: 'Evento 13', exact: true })).toBeVisible()
+    await page.goBack()
+    await expect(main.getByText('Página 2 de 2', { exact: true })).toBeAttached()
+    await expect(filter).toHaveText('Boda')
+    expect(new URL(page.url()).searchParams.get('type')).toBe('1')
+
+    await filter.click()
+    await page.getByRole('option', { name: 'Social', exact: true }).click()
+    await expect(main.getByRole('status', { name: 'Resumen de eventos' })).toHaveText('6 eventos')
+    await expect(list.getByRole('heading')).toHaveText(['Evento 2', 'Evento 4', 'Evento 6', 'Evento 8', 'Evento 10', 'Evento 12'])
+    await filter.click()
+    await page.getByRole('option', { name: 'Corporativo', exact: true }).click()
+    await expect(main.getByRole('heading', { name: 'No hay eventos de este tipo', exact: true })).toBeVisible()
+    await expect(main.getByRole('heading', { name: 'Aún no tienes eventos' })).toHaveCount(0)
+    await expect(main.getByRole('navigation', { name: 'Paginación de eventos' })).toHaveCount(0)
+    await main.getByRole('button', { name: 'Ver todos los eventos' }).click()
+    await expect(main.getByText('Página 1 de 3', { exact: true })).toBeAttached()
+    await expect(list.getByRole('link')).toHaveCount(6)
+    await expect(filter).toHaveText('Todos los tipos')
+    expect(new URL(page.url()).searchParams.get('type')).toBeNull()
+    expect(requests).toContainEqual({ page: 2, type: '1' })
+    expect(requests).toContainEqual({ page: 1, type: '2' })
+    expect(requests).toContainEqual({ page: 1, type: null })
+    const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+    expect(width.content).toBeLessThanOrEqual(width.viewport)
+  })
+}
+
+test('filtro por tipo de evento conserva las tarjetas si falla el catálogo y permite reintentar', async ({ page }) => {
+  let failCatalog = true
+  await page.route('**/event-types/', route => failCatalog
+    ? route.fulfill({ status: 503, json: { success: false, message: 'Tipos no disponibles.' } })
+    : route.fulfill({ json: { success: true, data: [{ id: 1, name: 'Boda', description: '' }] } }))
+  await page.route(url => url.pathname === '/events/', route => route.fulfill({ json: paginationResponse(1) }))
+  await page.route(/\/events\/\d+\/subtasks\/$/, route => route.fulfill({ json: { success: true, data: [] } }))
+  await page.goto('/tests/visual/index.html?view=events-pagination')
+  await expect(page.getByRole('region', { name: 'Lista de eventos' }).getByRole('link')).toHaveCount(6)
+  await expect(page.getByRole('alert')).toContainText('No pudimos cargar los tipos de evento.')
+  failCatalog = false
+  await page.getByRole('button', { name: 'Reintentar tipos' }).click()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await page.getByRole('combobox', { name: 'Tipo de evento' }).click()
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
+})
+
+test('filtro por tipo de evento mantiene carga al cambiar de tipo en la misma página', async ({ page }) => {
+  let release = () => {}
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route(url => url.pathname === '/events/', async route => {
+    const type = new URL(route.request().url()).searchParams.get('type')
+    if (type === '2') {
+      await pending
+      return route.fulfill({ json: { success: true, data: [], pagination: { page: 1, page_size: 6, total: 0, total_pages: 1 } } })
+    }
+    return route.fulfill({ json: paginationResponse(1) })
+  })
+  await page.route(/\/events\/\d+\/subtasks\/$/, route => route.fulfill({ json: { success: true, data: [] } }))
+  await page.goto('/tests/visual/index.html?view=events-pagination')
+  await expect(page.getByRole('region', { name: 'Lista de eventos' }).getByRole('link')).toHaveCount(6)
+  await page.getByRole('combobox', { name: 'Tipo de evento' }).click()
+  await page.getByRole('option', { name: 'Social', exact: true }).click()
+  try {
+    await expect(page.getByRole('status', { name: 'Cargando eventos' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Lista de eventos' })).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'No hay eventos de este tipo' })).toHaveCount(0)
+    release()
+    await expect(page.getByRole('heading', { name: 'No hay eventos de este tipo' })).toBeVisible()
+  } finally { release() }
+})
+
+for (const viewport of [
+  { name: 'móvil', width: 390, height: 844 },
+  { name: 'tableta', width: 768, height: 1024 },
+  { name: 'escritorio estrecho', width: 1024, height: 768 },
+  { name: 'escritorio de la captura', width: 1557, height: 768 },
+]) {
+  test(`menús de Hoy mantienen estilo, tamaño y teclado con muchos eventos en ${viewport.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    const tasks = Array.from({ length: 40 }, (_, index) => ({
+      id: index + 200,
+      event: index + 100,
+      event_name: `Congreso internacional de innovación y desarrollo empresarial en Bogotá ${String(index + 1).padStart(2, '0')}`,
+      name: `Seguimiento ${index + 1}`,
+      target_date: '2099-12-31T18:00:00-05:00',
+      estimated_hours: '1.00',
+      state: 'pending',
+      details: '',
+    }))
+    await page.route('**/hoy/', route => route.fulfill({ json: {
+      success: true, data: { overdue: [], today: tasks, upcoming: [], completed: [] },
+    } }))
+    await page.goto('/tests/visual/index.html?view=today-navigation')
+    const eventFilter = page.getByRole('combobox', { name: 'Evento', exact: true })
+    const stateFilter = page.getByRole('combobox', { name: 'Estado', exact: true })
+    await expect(eventFilter).toBeVisible()
+    await page.evaluate(() => document.fonts.ready)
+    await eventFilter.focus()
+    await page.keyboard.press('ArrowDown')
+    const menu = page.getByRole('listbox')
+    await expect(menu).toBeVisible()
+    const triggerBox = await page.locator('#today-event-filter').boundingBox()
+    const menuBox = await menu.boundingBox()
+    expect(triggerBox!.height).toBe(44)
+    expect(menuBox!.width).toBeCloseTo(triggerBox!.width, 0)
+    expect(menuBox!.x).toBeGreaterThanOrEqual(16)
+    expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(viewport.width - 16)
+    expect(menuBox!.height).toBeLessThanOrEqual(352)
+    expect(menuBox!.y).toBeGreaterThanOrEqual(16)
+    expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(viewport.height - 16)
+    expect(await menu.evaluate(element => getComputedStyle(element).borderRadius)).toBe('8px')
+    expect((await page.getByRole('option', { name: 'Todos los eventos', exact: true }).boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    await page.screenshot({ path: testInfo.outputPath('menu-hoy-abierto.png') })
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+    await expect(eventFilter).toBeFocused()
+    await page.keyboard.press('ArrowDown')
+    await expect(page.getByRole('option', { name: 'Todos los eventos', exact: true })).toBeFocused()
+    await page.keyboard.press('End')
+    await expect(page.getByRole('option', { name: tasks[39].event_name, exact: true })).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(eventFilter).toHaveText(tasks[39].event_name)
+    expect((await eventFilter.boundingBox())!.height).toBe(44)
+    await expect(page.getByRole('button', { name: /^Ver tarea:/ })).toHaveCount(1)
+    await expect(page.getByRole('button', { name: 'Ver tarea: Seguimiento 40', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Limpiar filtros', exact: true }).click()
+    await expect(eventFilter).toHaveText('Todos los eventos')
+    await stateFilter.focus()
+    await page.keyboard.press('Space')
+    await expect(page.getByRole('listbox')).toBeVisible()
+    await expect(page.getByRole('option', { name: 'Todos', exact: true })).toBeFocused()
+    await page.keyboard.press('End')
+    await expect(page.getByRole('option', { name: 'Vencidas', exact: true })).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(stateFilter).toHaveText('Vencidas')
+    await expect(page.getByRole('button', { name: /^Ver tarea:/ })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Limpiar filtros', exact: true }).last().click()
+    await expect(stateFilter).toHaveText('Todos')
+    await expect(page.getByRole('button', { name: /^Ver tarea:/ })).toHaveCount(40)
+    const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+    expect(width.content).toBeLessThanOrEqual(width.viewport)
+  })
+}
+
+for (const viewport of [
+  { name: 'móvil pequeño', width: 320, height: 568 },
+  { name: 'móvil', width: 390, height: 844 },
+  { name: 'tableta', width: 768, height: 1024 },
+  { name: 'escritorio', width: 1440, height: 900 },
+  { name: 'escritorio amplio', width: 1920, height: 1080 },
+]) {
+  test(`filas de tareas mantienen columnas con estados distintos en ${viewport.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    const event = { ...paginationEvents[0], name: 'Evento con tareas mixtas' }
+    const tasks = [
+      { id: 51, state: 'pending', name: 'Confirmar proveedores' },
+      { id: 52, state: 'completed', name: 'Definir concepto creativo' },
+      { id: 53, state: 'in_progress', name: 'Solicitar propuestas de producción' },
+      { id: 54, state: 'pending', name: 'Seleccionar maestro de ceremonias' },
+      { id: 55, state: 'completed', name: 'Preparar kit de prensa y documentación con nombres largos sin espacios InvitadosInternacionalesInvitadosInternacionalesInvitadosInternacionales' },
+    ].map((task, index) => ({ ...task, event: 21, target_date: `2099-12-${20 + index}T23:59:59-05:00`, estimated_hours: '5.00', details: '' }))
+    await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: { overdue: [], today: [], upcoming: [], completed: [] } } }))
+    await page.route(url => url.pathname === '/events/', route => route.fulfill({ json: { success: true, data: [event], pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 } } }))
+    await page.route('**/events/21/', route => route.fulfill({ json: { success: true, data: event } }))
+    await page.route('**/events/21/subtasks/', route => route.fulfill({ json: { success: true, data: tasks } }))
+    await page.route(/\/subtasks\/\d+\/reschedule-preview\/$/, route => {
+      const input = route.request().postDataJSON()
+      return route.fulfill({ json: { success: true, data: { ...dayPlan(input.target_date, Number(input.estimated_hours)), event_date: '2099-12-31' } } })
+    })
+    await page.goto('/tests/visual/index.html?view=layout-navigation')
+    if (viewport.width < 1280) await page.getByRole('button', { name: 'Abrir menú' }).click()
+    await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Eventos', exact: true }).click()
+    await page.getByRole('region', { name: 'Lista de eventos' }).getByRole('link').click()
+    await page.getByRole('button', { name: 'Editar evento', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Tareas agregadas (5)', exact: true })).toBeVisible()
+    await page.evaluate(() => document.fonts.ready)
+    const editButtons = tasks.map(task => page.getByRole('button', { name: `Editar ${task.name}`, exact: true }))
+    const rows = tasks.map((_, index) => page.getByRole('list', { name: 'Tareas agregadas', exact: true }).getByRole('listitem').nth(index))
+    const dateX: number[] = []
+    const hoursX: number[] = []
+    const editX: number[] = []
+    const deleteX: number[] = []
+    for (let index = 0; index < tasks.length; index++) {
+      const task = tasks[index]
+      const row = rows[index]
+      const date = row.getByText(`${20 + index}/12/2099`, { exact: true })
+      const hours = row.getByText('5 h', { exact: true })
+      if (viewport.width >= 768) {
+        dateX.push((await date.boundingBox())!.x)
+        hoursX.push((await hours.boundingBox())!.x)
+      }
+      const edit = await editButtons[index].boundingBox()
+      const remove = await page.getByRole('button', { name: `Eliminar ${task.name}`, exact: true }).boundingBox()
+      editX.push(edit!.x)
+      deleteX.push(remove!.x)
+      expect(edit!.width).toBeGreaterThanOrEqual(44)
+      expect(edit!.height).toBeGreaterThanOrEqual(44)
+      expect(remove!.width).toBeGreaterThanOrEqual(44)
+      const reschedule = page.getByRole('button', { name: `Reprogramar ${task.name}`, exact: true })
+      await expect(reschedule).toHaveCount(task.state === 'completed' ? 0 : 1)
+    }
+    for (const positions of [dateX, hoursX, editX, deleteX]) {
+      if (positions.length) expect(Math.max(...positions) - Math.min(...positions)).toBeLessThanOrEqual(1)
+    }
+    const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+    expect(width.content).toBeLessThanOrEqual(width.viewport)
+    await page.getByRole('heading', { name: 'Tareas agregadas (5)' }).scrollIntoViewIfNeeded()
+    await page.getByRole('list', { name: 'Tareas agregadas', exact: true }).screenshot({ path: testInfo.outputPath('filas-de-tareas.png') })
+    await page.getByRole('button', { name: `Reprogramar ${tasks[0].name}`, exact: true }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancelar', exact: true }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+  })
+}
+
+for (const viewport of [
+  { name: 'móvil pequeño', width: 320, height: 568 },
+  { name: 'móvil', width: 390, height: 844 },
+  { name: 'tableta', width: 768, height: 1024 },
+  { name: 'escritorio', width: 1440, height: 900 },
+]) {
+  test(`resumen de eventos evita paginación innecesaria en ${viewport.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    await page.route(url => url.pathname === '/events/', route => route.fulfill({ json: {
+      success: true, data: paginationEvents.slice(0, 5),
+      pagination: { page: 1, page_size: 6, total: 5, total_pages: 1 },
+    } }))
+    await page.route(/\/events\/\d+\/subtasks\/$/, route => route.fulfill({ json: { success: true, data: [] } }))
+    await page.goto('/tests/visual/index.html?view=events-pagination')
+    const summary = page.getByRole('status', { name: 'Resumen de eventos' })
+    await expect(page.getByRole('region', { name: 'Lista de eventos' }).getByRole('link')).toHaveCount(5)
+    await expect(summary).toHaveText('5 eventos')
+    await expect(page.getByRole('navigation', { name: 'Paginación de eventos' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Anterior', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Siguiente', exact: true })).toHaveCount(0)
+    await expect(page.getByText('Página 1 de 1', { exact: true })).toHaveCount(0)
+    await summary.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: testInfo.outputPath('resumen-eventos.png') })
+    const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+    expect(width.content).toBeLessThanOrEqual(width.viewport)
+  })
+}

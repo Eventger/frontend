@@ -86,6 +86,46 @@ describe('useEventSubtasks', () => {
     expect(getEventSubtasks).not.toHaveBeenCalled()
   })
 
+  it('no presenta tareas vacías como cargadas al recibir el ID del evento', async () => {
+    const pending = deferred<Subtask[]>()
+    vi.mocked(getEventSubtasks).mockReturnValue(pending.promise)
+    const renders: boolean[] = []
+    const { result, rerender } = renderHook(({ id }: { id: number | null }) => {
+      const value = useEventSubtasks(id)
+      if (id !== null) renders.push(value.isLoading)
+      return value
+    }, { initialProps: { id: null as number | null } })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    rerender({ id: eventFixture.id })
+    await waitFor(() => expect(getEventSubtasks).toHaveBeenCalledOnce())
+    expect(renders.length).toBeGreaterThan(0)
+    expect(renders.every(Boolean)).toBe(true)
+
+    await act(async () => { pending.resolve([subtaskFixture]) })
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.subtasks).toEqual([subtaskFixture])
+  })
+
+  it('mantiene la carga al cambiar de evento hasta recibir sus propias tareas', async () => {
+    const pending = deferred<Subtask[]>()
+    vi.mocked(getEventSubtasks).mockResolvedValueOnce([subtaskFixture]).mockReturnValueOnce(pending.promise)
+    const renders: boolean[] = []
+    const { result, rerender } = renderHook(({ id }) => {
+      const value = useEventSubtasks(id)
+      if (id === 22) renders.push(value.isLoading)
+      return value
+    }, { initialProps: { id: eventFixture.id } })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    rerender({ id: 22 })
+    await waitFor(() => expect(getEventSubtasks).toHaveBeenCalledTimes(2))
+    expect(renders.every(Boolean)).toBe(true)
+    await act(async () => { pending.resolve([]) })
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.subtasks).toEqual([])
+  })
+
   it('descarta el error anterior al cambiar a un evento sin tareas', async () => {
     const previous = deferred<Subtask[]>()
     vi.mocked(getEventSubtasks)

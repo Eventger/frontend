@@ -24,6 +24,20 @@ describe('SecurityPage', () => {
     vi.mocked(useSession).mockReturnValue({ isLoaded: true, isSignedIn: true, session: { id: 'session-current' } } as never)
   })
 
+  it('regresa a configuración mediante la miga de pan usando el teclado', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('2 sesiones')
+    const breadcrumbs = within(screen.getByRole('navigation', { name: 'Miga de pan' }))
+    expect(breadcrumbs.getByText('Seguridad').getAttribute('aria-current')).toBe('page')
+    await user.tab()
+    await user.tab()
+    expect(document.activeElement).toBe(breadcrumbs.getByRole('link', { name: 'Configuración' }))
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('heading', { name: 'Configuración destino' })).toBeTruthy()
+    expect(fixture.other.session.revoke).not.toHaveBeenCalled()
+  })
+
   it('muestra los dispositivos reales y sólo permite cerrar las otras sesiones', async () => {
     const user = userEvent.setup()
     renderPage()

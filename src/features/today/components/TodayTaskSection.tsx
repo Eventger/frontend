@@ -17,6 +17,7 @@ type TodayTaskSectionProps = {
   onOpenTask: (
     task: TodayTaskItem,
   ) => void
+  onRescheduleTask?: (task: TodayTaskItem) => void
 }
 
 const countStyles: Record<
@@ -39,6 +40,7 @@ export function TodayTaskSection({
   tasks,
   group,
   onOpenTask,
+  onRescheduleTask,
 }: TodayTaskSectionProps) {
   if (tasks.length === 0) {
     return null
@@ -76,6 +78,7 @@ export function TodayTaskSection({
             onOpenTask={
               onOpenTask
             }
+            onRescheduleTask={onRescheduleTask}
           />
         ))}
       </div>

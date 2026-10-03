@@ -5,6 +5,7 @@ import {
 
 import {
   CalendarDays,
+  Check,
   Clock3,
   GripVertical,
   Pencil,
@@ -26,6 +27,9 @@ import { Textarea } from '@/components/ui/textarea'
 
 import { DeleteSubtaskDialog } from '@/features/events/components/detail/DeleteSubtaskDialog'
 import { getCalendarDate } from '@/lib/calendar'
+import { RescheduleTaskDialog } from '../detail/RescheduleTaskDialog'
+import { getSchedulingConflict } from '../../services/planning.service'
+import type { DayPlan } from '../../types/planning.types'
 
 import type {
   Event,
@@ -59,6 +63,7 @@ type EditEventFormProps = {
   onDeleteSubtask?: (
     subtask: Subtask,
   ) => Promise<void>
+  onSubtasksChanged?: () => Promise<void> | void
 }
 
 type FormValues = {
@@ -119,6 +124,7 @@ export function EditEventForm({
   onCreateSubtask,
   onUpdateSubtask,
   onDeleteSubtask,
+  onSubtasksChanged,
 }: EditEventFormProps) {
   const [values, setValues] =
     useState<FormValues>({
@@ -154,6 +160,8 @@ export function EditEventForm({
 
   const [taskActionError, setTaskActionError] =
     useState('')
+  const [rescheduling, setRescheduling] = useState<{ task: Subtask; input?: UpdateSubtaskInput; conflict?: DayPlan } | null>(null)
+  const [rescheduleSaved, setRescheduleSaved] = useState(false)
 
   const updateField = <
     K extends keyof FormValues,
@@ -328,10 +336,12 @@ export function EditEventForm({
       }
 
       resetSubtaskForm()
-    } catch {
-      setTaskActionError(
-        'No pudimos guardar la tarea. Inténtalo de nuevo.',
-      )
+    } catch (error) {
+      const conflict = getSchedulingConflict(error)
+      if (conflict && editingSubtask) {
+        setRescheduleSaved(false)
+        setRescheduling({ task: editingSubtask, input: { ...data, state: subtaskValues.state }, conflict })
+      } else setTaskActionError('No pudimos guardar la tarea. Inténtalo de nuevo.')
     } finally {
       setTaskAction(null)
     }
@@ -853,74 +863,99 @@ export function EditEventForm({
           </h2>
 
           {subtasks.length > 0 ? (
-            <div className="mt-1.5 space-y-1">
+            <ul className="mt-1.5 space-y-1" aria-label="Tareas agregadas">
               {subtasks.map((subtask) => (
-                <div
+                <li
                   key={subtask.id}
-                  className="flex min-h-12 items-center gap-3 rounded-[8px] border border-[#d9dee7] bg-white px-3 py-2"
+                  className="grid min-h-12 grid-cols-[15px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-[8px] border border-[#d9dee7] bg-white px-3 py-2 md:grid-cols-[15px_minmax(0,1fr)_120px_72px_44px_44px_44px] lg:grid-cols-[15px_minmax(0,1fr)_130px_90px_132px_44px_44px]"
                 >
                   <GripVertical
                     size={15}
-                    className="shrink-0 text-[#98a2b3]"
+                    className="shrink-0 self-start text-[#98a2b3] md:self-center"
                     aria-hidden="true"
                   />
 
-                  <p className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#17212b]">
+                  <p title={subtask.name} className="min-w-0 break-words text-[12px] font-medium text-[#17212b] md:truncate">
                     {subtask.name}
                   </p>
 
-                  <div className="hidden min-w-[130px] items-center gap-2 text-[11px] text-[#667085] sm:flex">
-                    <CalendarDays
-                      size={15}
-                      aria-hidden="true"
-                    />
-                    {formatTaskDate(
-                      subtask.targetDate,
-                    )}
+                  <div className="col-start-2 flex min-w-0 flex-wrap gap-x-4 gap-y-1 md:contents">
+                    <div className="flex items-center gap-2 whitespace-nowrap text-[11px] text-[#667085]">
+                      <CalendarDays
+                        size={15}
+                        aria-hidden="true"
+                      />
+                      <time dateTime={subtask.targetDate.slice(0, 10)}>
+                        {formatTaskDate(subtask.targetDate)}
+                      </time>
+                    </div>
+
+                    <div className="flex items-center gap-2 whitespace-nowrap text-[11px] text-[#667085]">
+                      <Clock3
+                        size={15}
+                        aria-hidden="true"
+                      />
+                      {subtask.estimatedHours} h
+                    </div>
                   </div>
 
-                  <div className="hidden min-w-[90px] items-center gap-2 text-[11px] text-[#667085] sm:flex">
-                    <Clock3
-                      size={15}
-                      aria-hidden="true"
-                    />
-                    {subtask.estimatedHours} h
+                  <div className="col-start-2 flex items-center justify-end gap-3 md:contents">
+                    <div className="flex h-11 w-11 items-center justify-center lg:w-[132px] lg:justify-start">
+                      {subtask.state === 'completed' ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-[#ecfdf3] px-2 py-1 text-[11px] font-medium text-[#027a48]" title="Tarea completada">
+                          <Check size={15} aria-hidden="true" />
+                          <span className="sr-only lg:not-sr-only">Completada</span>
+                        </span>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={isTaskBusy}
+                          aria-label={`Reprogramar ${subtask.name}`}
+                          className="h-11 w-full px-2 text-[#3730a3] lg:justify-start"
+                          onClick={() => { setRescheduleSaved(false); setRescheduling({ task: subtask }) }}
+                        >
+                          <CalendarDays size={15} aria-hidden="true" />
+                          <span className="hidden lg:inline">Reprogramar</span>
+                        </Button>
+                      )}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={isTaskBusy}
+                      onClick={() =>
+                        handleEditSubtask(
+                          subtask,
+                        )
+                      }
+                      aria-label={`Editar ${subtask.name}`}
+                      className="size-11 text-[#667085] hover:bg-[#eef2ff] hover:text-[#4f46e5]"
+                    >
+                      <Pencil size={15} />
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={isTaskBusy}
+                      onClick={() =>
+                        setDeletingSubtask(
+                          subtask,
+                        )
+                      }
+                      aria-label={`Eliminar ${subtask.name}`}
+                      className="size-11 text-[#d92d20] hover:bg-[#fef2f2] hover:text-[#b42318]"
+                    >
+                      <Trash2 size={15} />
+                    </Button>
                   </div>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={isTaskBusy}
-                    onClick={() =>
-                      handleEditSubtask(
-                        subtask,
-                      )
-                    }
-                    aria-label={`Editar ${subtask.name}`}
-                    className="size-11 text-[#667085] hover:bg-[#eef2ff] hover:text-[#4f46e5]"
-                  >
-                    <Pencil size={15} />
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={isTaskBusy}
-                    onClick={() =>
-                      setDeletingSubtask(
-                        subtask,
-                      )
-                    }
-                    aria-label={`Eliminar ${subtask.name}`}
-                    className="size-11 text-[#d92d20] hover:bg-[#fef2f2] hover:text-[#b42318]"
-                  >
-                    <Trash2 size={15} />
-                  </Button>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
             <p className="mt-2 rounded-[8px] border border-dashed border-[#d9dee7] px-4 py-3 text-[12px] text-[#667085]">
               Aún no hay tareas. Completa el formulario superior para agregar la primera.
@@ -961,6 +996,25 @@ export function EditEventForm({
             setDeletingSubtask(null)
           }
           onConfirm={handleConfirmDelete}
+        />
+      )}
+      {rescheduling && (
+        <RescheduleTaskDialog
+          key={rescheduling.task.id}
+          task={rescheduling.task}
+          eventDate={event.eventDate}
+          initialInput={rescheduling.input}
+          initialConflict={rescheduling.conflict}
+          onSaved={async () => {
+            setRescheduleSaved(true)
+            await onSubtasksChanged?.()
+          }}
+          onClose={() => {
+            setRescheduling(null)
+            if (rescheduleSaved && editingSubtask?.id === rescheduling.task.id) {
+              resetSubtaskForm()
+            }
+          }}
         />
       )}
     </>

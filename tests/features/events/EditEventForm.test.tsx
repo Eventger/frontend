@@ -1,9 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
 
 import { EditEventForm } from '@/features/events/components/edit/EditEventForm'
+import { ApiError } from '@/lib/api'
+import { dayPlan } from './planning.fixtures'
 import {
   createSubtaskInputFixture,
   eventFixture,
@@ -37,6 +39,57 @@ function renderForm(
 }
 
 describe('EditEventForm', () => {
+  it.each([false, true])('conserva el borrador del evento al resolver=%s y el de la tarea al cancelar', async (resolve) => {
+    const user = userEvent.setup()
+    const writes: Record<string, unknown>[] = []
+    const onSubtasksChanged = vi.fn()
+    const onUpdateSubtask = vi.fn().mockRejectedValue(new ApiError(409, {
+      success: false, data: dayPlan('2026-10-12', 2.5),
+    }))
+    vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
+      const body = JSON.parse(String(options.body))
+      const headers = { 'Content-Type': 'application/json' }
+      if (url.endsWith('/reschedule-preview/')) {
+        return new Response(JSON.stringify({ success: true, data: dayPlan(body.target_date, Number(body.estimated_hours)) }), { headers })
+      }
+      writes.push(body)
+      return new Response(JSON.stringify({ success: true, data: {}, planning: dayPlan('2026-10-12', Number(body.estimated_hours)) }), { headers })
+    }))
+    renderForm(undefined, { subtasks: [subtaskFixture], onUpdateSubtask, onSubtasksChanged })
+    await user.clear(screen.getByLabelText('Contacto *'))
+    await user.type(screen.getByLabelText('Contacto *'), 'Contacto sin guardar')
+    await user.click(screen.getByRole('button', { name: `Editar ${subtaskFixture.name}` }))
+    await user.clear(screen.getByLabelText('Nombre de la tarea *'))
+    await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Transporte actualizado')
+    await user.clear(screen.getByLabelText('Nota opcional'))
+    await user.type(screen.getByLabelText('Nota opcional'), 'Nota sin perder')
+    fireEvent.change(screen.getByLabelText('Fecha límite *'), { target: { value: '2026-10-12' } })
+    await user.click(screen.getByRole('button', { name: 'Guardar tarea' }))
+    await screen.findByText('7,5 h / 6 h')
+
+    if (resolve) {
+      await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
+      await user.click(screen.getByRole('radio', { name: /Reducir el tiempo estimado/ }))
+      fireEvent.change(screen.getByLabelText('Horas estimadas'), { target: { value: '1' } })
+      await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+      await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+      await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
+      await user.click(screen.getByRole('button', { name: 'Volver al plan' }))
+      expect(writes).toHaveLength(1)
+      expect(writes[0]).toMatchObject({ name: 'Transporte actualizado', details: 'Nota sin perder', state: 'pending', estimated_hours: '1.00' })
+      expect(onSubtasksChanged).toHaveBeenCalledOnce()
+      expect((screen.getByLabelText('Nombre de la tarea *') as HTMLInputElement).value).toBe('')
+    } else {
+      await user.click(screen.getByRole('button', { name: 'Cancelar reprogramación' }))
+      expect(writes).toHaveLength(0)
+      expect(onSubtasksChanged).not.toHaveBeenCalled()
+      expect((screen.getByLabelText('Nombre de la tarea *') as HTMLInputElement).value).toBe('Transporte actualizado')
+      expect((screen.getByLabelText('Nota opcional') as HTMLTextAreaElement).value).toBe('Nota sin perder')
+      expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('2026-10-12')
+    }
+    expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto sin guardar')
+  })
+
   it('precarga, actualiza y envía el contacto', async () => {
     const user = userEvent.setup()
     const onSubmit = renderForm()

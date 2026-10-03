@@ -86,6 +86,7 @@ describe('getEvents', () => {
   it('obtiene y transforma la lista de eventos del backend', async () => {
     const response: EventsApiResponse = {
       success: true,
+      pagination: { page: 2, page_size: 6, total: 7, total_pages: 2 },
       data: [
         {
           id: 21,
@@ -102,11 +103,11 @@ describe('getEvents', () => {
     }
     vi.mocked(apiRequest).mockResolvedValue(response)
 
-    const result = await getEvents()
+    const result = await getEvents(2)
 
     expect(apiRequest).toHaveBeenCalledOnce()
-    expect(apiRequest).toHaveBeenCalledWith('/events/')
-    expect(result).toEqual([
+    expect(apiRequest).toHaveBeenCalledWith('/events/?page=2')
+    expect(result.events).toEqual([
       {
         id: 21,
         name: 'Boda Backend',
@@ -116,6 +117,14 @@ describe('getEvents', () => {
         contact: 'Laura 3001234567',
       },
     ])
+    expect(result.pagination).toEqual({ page: 2, pageSize: 6, total: 7, totalPages: 2 })
+  })
+
+  it('envía el tipo junto con la página al backend usando el cliente autenticado', async () => {
+    const request = vi.fn().mockResolvedValue({ success: true, data: [], pagination: { page: 2, page_size: 6, total: 0, total_pages: 1 } })
+    await getEvents(2, request, 3)
+    expect(request).toHaveBeenCalledWith('/events/?page=2&type=3')
+    expect(apiRequest).not.toHaveBeenCalled()
   })
 })
 

@@ -99,10 +99,10 @@ export function SecurityPage() {
   const { user, isLoaded } = useUser()
   const { session } = useSession()
   return (
-    <PageContainer>
+    <PageContainer breadcrumbs={[{ label: 'Hoy', to: '/hoy' }, { label: 'Configuración', to: '/configuracion' }, { label: 'Seguridad' }]}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader title="Seguridad de la cuenta" description="Administra tu contraseña, revisa los dispositivos activos y controla las acciones sensibles." />
-        <Button asChild className={`${settingsSecondaryButton} self-start sm:mt-3`}><Link to="/configuracion" viewTransition>Volver a configuración</Link></Button>
+        <Button asChild className={`${settingsSecondaryButton} self-start`}><Link to="/configuracion" viewTransition>Volver a configuración</Link></Button>
       </div>
       {!isLoaded ? <SettingsLoadingState /> : user && <SecuritySettings key={user.id} user={user} currentSessionId={session?.id} />}
     </PageContainer>

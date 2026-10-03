@@ -1,11 +1,14 @@
 import { useUser } from '@clerk/react'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { settingsUserFixture } from './settings.fixtures'
 import { deferred } from '../../deferred'
+import { getPlanningPreferences, savePlanningPreferences } from '@/features/settings/services/planningPreferences.service'
+
+vi.mock('@/features/settings/services/planningPreferences.service', () => ({ getPlanningPreferences: vi.fn(), savePlanningPreferences: vi.fn() }))
 
 let fixture: ReturnType<typeof settingsUserFixture>
 
@@ -17,10 +20,16 @@ function renderPage() {
   return render(<MemoryRouter><PageRoutes /></MemoryRouter>)
 }
 
+async function readyPreferences() {
+  await waitFor(() => expect((screen.getByLabelText('Límite diario de trabajo') as HTMLInputElement).disabled).toBe(false))
+}
+
 describe('SettingsPage', () => {
   beforeEach(() => {
     fixture = settingsUserFixture()
     vi.mocked(useUser).mockReturnValue({ isLoaded: true, isSignedIn: true, user: fixture.resource })
+    vi.mocked(getPlanningPreferences).mockReset().mockResolvedValue({ dailyLimitHours: 6, configured: true })
+    vi.mocked(savePlanningPreferences).mockReset().mockImplementation(async hours => ({ dailyLimitHours: hours, configured: true }))
   })
 
   it('muestra el perfil real, correo y Google y navega a seguridad', async () => {
@@ -44,36 +53,40 @@ describe('SettingsPage', () => {
     expect(screen.queryByRole('button', { name: 'Guardar cambios' })).toBeNull()
   })
 
-  it('guarda una preferencia en la cuenta sin reemplazar otros metadatos', async () => {
+  it('guarda una preferencia en la API sin reemplazar metadatos de Clerk', async () => {
     const user = userEvent.setup()
     renderPage()
+    await readyPreferences()
     await user.clear(screen.getByLabelText('Límite diario de trabajo'))
     await user.type(screen.getByLabelText('Límite diario de trabajo'), '7.5')
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    expect(fixture.user.updateMetadata).toHaveBeenCalledWith({ unsafeMetadata: { eventger: { dailyLimitHours: 7.5 } } })
+    expect(savePlanningPreferences).toHaveBeenCalledWith(7.5, expect.any(Function))
+    expect(fixture.user.updateMetadata).not.toHaveBeenCalled()
     expect(fixture.user.unsafeMetadata.otherApp).toEqual({ theme: 'dark' })
     expect(fixture.user.unsafeMetadata.eventger.calendar).toBe('week')
     expect(await screen.findByText('Tus preferencias se guardaron correctamente.')).toBeTruthy()
     expect((screen.getByLabelText('Límite diario de trabajo') as HTMLInputElement).value).toBe('7.5')
   })
 
-  it.each(['', '0', '25', '2.25'])('rechaza el límite inválido %s y enfoca el campo', async (value) => {
+  it.each(['', '0', '0.5', '16.01', '25', '2.001'])('rechaza el límite inválido %s y enfoca el campo', async (value) => {
     const user = userEvent.setup()
     renderPage()
+    await readyPreferences()
     const input = screen.getByLabelText('Límite diario de trabajo')
     await user.clear(input)
     if (value) await user.type(input, value)
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    expect(fixture.user.updateMetadata).not.toHaveBeenCalled()
+    expect(savePlanningPreferences).not.toHaveBeenCalled()
     expect(input.getAttribute('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(input)
   })
 
   it('conserva el borrador tras un fallo y bloquea envíos simultáneos', async () => {
     const pending = deferred<never>()
-    fixture.user.updateMetadata.mockReturnValueOnce(pending.promise)
+    vi.mocked(savePlanningPreferences).mockReturnValueOnce(pending.promise)
     const user = userEvent.setup()
     renderPage()
+    await readyPreferences()
     await user.clear(screen.getByLabelText('Límite diario de trabajo'))
     await user.type(screen.getByLabelText('Límite diario de trabajo'), '8')
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
@@ -87,14 +100,16 @@ describe('SettingsPage', () => {
   it('reinicia el borrador al cambiar de usuario', async () => {
     const user = userEvent.setup()
     const view = renderPage()
+    await readyPreferences()
     await user.clear(screen.getByLabelText('Límite diario de trabajo'))
     await user.type(screen.getByLabelText('Límite diario de trabajo'), '9')
     const second = settingsUserFixture()
     second.user.id = 'another-user'
     second.user.unsafeMetadata.eventger.dailyLimitHours = 4
     vi.mocked(useUser).mockReturnValue({ isLoaded: true, isSignedIn: true, user: second.resource })
+    vi.mocked(getPlanningPreferences).mockResolvedValueOnce({ dailyLimitHours: 4, configured: true })
     view.rerender(<MemoryRouter><PageRoutes /></MemoryRouter>)
-    expect((screen.getByLabelText('Límite diario de trabajo') as HTMLInputElement).value).toBe('4')
+    await waitFor(() => expect((screen.getByLabelText('Límite diario de trabajo') as HTMLInputElement).value).toBe('4'))
     expect(fixture.user.updateMetadata).not.toHaveBeenCalled()
   })
 

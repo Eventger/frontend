@@ -33,7 +33,7 @@ function mapSubtaskResponse(
   }
 }
 
-function toDeadlineDateTime(
+export function toDeadlineDateTime(
   date: string,
 ) {
   const localEndOfDay = new Date(

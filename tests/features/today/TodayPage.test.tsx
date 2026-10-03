@@ -1,6 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
-import { useUser } from '@clerk/react'
-import { settingsUserFixture } from '../settings/settings.fixtures'
+import { usePlanningPreferences } from '@/features/settings/hooks/usePlanningPreferences'
 import userEvent from '@testing-library/user-event'
 import {
   MemoryRouter,
@@ -18,6 +17,7 @@ import { todayDataFixture } from './today.fixtures'
 vi.mock('@/features/today/hooks/useToday', () => ({
   useToday: vi.fn(),
 }))
+vi.mock('@/features/settings/hooks/usePlanningPreferences', () => ({ usePlanningPreferences: vi.fn() }))
 
 const retry = vi.fn().mockResolvedValue(undefined)
 
@@ -62,6 +62,7 @@ function expectBefore(first: HTMLElement, second: HTMLElement) {
 
 describe('TodayPage', () => {
   beforeEach(() => {
+    vi.mocked(usePlanningPreferences).mockReturnValue({ dailyLimitHours: 6, isLoading: false, error: '', save: vi.fn(), refresh: vi.fn() })
     retry.mockClear()
     vi.mocked(useToday).mockReset()
     vi.mocked(useToday).mockReturnValue({
@@ -73,12 +74,28 @@ describe('TodayPage', () => {
   })
 
   it('calcula la capacidad con la preferencia de la cuenta y avisa si hay sobrecarga', () => {
-    const fixture = settingsUserFixture()
-    fixture.user.unsafeMetadata.eventger.dailyLimitHours = 2
-    vi.mocked(useUser).mockReturnValueOnce({ isLoaded: true, isSignedIn: true, user: fixture.resource })
+    vi.mocked(usePlanningPreferences).mockReturnValue({ dailyLimitHours: 2, isLoading: false, error: '', save: vi.fn(), refresh: vi.fn() })
     renderPage()
     expect(screen.getByText('3.75 h / 2 h')).toBeTruthy()
     expect(screen.getByText('Tu planificación de hoy supera el límite diario de 2 horas. Revisa tus tareas para reducir la sobrecarga.')).toBeTruthy()
+  })
+
+  it('filtra por evento y estado con los selectores compartidos y permite limpiar ambos', async () => {
+    renderPage()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', { name: 'Evento' }))
+    await user.keyboard('{ArrowDown}')
+    await user.click(await screen.findByRole('option', { name: 'Conferencia Frontend' }))
+    expect(screen.queryByRole('button', { name: 'Ver tarea: Confirmar invitados hoy' })).toBeNull()
+    expect(screen.getAllByRole('button', { name: 'Ver tarea: Revisar presentación hoy' }).length).toBeGreaterThan(0)
+    await user.click(screen.getByRole('combobox', { name: 'Estado' }))
+    await user.keyboard('{ArrowDown}')
+    await user.click(await screen.findByRole('option', { name: 'Para hoy' }))
+    expect(screen.getByRole('combobox', { name: 'Estado' }).textContent).toBe('Para hoy')
+    await user.click(screen.getByRole('button', { name: 'Limpiar filtros' }))
+    expect(screen.getByRole('combobox', { name: 'Evento' }).textContent).toBe('Todos los eventos')
+    expect(screen.getByRole('combobox', { name: 'Estado' }).textContent).toBe('Todos')
+    expect(screen.getAllByRole('button', { name: 'Ver tarea: Confirmar invitados hoy' }).length).toBeGreaterThan(0)
   })
 
   it('muestra el estado de carga', () => {

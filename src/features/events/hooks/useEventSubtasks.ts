@@ -27,6 +27,9 @@ export function useEventSubtasks(
   const [error, setError] =
     useState<string | null>(null)
 
+  const [loadedEventId, setLoadedEventId] =
+    useState<number | null>(null)
+
   const requestVersion = useRef(0)
 
   const loadSubtasks = useCallback(
@@ -36,6 +39,7 @@ export function useEventSubtasks(
       if (eventId === null) {
         setSubtasks([])
         setError(null)
+        setLoadedEventId(null)
         setIsLoading(false)
         return
       }
@@ -63,6 +67,7 @@ export function useEventSubtasks(
         }
       } finally {
         if (version === requestVersion.current) {
+          setLoadedEventId(eventId)
           setIsLoading(false)
         }
       }
@@ -103,7 +108,8 @@ export function useEventSubtasks(
     isLoading:
       isAuthLoaded && !isSignedIn
         ? false
-        : isLoading,
+        : isLoading ||
+          (eventId !== null && loadedEventId !== eventId),
     error,
     refresh: loadSubtasks,
   }

@@ -9,11 +9,14 @@ export function ClerkProvider({
   return children
 }
 
+const getVisualToken = async () => 'visual-audit-token'
+
 export function useAuth() {
   return {
     isLoaded: true,
     isSignedIn: true,
-    getToken: async () => 'visual-audit-token',
+    userId: 'visual-user',
+    getToken: getVisualToken,
   }
 }
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { PageTitle } from './PageTitle'
 
 type PageHeaderProps = {
   title: string
@@ -14,9 +15,7 @@ export function PageHeader({
   return (
     <header className="flex min-h-16 items-start justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold leading-9 tracking-[-0.02em] text-[#17212b] md:text-[30px]">
-          {title}
-        </h1>
+        <PageTitle>{title}</PageTitle>
 
         <p className="mt-1 text-[14px] leading-5 text-[#667085] md:text-[15px]">
           {description}

@@ -11,6 +11,7 @@ import {
 } from 'react-router'
 
 import { AppSidebar } from '@/components/layout/AppSidebar'
+import { useDeferredScrollRestoration } from './useDeferredScrollRestoration'
 
 type AppLayoutProps = {
   children?: ReactNode
@@ -20,6 +21,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation()
   const mainRef =
     useRef<HTMLElement>(null)
+
+  useDeferredScrollRestoration(mainRef)
 
   useEffect(() => {
     const animationFrame =

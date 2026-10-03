@@ -5,13 +5,16 @@ import {
   type ReactNode,
 } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router'
+import { BrowserRouter, createBrowserRouter } from 'react-router'
+import { RouterProvider } from 'react-router/dom'
 
 import '@/index.css'
 
 import { OperationFeedback } from '@/components/OperationFeedback'
 import { AppSidebar } from '@/components/layout/AppSidebar'
+import { AppLayout } from '@/components/layout/AppLayout'
 import { PageContainer } from '@/components/layout/PageContainer'
+import type { BreadcrumbItem } from '@/components/layout/PageBreadcrumbs'
 import { PageContent } from '@/components/layout/PageContent'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageHeaderCreateButton } from '@/components/layout/PageHeaderCreateButton'
@@ -26,15 +29,29 @@ import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard
 import { TodaySummary } from '@/features/today/components/TodaySummary'
 import { TodayPriorityGuide } from '@/features/today/components/TodayPriorityGuide'
 import { TodayTaskCard } from '@/features/today/components/TodayTaskCard'
+import { TodayPage } from '@/features/today/pages/TodayPage'
+import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
+import { EventsPage } from '@/features/events/pages/EventsPage'
+import { CreateEventPage } from '@/features/events/pages/CreateEventPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { SecurityPage } from '@/features/settings/pages/SecurityPage'
+import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
+import { dayPlan, schedulingTask } from '../features/events/planning.fixtures'
+
+const eventBreadcrumbs: BreadcrumbItem[] = [
+  { label: 'Hoy', to: '/hoy' },
+  { label: 'Eventos', to: '/eventos' },
+  { label: 'Boda Laura & Daniel' },
+]
 
 function AppShell({
   children,
   fullPage = false,
+  breadcrumbs = [{ label: 'Hoy', to: '/hoy' }, { label: 'Eventos' }],
 }: {
   children: ReactNode
   fullPage?: boolean
+  breadcrumbs?: BreadcrumbItem[]
 }) {
   return (
     <div className="min-h-svh bg-[#f7f8fc] xl:flex">
@@ -43,7 +60,7 @@ function AppShell({
         id="main-content"
         className="min-w-0 flex-1"
       >
-        {fullPage ? children : <PageContainer>
+        {fullPage ? children : <PageContainer breadcrumbs={breadcrumbs}>
           <PageContent>
             {children}
           </PageContent>
@@ -323,7 +340,7 @@ function AuthFeedbackReviewFixture() {
 
 function EmptyTasksFixture() {
   return (
-    <AppShell>
+    <AppShell breadcrumbs={eventBreadcrumbs}>
       <PageHeader
         title="Boda Laura & Daniel"
         description="Detalle y planificación del evento"
@@ -340,7 +357,7 @@ function EmptyTasksFixture() {
 
 function EventTaskFixture() {
   return (
-    <AppShell>
+    <AppShell breadcrumbs={eventBreadcrumbs}>
       <PageHeader
         title="Plan logístico"
         description="Comprobación con contenido largo y acciones disponibles"
@@ -373,7 +390,7 @@ function TodayFixture() {
   }
 
   return (
-    <AppShell>
+    <AppShell breadcrumbs={[{ label: 'Hoy' }]}>
       <PageHeader
         title="Hoy"
         description="Miércoles, 30 de septiembre · Organiza primero lo que requiere atención"
@@ -400,11 +417,13 @@ function TodayFixture() {
           task={task}
           group="today"
           onOpenTask={() => undefined}
+          onRescheduleTask={() => undefined}
         />
         <TodayTaskCard
           task={{ ...task, id: 2 }}
           group="upcoming"
           onOpenTask={() => undefined}
+          onRescheduleTask={() => undefined}
         />
       </div>
     </AppShell>
@@ -413,7 +432,7 @@ function TodayFixture() {
 
 function DeleteDialogFixture() {
   return (
-    <AppShell>
+    <AppShell breadcrumbs={eventBreadcrumbs}>
       <PageHeader
         title="Boda Laura & Daniel"
         description="Detalle del evento"
@@ -432,6 +451,24 @@ const view = new URLSearchParams(
   window.location.search,
 ).get('view')
 
+function RescheduleFixture({ conflict = false }: { conflict?: boolean }) {
+  const [open, setOpen] = useState(true)
+  return <AppShell breadcrumbs={eventBreadcrumbs}><PageHeader title="Boda Laura & Daniel" description="Plan logístico" /><button type="button" className="mt-5 min-h-11 rounded-lg bg-[#4f46e5] px-4 text-white" onClick={() => setOpen(true)}>Abrir reprogramación</button>{open && <RescheduleTaskDialog task={schedulingTask} initialConflict={conflict ? dayPlan() : undefined} initialInput={conflict ? { name: schedulingTask.name, targetDate: '2026-10-12', estimatedHours: 2, details: '' } : undefined} onClose={() => setOpen(false)} onSaved={() => undefined} />}</AppShell>
+}
+
+function BreadcrumbsFixture() {
+  return (
+    <AppShell breadcrumbs={[
+      { label: 'Hoy', to: '/hoy' },
+      { label: 'Eventos', to: '/eventos' },
+      { label: 'Celebración internacional de graduación con proveedores e invitados de varias ciudades y un nombre muy largo sin espacios: InvitadosInternacionalesInvitadosInternacionalesInvitadosInternacionales', to: '/evento/21' },
+      { label: 'Editar evento' },
+    ]}>
+      <PageHeader title="Editar evento" description="Comprueba la navegación con nombres largos y poco espacio disponible." />
+    </AppShell>
+  )
+}
+
 const fixtures: Record<string, ReactNode> = {
   login: <LoginPage />,
   signup: <SignUpPage />,
@@ -448,14 +485,32 @@ const fixtures: Record<string, ReactNode> = {
   'delete-dialog': <DeleteDialogFixture />,
   settings: <AppShell fullPage><SettingsPage /></AppShell>,
   security: <AppShell fullPage><SecurityPage /></AppShell>,
+  reschedule: <RescheduleFixture />,
+  conflict: <RescheduleFixture conflict />,
+  breadcrumbs: <BreadcrumbsFixture />,
 }
+
+const navigationRouter = view === 'today-navigation' || view === 'layout-navigation' || view === 'events-pagination' ? createBrowserRouter([
+  {
+    element: <AppLayout />,
+    children: [
+      { path: '/tests/visual/index.html', element: view === 'events-pagination' ? <EventsPage /> : <TodayPage /> },
+      { path: '/hoy', element: <TodayPage /> },
+      { path: '/eventos', element: <EventsPage /> },
+      { path: '/crear', element: <CreateEventPage /> },
+      { path: '/evento/:id', element: <EventDetailPage /> },
+      { path: '/configuracion', element: <SettingsPage /> },
+      { path: '/configuracion/seguridad', element: <SecurityPage /> },
+    ],
+  },
+]) : null
 
 createRoot(
   document.getElementById('root')!,
 ).render(
   <StrictMode>
-    <BrowserRouter>
+    {navigationRouter ? <RouterProvider router={navigationRouter} /> : <BrowserRouter>
       {fixtures[view ?? 'events-empty'] ?? fixtures['events-empty']}
-    </BrowserRouter>
+    </BrowserRouter>}
   </StrictMode>,
 )

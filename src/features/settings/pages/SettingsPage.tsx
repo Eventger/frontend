@@ -72,7 +72,7 @@ function AccountSettings({ user }: { user: UserResource }) {
         </AccountRow>
         {saved && <InlineFeedback variant="success">{saved}</InlineFeedback>}
       </SettingsCard>
-      <PreferencesForm user={user} />
+      <PreferencesForm />
       {dialog === 'profile' && <ProfileDialog user={user} onClose={() => setDialog(null)} onSaved={() => setSaved('Tu perfil se actualizó correctamente.')} />}
       {dialog === 'email' && <EmailDialog user={user} onClose={() => setDialog(null)} onSaved={() => setSaved('Tu correo principal se actualizó correctamente.')} />}
     </>
@@ -82,7 +82,7 @@ function AccountSettings({ user }: { user: UserResource }) {
 export function SettingsPage() {
   const { user, isLoaded } = useUser()
   return (
-    <PageContainer>
+    <PageContainer breadcrumbs={[{ label: 'Hoy', to: '/hoy' }, { label: 'Configuración' }]}>
       <PageHeader title="Configuración de cuenta" description="Gestiona tu cuenta de Clerk y las preferencias de Eventger desde un solo lugar." />
       {!isLoaded ? <SettingsLoadingState /> : user && (
         <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_17.25rem]">
