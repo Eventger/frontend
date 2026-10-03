@@ -85,17 +85,8 @@ export function SettingsPage() {
     <PageContainer breadcrumbs={[{ label: 'Hoy', to: '/hoy' }, { label: 'Configuración' }]}>
       <PageHeader title="Configuración de cuenta" description="Gestiona tu cuenta de Clerk y las preferencias de Eventger desde un solo lugar." />
       {!isLoaded ? <SettingsLoadingState /> : user && (
-        <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_17.25rem]">
-          <div className="min-w-0 space-y-6"><AccountSettings key={user.id} user={user} /></div>
-          <aside aria-label="Acerca de tu configuración" className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <SettingsCard title="Gestionado por Clerk" tone="brand" compact className="[&_h2]:text-[#4f46e5]">
-              <p className="mt-3 text-[13px] leading-[19px] text-[#17212b]">Perfil, correo, acceso con Google y seguridad permanecen sincronizados con tu cuenta real.</p>
-            </SettingsCard>
-            <SettingsCard title="¿Dónde se aplica Eventger?" tone="success" compact className="[&_h2]:text-[#027a48]">
-              <p className="mt-3 text-[13px] leading-[19px] text-[#17212b]">El límite diario se aplica a tu capacidad de trabajo y a las alertas de sobrecarga en Hoy.</p>
-            </SettingsCard>
-            <SettingsCard title="Una sola experiencia" description="Clerk conserva la seguridad; Eventger presenta los ajustes dentro del mismo flujo." compact />
-          </aside>
+        <div className="mt-8 min-w-0 space-y-6">
+          <AccountSettings key={user.id} user={user} />
         </div>
       )}
     </PageContainer>

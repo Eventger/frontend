@@ -39,6 +39,10 @@ Los mensajes de error, éxito y confirmación conservan el icono, título,
 descripción y grupo de acciones centrados en móvil, tableta y escritorio,
 siguiendo la referencia de `Estados UX en _hoy.pdf`.
 
+Configuración y Seguridad presentan sus controles en una sola columna, sin
+tarjetas informativas laterales. Las tarjetas de cuenta, preferencias, contraseña,
+dispositivos y eliminación aprovechan el ancho del contenedor compartido.
+
 Eventos descarga y presenta como máximo 6 tarjetas por página, con dos columnas
 desde `lg` y una por debajo. La paginación conserva el contenedor y encabezado
 compartidos. Si solo hay una página, el pie muestra únicamente el número de

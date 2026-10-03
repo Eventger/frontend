@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSession, useUser } from '@clerk/react'
 import type { SessionWithActivitiesResource, UserResource } from '@clerk/react/types'
-import { CircleCheck, KeyRound, Monitor, ShieldCheck, Smartphone, Trash2 } from 'lucide-react'
+import { CircleCheck, KeyRound, Monitor, Smartphone, Trash2 } from 'lucide-react'
 import { Link } from 'react-router'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -32,12 +32,11 @@ function SecuritySettings({ user, currentSessionId }: { user: UserResource; curr
   const [dialog, setDialog] = useState<'password' | 'delete' | null>(null)
   const [passwordSaved, setPasswordSaved] = useState(false)
   const { sessions, loading, error, revokingId, notice, needsPageReload, reload, revokeSession, confirmOtherSessionsClosed } = useAccountSessions(user, currentSessionId)
-  const current = sessions.find((session) => session.id === currentSessionId)
   const googleAccount = user.externalAccounts.find((account) => account.provider === 'google')
 
   return (
     <>
-      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_17.25rem]">
+      <div className="mt-8">
         <div className="min-w-0 space-y-6">
           <SettingsCard title="Acceso y contraseña" description={user.passwordEnabled ? 'Tienes una contraseña configurada para esta cuenta.' : 'No tienes una contraseña configurada para esta cuenta.'} headerIcon={<KeyRound size={21} aria-hidden="true" />} className="py-8 sm:py-8" action={<Button type="button" className={`${settingsSecondaryButton} w-full sm:w-auto`} onClick={() => { setPasswordSaved(false); setDialog('password') }}>{user.passwordEnabled ? 'Cambiar contraseña' : 'Establecer contraseña'}</Button>}>
             <InlineFeedback variant="info" className="mt-5 border-transparent py-4 text-[#17212b]">
@@ -74,20 +73,6 @@ function SecuritySettings({ user, currentSessionId }: { user: UserResource; curr
             <p className="mt-6 text-xs leading-[18px] text-[#b42318]">{user.deleteSelfEnabled ? 'Solicitaremos una confirmación adicional antes de eliminar tu cuenta.' : 'La eliminación de cuenta no está habilitada para tu cuenta.'}</p>
           </SettingsCard>
         </div>
-        <aside aria-label="Acerca de la seguridad de tu cuenta" className="grid min-w-0 gap-6 sm:grid-cols-2 lg:grid-cols-1">
-          <SettingsCard title="Protegido por Clerk" description="Clerk gestiona el acceso, las sesiones y las acciones sensibles de tu cuenta." tone="brand" compact icon={<ShieldCheck size={22} aria-hidden="true" />} />
-          <SettingsCard title="Recomendación" description="Configura una contraseña como método alternativo y revisa periódicamente tus sesiones abiertas." compact>
-            {googleAccount && <p className="mt-5 flex items-center gap-2 text-xs text-[#027a48]"><CircleCheck size={16} aria-hidden="true" />Cuenta vinculada con Google</p>}
-          </SettingsCard>
-          {current && <SettingsCard title="Sesión actual" tone="success" compact>
-            <span className="mt-3 inline-flex rounded-full bg-white px-4 py-1 text-xs text-[#027a48]">Protegida</span>
-            <p className="mt-3 break-words text-[13px] text-[#17212b]">{deviceDetails(current).device} · {deviceDetails(current).browser}</p>
-            <p className="mt-3 text-xs leading-4 text-[#667085]">{deviceDetails(current).location}<br />Actividad reciente: {activityDate(current.lastActiveAt)}</p>
-          </SettingsCard>}
-          <SettingsCard title="Acción irreversible" tone="danger" compact icon={<Trash2 size={20} className="text-[#b42318]" aria-hidden="true" />}>
-            <p className="mt-3 text-xs leading-[18px] text-[#17212b]">Eliminar tu cuenta revoca tu acceso. Los eventos y tareas de Eventger no se eliminan con esta acción.</p>
-          </SettingsCard>
-        </aside>
       </div>
       {dialog === 'password' && <PasswordDialog user={user} onClose={() => setDialog(null)} onSaved={(otherSessionsClosed) => { setPasswordSaved(true); if (otherSessionsClosed) confirmOtherSessionsClosed() }} />}
       {dialog === 'delete' && <DeleteAccountDialog user={user} onClose={() => setDialog(null)} />}
