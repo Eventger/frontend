@@ -5,6 +5,7 @@ import { useId } from 'react'
 
 import { FeedbackIcon } from '@/components/feedback/FeedbackIcon'
 import { Button } from '@/components/ui/button'
+import { PageTitle } from '@/components/layout/PageTitle'
 
 export type FeedbackAction = {
   label: string
@@ -39,9 +40,7 @@ export function OperationFeedback({
 
   return (
     <>
-      <h1 className="text-2xl font-bold text-[#17212b] md:text-[30px]">
-        {pageTitle}
-      </h1>
+      <PageTitle>{pageTitle}</PageTitle>
 
       <div className="mt-8 w-full max-w-[var(--app-content-max-width)] md:mt-[146px]">
         <section

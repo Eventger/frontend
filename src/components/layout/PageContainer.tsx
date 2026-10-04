@@ -3,15 +3,18 @@ import type {
 } from 'react'
 
 import { cn } from '@/lib/utils'
+import { PageBreadcrumbs, type BreadcrumbItem } from './PageBreadcrumbs'
 
 type PageContainerProps = {
   children: ReactNode
   className?: string
+  breadcrumbs?: readonly BreadcrumbItem[]
 }
 
 export function PageContainer({
   children,
   className,
+  breadcrumbs,
 }: PageContainerProps) {
   return (
     <div
@@ -20,6 +23,7 @@ export function PageContainer({
         className,
       )}
     >
+      {breadcrumbs && <PageBreadcrumbs items={breadcrumbs} />}
       {children}
     </div>
   )

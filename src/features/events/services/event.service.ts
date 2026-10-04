@@ -9,6 +9,7 @@ import type {
   EventApiData,
   CreateEventApiResponse,
   EventsApiResponse,
+  EventsPageData,
   EventApiResponse,
   UpdateEventApiResponse,
   UpdateEventApiRequest,
@@ -89,11 +90,15 @@ export async function createEvent(
 }
 
 export async function getEvents(
+  page: number = 1,
   requestFn: RequestFn = apiRequest,
-): Promise<Event[]> {
+  typeId: number | null = null,
+): Promise<EventsPageData> {
+  const query = new URLSearchParams({ page: String(page) })
+  if (typeId !== null) query.set('type', String(typeId))
   const response =
     await requestFn<EventsApiResponse>(
-      '/events/',
+      `/events/?${query}`,
     )
 
   if (!response.success) {
@@ -102,9 +107,15 @@ export async function getEvents(
     )
   }
 
-  return response.data.map(
-    mapEventResponse,
-  )
+  return {
+    events: response.data.map(mapEventResponse),
+    pagination: {
+      page: response.pagination.page,
+      pageSize: response.pagination.page_size,
+      total: response.pagination.total,
+      totalPages: response.pagination.total_pages,
+    },
+  }
 }
 
 export async function getEventById(

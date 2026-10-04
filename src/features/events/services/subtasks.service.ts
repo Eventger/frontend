@@ -17,7 +17,7 @@ type RequestFn = <T>(
   options?: RequestInit,
 ) => Promise<T>
 
-function mapSubtaskResponse(
+export function mapSubtaskResponse(
   subtask: SubtaskApiData,
 ): Subtask {
   return {
@@ -33,7 +33,7 @@ function mapSubtaskResponse(
   }
 }
 
-function toDeadlineDateTime(
+export function toDeadlineDateTime(
   date: string,
 ) {
   const localEndOfDay = new Date(

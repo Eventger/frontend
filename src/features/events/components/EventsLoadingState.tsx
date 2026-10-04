@@ -7,7 +7,7 @@ export function EventsLoadingState() {
       aria-live="polite"
       aria-busy="true"
     >
-      {Array.from({ length: 3 }).map((_, index) => (
+      {Array.from({ length: 6 }).map((_, index) => (
         <div
           key={index}
           className="h-[190px] animate-pulse rounded-2xl border border-[#dde2ea] bg-white p-5"

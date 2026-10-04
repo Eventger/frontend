@@ -2,7 +2,12 @@ import { useNavigate } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 
-export function EmptyEventsState() {
+type EmptyEventsStateProps = {
+  filtered?: boolean
+  onClearFilter?: () => void
+}
+
+export function EmptyEventsState({ filtered = false, onClearFilter }: EmptyEventsStateProps) {
   const navigate = useNavigate()
 
   return (
@@ -16,25 +21,26 @@ export function EmptyEventsState() {
         </span>
 
         <h2 className="mt-[23px] text-[22px] font-bold leading-7 tracking-[-0.015em] text-[#17212b] sm:text-2xl sm:leading-8">
-          Aún no tienes eventos
+          {filtered ? 'No hay eventos de este tipo' : 'Aún no tienes eventos'}
         </h2>
 
         <p className="mt-[18px] w-full max-w-[540px] text-sm leading-5 text-[#667085] sm:text-[15px]">
-          Crea tu primer evento para organizar sus tareas y hacer seguimiento a
-          su preparación.
+          {filtered
+            ? 'Prueba otro tipo o limpia el filtro para ver todos tus eventos.'
+            : 'Crea tu primer evento para organizar sus tareas y hacer seguimiento a su preparación.'}
         </p>
 
         <Button
           type="button"
           className="mt-[30px] h-11 min-w-[167px] rounded-[10px] bg-[#4f46e5] px-5 text-sm font-semibold text-white hover:bg-[#4338ca]"
           onClick={() =>
-            navigate('/crear', {
+            filtered ? onClearFilter?.() : navigate('/crear', {
               viewTransition: true,
             })
           }
         >
-          <span aria-hidden="true">+</span>
-          Crear evento
+          {!filtered && <span aria-hidden="true">+</span>}
+          {filtered ? 'Ver todos los eventos' : 'Crear evento'}
         </Button>
       </div>
     </section>

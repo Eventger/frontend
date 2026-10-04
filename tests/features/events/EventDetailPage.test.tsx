@@ -292,6 +292,24 @@ describe('EventDetailPage', () => {
     ).toBeTruthy()
   })
 
+  it('vuelve al detalle desde la miga de pan sin guardar el borrador de edición', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('button', { name: 'Editar evento' }))
+    await user.clear(screen.getByLabelText('Contacto *'))
+    await user.type(screen.getByLabelText('Contacto *'), 'Borrador sin enviar')
+
+    const breadcrumbs = within(screen.getByRole('navigation', { name: 'Miga de pan' }))
+    expect(breadcrumbs.getByText('Editar evento').getAttribute('aria-current')).toBe('page')
+    await user.click(breadcrumbs.getByRole('link', { name: eventFixture.name }))
+
+    expect(screen.getByRole('heading', { name: eventFixture.name })).toBeTruthy()
+    expect(updateEvent).not.toHaveBeenCalled()
+    expect(retryEvent).toHaveBeenCalledOnce()
+    expect(breadcrumbs.queryByRole('link', { name: eventFixture.name })).toBeNull()
+    expect(breadcrumbs.getByText(eventFixture.name).getAttribute('aria-current')).toBe('page')
+  })
+
   it('edita el evento y muestra la confirmación con los datos actualizados', async () => {
     const user = userEvent.setup()
     const updatedEvent = {
@@ -334,7 +352,7 @@ describe('EventDetailPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Evento actualizado' }),
     ).toBeTruthy()
-    expect(screen.getByText(/Boda actualizada/)).toBeTruthy()
+    expect(screen.getByText(`La información y las tareas de ${updatedEvent.name} se actualizaron correctamente.`)).toBeTruthy()
 
     await user.click(
       screen.getByRole('button', { name: 'Volver al evento' }),
@@ -474,6 +492,9 @@ describe('EventDetailPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Evento eliminado' }),
     ).toBeTruthy()
+    const breadcrumbs = within(screen.getByRole('navigation', { name: 'Miga de pan' }))
+    expect(breadcrumbs.queryByRole('link', { name: eventFixture.name })).toBeNull()
+    expect(breadcrumbs.getByRole('link', { name: 'Eventos' }).getAttribute('href')).toBe('/eventos')
 
     await user.click(
       screen.getByRole('button', { name: 'Volver a eventos' }),

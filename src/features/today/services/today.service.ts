@@ -1,17 +1,10 @@
 import { apiRequest } from '@/lib/api'
 
-import {
-  getEvents,
-} from '@/features/events/services/event.service'
-
-import type {
-  SubtaskApiData,
-} from '@/features/events/types/subtask.types'
-
 import type {
   TodayApiResponse,
   TodayData,
   TodayTaskItem,
+  TodaySubtaskApiData,
 } from '@/features/today/types/today.types'
 
 type RequestFn = <T>(
@@ -20,14 +13,12 @@ type RequestFn = <T>(
 ) => Promise<T>
 
 function mapTodayTask(
-  task: SubtaskApiData,
-  eventNames: Map<number, string>,
+  task: TodaySubtaskApiData,
 ): TodayTaskItem {
   return {
     id: task.id,
     eventId: task.event,
-    eventName:
-      eventNames.get(task.event) ?? '',
+    eventName: task.event_name,
     name: task.name,
     targetDate: task.target_date,
     estimatedHours: Number(
@@ -91,22 +82,12 @@ export async function getToday(
     }
   }
 
-  const events = await getEvents(requestFn)
-
-  const eventNames = new Map(
-    events.map((event) => [
-      event.id,
-      event.name,
-    ]),
-  )
-
   return {
     overdue: sortByPriority(
       todayResponse.data.overdue.map(
         (task) =>
           mapTodayTask(
             task,
-            eventNames,
           ),
       ),
     ),
@@ -116,7 +97,6 @@ export async function getToday(
         (task) =>
           mapTodayTask(
             task,
-            eventNames,
           ),
       ),
     ),
@@ -126,7 +106,6 @@ export async function getToday(
         (task) =>
           mapTodayTask(
             task,
-            eventNames,
           ),
       ),
     ),
@@ -136,7 +115,6 @@ export async function getToday(
         (task) =>
           mapTodayTask(
             task,
-            eventNames,
           ),
       ),
   }

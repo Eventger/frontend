@@ -28,6 +28,7 @@ function json(body: unknown, status = 200) {
 function mockHttp(handler: (path: string) => Response) {
   const fetchMock = vi.fn(async (input: string, options?: RequestInit) => {
     const path = new URL(input).pathname
+    if (path === '/event-types/') return json({ success: true, data: [{ id: 1, name: 'Boda', description: '' }] })
     if (path !== '/event-types/') {
       expect(new Headers(options?.headers).get('Authorization')).toBe('Bearer test-token')
     }
@@ -72,7 +73,7 @@ describe('estados de carga con hooks, servicios y respuestas HTTP', () => {
   for (const view of listViews) {
     describe(view.path, () => {
       it('una cuenta sin datos muestra el mensaje vacío y no un error', async () => {
-        mockHttp(() => json({ success: true, data: view.data }))
+        mockHttp(() => json({ success: true, data: view.data, pagination: { page: 1, page_size: 6, total: 0, total_pages: 1 } }))
         renderList(view)
 
         expect(await screen.findByRole('heading', { name: view.empty })).toBeTruthy()
@@ -108,7 +109,7 @@ describe('estados de carga con hooks, servicios y respuestas HTTP', () => {
         let failed = true
         mockHttp(() => failed
           ? json({ success: false }, 503)
-          : json({ success: true, data: view.data }))
+          : json({ success: true, data: view.data, pagination: { page: 1, page_size: 6, total: 0, total_pages: 1 } }))
         renderList(view)
         await screen.findByRole('heading', { name: view.error })
 
@@ -128,12 +129,12 @@ describe('estados de carga con hooks, servicios y respuestas HTTP', () => {
     renderList(listViews[1])
 
     await screen.findByRole('heading', { name: listViews[1].empty })
-    expect(fetchMock).toHaveBeenCalledOnce()
-    expect(fetchMock.mock.calls[0][0]).toBe('https://api.eventger.test/hoy/')
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith('/hoy/'))).toHaveLength(1)
+    expect(fetchMock.mock.calls.some(([url]) => url.endsWith('/events/'))).toBe(false)
   })
 
   it('una cuenta con eventos muestra sus datos y su progreso vacío', async () => {
-    mockHttp(path => json({ success: true, data: path === '/events/' ? [eventApi] : [] }))
+    mockHttp(path => json({ success: true, data: path === '/events/' ? [eventApi] : [], pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 } }))
     renderList(listViews[0])
 
     expect(await screen.findByRole('heading', { name: eventFixture.name })).toBeTruthy()
@@ -146,7 +147,7 @@ describe('estados de carga con hooks, servicios y respuestas HTTP', () => {
     mockHttp(path => json({
       success: true,
       data: path === '/hoy/'
-        ? { ...emptyTasks, today: [subtaskApiFixture] }
+        ? { ...emptyTasks, today: [{ ...subtaskApiFixture, event_name: eventFixture.name }] }
         : [eventApi],
     }))
     renderList(listViews[1])

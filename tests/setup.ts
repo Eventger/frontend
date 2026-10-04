@@ -42,6 +42,7 @@ vi.mock('@clerk/react', () => ({
     isLoaded: true,
     isSignedIn: true,
     user: {
+      id: 'user-test',
       firstName: 'Usuario',
       lastName: 'Prueba',
       fullName: 'Usuario Prueba',
@@ -49,8 +50,13 @@ vi.mock('@clerk/react', () => ({
         emailAddress:
           'usuario@eventger.test',
       },
+      unsafeMetadata: {},
+      externalAccounts: [],
+      emailAddresses: [],
     },
   })),
+  useSession: vi.fn(() => ({ isLoaded: true, isSignedIn: true, session: { id: 'session-current' } })),
+  useReverification: vi.fn((fetcher: (...args: never[]) => Promise<unknown>) => fetcher),
   useSignIn: vi.fn(() => ({
     fetchStatus: 'idle',
     errors: {

@@ -9,7 +9,9 @@ import {
 
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageFlowSurface } from '@/components/layout/PageFlowSurface'
+import { usePageFlowNavigation } from '@/components/layout/usePageFlowNavigation'
 import { PageHeader } from '@/components/layout/PageHeader'
+import type { BreadcrumbItem } from '@/components/layout/PageBreadcrumbs'
 
 import {
   useAuthenticatedApi,
@@ -69,6 +71,16 @@ type DetailFlowView =
   | 'event-edit-error'
   | 'event-delete-success'
   | 'event-delete-error'
+
+const flowBreadcrumbLabels: Record<Exclude<DetailFlowView, 'detail'>, string> = {
+  'create-success': 'Tarea agregada',
+  'create-error': 'Tarea no agregada',
+  'event-edit': 'Editar evento',
+  'event-edit-success': 'Evento actualizado',
+  'event-edit-error': 'Cambios no guardados',
+  'event-delete-success': 'Evento eliminado',
+  'event-delete-error': 'No se pudo eliminar',
+}
 
 export function EventDetailPage() {
   const { id } = useParams()
@@ -434,17 +446,36 @@ export function EventDetailPage() {
       await handleConfirmDeleteEvent()
     }
 
+  const breadcrumbs: BreadcrumbItem[] = [
+    { label: 'Hoy', to: '/hoy' },
+    { label: 'Eventos', to: '/eventos' },
+  ]
+
+  if (view === 'event-delete-success') {
+    breadcrumbs.push({ label: flowBreadcrumbLabels[view] })
+  } else {
+    breadcrumbs.push({
+      label: currentEvent?.name ?? 'Detalle del evento',
+      ...(view !== 'detail' && currentEvent ? {
+        to: `/evento/${currentEvent.id}`,
+        onNavigate: view.startsWith('event-edit')
+          ? handleReturnFromEventEdit
+          : handleReturnToEvent,
+      } : {}),
+    })
+    if (view !== 'detail') breadcrumbs.push({ label: flowBreadcrumbLabels[view] })
+  }
+
+  const flowContentRef = usePageFlowNavigation(view)
+
   return (
     <PageContainer
-      className={
-        view === 'event-edit'
-          ? 'md:py-6'
-          : undefined
-      }
+      breadcrumbs={breadcrumbs}
     >
       <div
+        ref={flowContentRef}
         key={view}
-        className="event-flow-view"
+        className={view === 'detail' ? undefined : 'event-flow-view'}
       >
         {view === 'create-success' &&
           event &&
@@ -511,7 +542,7 @@ export function EventDetailPage() {
 
         {view === 'event-edit' &&
           currentEvent && (
-            <PageFlowSurface>
+            <>
               <PageHeader
                 title="Editar evento"
                 description="Modifica la información del evento y administra sus tareas principales."
@@ -538,7 +569,7 @@ export function EventDetailPage() {
 
               {!isLoadingEventTypes &&
                 !eventTypesError && (
-                  <div className="mt-4">
+                  <PageFlowSurface className="mt-4">
                     <EditEventForm
                       key={
                         currentEvent.id
@@ -552,6 +583,8 @@ export function EventDetailPage() {
                         eventTypes
                       }
                       subtasks={subtasks}
+                      subtasksError={subtasksError}
+                      isRefreshingSubtasks={isLoadingSubtasks}
                       isSubmitting={
                         isUpdatingEvent
                       }
@@ -570,10 +603,12 @@ export function EventDetailPage() {
                       onDeleteSubtask={
                         handleDeleteSubtaskFromEdit
                       }
+                      onSubtasksChanged={refreshSubtasks}
+                      onRetrySubtasks={refreshSubtasks}
                     />
-                  </div>
+                  </PageFlowSurface>
                 )}
-            </PageFlowSurface>
+            </>
           )}
 
         {view ===

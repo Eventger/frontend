@@ -13,6 +13,7 @@ import {
 } from 'react-router'
 
 import { useClerk, useUser } from '@clerk/react'
+import { Avatar } from 'radix-ui'
 
 import { Button } from '@/components/ui/button'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
@@ -51,12 +52,15 @@ function SidebarContent({
   const [signOutError, setSignOutError] =
     useState('')
 
-  const { openUserProfile, signOut } = useClerk()
+  const { signOut } = useClerk()
   const {
     user,
     isLoaded,
     isSignedIn,
   } = useUser()
+  const displayName = isLoaded && isSignedIn
+    ? user.firstName?.trim() || user.fullName?.trim().split(/\s+/)[0] || 'Usuario'
+    : 'Usuario'
   const isEventsSection =
     location.pathname === '/eventos' ||
     location.pathname === '/crear' ||
@@ -88,8 +92,8 @@ function SidebarContent({
   }
 
   const handleOpenProfile = () => {
+    navigate('/configuracion', { viewTransition: true })
     onNavigate?.()
-    openUserProfile()
   }
 
   return (
@@ -171,28 +175,34 @@ function SidebarContent({
           type="button"
           onClick={handleOpenProfile}
           disabled={!isLoaded || !isSignedIn}
-          aria-label="Abrir perfil de usuario"
-          className="group flex min-h-[68px] w-full items-center rounded-xl border border-[#dde2ea] bg-[#f9fafb] px-3 text-left transition-colors hover:border-[#c7d2fe] hover:bg-[#eef2ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label="Abrir configuración de cuenta"
+          aria-current={location.pathname.startsWith('/configuracion') ? 'page' : undefined}
+          className={cn(
+            'group flex min-h-[68px] w-full items-center rounded-xl border border-[#dde2ea] bg-[#f9fafb] px-3 text-left transition-colors hover:border-[#c7d2fe] hover:bg-[#eef2ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+            location.pathname.startsWith('/configuracion') && 'border-[#4f46e5] bg-[#eef2ff]',
+          )}
         >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#4f46e5] text-xs font-bold text-white">
-              {isLoaded && isSignedIn
-                ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`
-                    .toUpperCase()
-                : 'U'}
-            </span>
-
-            <span className="ml-3 min-w-0">
-              <span className="block truncate text-[13px] font-semibold text-[#17212b]">
+            <Avatar.Root className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#4f46e5] text-xs font-bold text-white">
+              <Avatar.Image
+                src={isLoaded && isSignedIn && user.hasImage ? user.imageUrl : undefined}
+                alt=""
+                width={36}
+                height={36}
+                className="size-full object-cover"
+              />
+              <Avatar.Fallback className="flex size-full items-center justify-center">
                 {isLoaded && isSignedIn
-                  ? user.fullName || 'Usuario'
-                  : 'Usuario'}
-              </span>
+                  ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`
+                    .toUpperCase() || 'U'
+                  : 'U'}
+              </Avatar.Fallback>
+            </Avatar.Root>
 
-              <span className="mt-1 block truncate text-[11px] font-medium text-[#667085]">
-                {isLoaded && isSignedIn
-                  ? user.primaryEmailAddress?.emailAddress ?? 'Cuenta de usuario'
-                  : 'Cuenta de usuario'}
-              </span>
+            <span
+              title={displayName}
+              className="ml-3 mr-2 min-w-0 flex-1 truncate text-[13px] font-semibold text-[#17212b]"
+            >
+              {displayName}
             </span>
 
             <ChevronRight

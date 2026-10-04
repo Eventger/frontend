@@ -3,6 +3,38 @@
 React 19 + TypeScript + Vite, con React Compiler, Oxlint y autenticación mediante
 Clerk. Incluye las vistas de hoy, eventos, creación y detalle de eventos.
 
+Eventos muestra hasta 6 tarjetas por página y el total. Si hay varias páginas,
+agrupa «Anterior», el indicador de página y «Siguiente»; con una sola página
+muestra únicamente el contador de eventos. `/eventos?page=2` carga esa página desde la API y
+conserva la selección al volver con el historial. Hoy recibe el nombre del evento
+en cada tarea de `/hoy/`, sin descargar la lista completa de eventos.
+El filtro «Tipo de evento» utiliza el catálogo existente y consulta al backend
+antes de paginar. Cambiar o limpiar el tipo vuelve a la primera página; la URL
+conserva `type` junto con `page` y distingue un filtro sin coincidencias de una
+cuenta sin eventos.
+
+La tarjeta de usuario abre `/configuracion`; `/configuracion/seguridad` permite
+administrar la contraseña y las sesiones con el diseño de Eventger. Perfil y
+correo usan formularios propios; el nuevo correo se verifica antes de hacerlo
+principal. Las acciones sensibles usan la
+[reverificación de Clerk](https://clerk.com/docs/react/reference/hooks/use-reverification),
+incluidos los factores que admita la cuenta.
+
+El límite diario se guarda por organizador en la API y se aplica al resumen de
+Hoy y a la reprogramación. Su valor predeterminado es 6 horas y admite de 1 a 16
+horas, con hasta dos decimales. Una preferencia anterior válida de Clerk se importa
+una sola vez, sin modificar sus demás metadatos. Consulta el flujo, decisiones UX
+y evidencia reproducible en [docs/sprint-3.md](docs/sprint-3.md).
+La [API de usuario de Clerk](https://clerk.com/docs/react/reference/objects/user)
+define las operaciones utilizadas y los ajustes que deben estar habilitados en
+la instancia: nombre/apellido, correo, contraseña y eliminación de cuenta.
+
+**Alcance del borrado:** la confirmación elimina la cuenta de Clerk y su acceso.
+El backend actual sólo expone `GET /api/auth/me/` para el perfil; no implementa la
+eliminación de la cuenta y sus eventos/tareas. La interfaz explica que estos datos
+no se borran con esta acción. Ese borrado requiere un endpoint o webhook del
+backend; no se simula ni se orquesta eliminando eventos desde el navegador.
+
 ## Desarrollo
 
 Node 24.18.0 (ver `.nvmrc`). Si usas nvm, ejecuta `nvm install` y `nvm use`.

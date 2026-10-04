@@ -13,6 +13,7 @@ type TodayTaskCardProps = {
   onOpenTask: (
     task: TodayTaskItem,
   ) => void
+  onRescheduleTask?: (task: TodayTaskItem) => void
 }
 
 const groupStyles: Record<
@@ -88,6 +89,7 @@ export function TodayTaskCard({
   task,
   group,
   onOpenTask,
+  onRescheduleTask,
 }: TodayTaskCardProps) {
   const styles =
     groupStyles[group]
@@ -143,6 +145,8 @@ export function TodayTaskCard({
         >
           {styles.badgeLabel}
         </span>
+
+        {onRescheduleTask && <button type="button" aria-label={`Reprogramar tarea: ${task.name}`} onClick={() => onRescheduleTask(task)} className="pointer-events-auto ml-3 flex h-11 items-center justify-center rounded-[8px] border border-[#dde2ea] bg-white px-3 text-[12px] font-semibold text-[#3730a3] hover:bg-[#f9fafb] focus-visible:outline-2 focus-visible:outline-[#4f46e5] sm:ml-0">Reprogramar</button>}
 
         <button
           type="button"
