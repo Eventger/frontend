@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
 import { dayPlan, schedulingTask } from './planning.fixtures'
+import { subtaskApiFixture } from './subtask.fixtures'
 
 const saved = vi.fn()
 const closed = vi.fn()
@@ -25,7 +26,7 @@ describe('RescheduleTaskDialog', () => {
         writes.push(body)
         const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(body.target_date))
         if (patchStatus === 409) return json({ success: false, data: { ...dayPlan(date), planned_hours: '7', existing_hours: '5', has_conflict: true, overload_hours: '1' } }, 409)
-        return json({ success: true, data: {}, planning: dayPlan(date, Number(body.estimated_hours)) })
+        return json({ success: true, data: { ...subtaskApiFixture, id: schedulingTask.id, name: schedulingTask.name, details: '', ...body }, planning: dayPlan(date, Number(body.estimated_hours)) })
       }
       throw new Error('Ruta inesperada')
     }))
@@ -41,6 +42,7 @@ describe('RescheduleTaskDialog', () => {
     expect(writes).toHaveLength(1)
     expect(writes[0].target_date).toBe('2026-10-14T04:59:59.000Z')
     expect(saved).toHaveBeenCalledOnce()
+    expect(saved).toHaveBeenCalledWith(expect.objectContaining({ id: schedulingTask.id, targetDate: writes[0].target_date, estimatedHours: 2 }))
   })
 
   it('muestra 7 frente a 6 sin escribir y permite mover a un día recomendado', async () => {

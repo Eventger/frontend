@@ -26,7 +26,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 
 import { DeleteSubtaskDialog } from '@/features/events/components/detail/DeleteSubtaskDialog'
-import { getCalendarDate } from '@/lib/calendar'
+import { formatCalendarDate, getCalendarDate } from '@/lib/calendar'
 import { RescheduleTaskDialog } from '../detail/RescheduleTaskDialog'
 import { getSchedulingConflict } from '../../services/planning.service'
 import type { DayPlan } from '../../types/planning.types'
@@ -48,6 +48,8 @@ type EditEventFormProps = {
   event: Event
   eventTypes: EventType[]
   subtasks?: Subtask[]
+  subtasksError?: string | null
+  isRefreshingSubtasks?: boolean
   isSubmitting: boolean
   onSubmit: (
     data: UpdateEventInput,
@@ -63,7 +65,8 @@ type EditEventFormProps = {
   onDeleteSubtask?: (
     subtask: Subtask,
   ) => Promise<void>
-  onSubtasksChanged?: () => Promise<void> | void
+  onSubtasksChanged?: (task: Subtask) => Promise<void> | void
+  onRetrySubtasks?: () => Promise<void> | void
 }
 
 type FormValues = {
@@ -99,25 +102,19 @@ const emptySubtaskValues: SubtaskFormValues = {
 }
 
 function formatTaskDate(date: string) {
-  return new Intl.DateTimeFormat(
-    'es-CO',
-    {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'UTC',
-    },
-  ).format(
-    new Date(
-      `${date.slice(0, 10)}T00:00:00Z`,
-    ),
-  )
+  return formatCalendarDate(date, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
 export function EditEventForm({
   event,
   eventTypes,
   subtasks = [],
+  subtasksError,
+  isRefreshingSubtasks = false,
   isSubmitting,
   onSubmit,
   onCancel,
@@ -125,6 +122,7 @@ export function EditEventForm({
   onUpdateSubtask,
   onDeleteSubtask,
   onSubtasksChanged,
+  onRetrySubtasks,
 }: EditEventFormProps) {
   const [values, setValues] =
     useState<FormValues>({
@@ -862,6 +860,28 @@ export function EditEventForm({
             Tareas agregadas ({subtasks.length})
           </h2>
 
+          {subtasksError && (
+            <InlineFeedback variant="warning" className="mt-3">
+              No pudimos actualizar la lista de tareas. Los cambios guardados se conservan.
+              {onRetrySubtasks && (
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-11"
+                  disabled={isTaskBusy || isRefreshingSubtasks}
+                  onClick={() => { void onRetrySubtasks() }}
+                >
+                  Reintentar
+                </Button>
+              )}
+            </InlineFeedback>
+          )}
+          {isRefreshingSubtasks && (
+            <p role="status" className="mt-3 text-sm text-[#667085]">
+              Actualizando la lista de tareas…
+            </p>
+          )}
+
           {subtasks.length > 0 ? (
             <ul className="mt-1.5 space-y-1" aria-label="Tareas agregadas">
               {subtasks.map((subtask) => (
@@ -885,7 +905,7 @@ export function EditEventForm({
                         size={15}
                         aria-hidden="true"
                       />
-                      <time dateTime={subtask.targetDate.slice(0, 10)}>
+                      <time dateTime={getCalendarDate(subtask.targetDate)}>
                         {formatTaskDate(subtask.targetDate)}
                       </time>
                     </div>
@@ -1005,9 +1025,9 @@ export function EditEventForm({
           eventDate={event.eventDate}
           initialInput={rescheduling.input}
           initialConflict={rescheduling.conflict}
-          onSaved={async () => {
+          onSaved={async (task) => {
             setRescheduleSaved(true)
-            await onSubtasksChanged?.()
+            await onSubtasksChanged?.(task)
           }}
           onClose={() => {
             setRescheduling(null)

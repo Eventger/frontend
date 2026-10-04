@@ -72,6 +72,25 @@ describe('useEventSubtasks', () => {
     expect(getEventSubtasks).toHaveBeenCalledTimes(2)
   })
 
+  it('conserva la tarea confirmada al guardar si falla la recarga y permite reintentar', async () => {
+    const savedTask = { ...subtaskFixture, targetDate: '2026-10-21', estimatedHours: 1 }
+    vi.mocked(getEventSubtasks)
+      .mockResolvedValueOnce([subtaskFixture])
+      .mockRejectedValueOnce(new Error('No se pudieron cargar las subtareas'))
+      .mockResolvedValueOnce([savedTask])
+    const { result } = renderHook(() => useEventSubtasks(eventFixture.id))
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    await act(async () => { await result.current.refresh(savedTask) })
+
+    expect(result.current.subtasks).toEqual([savedTask])
+    expect(result.current.error).toBe('No se pudieron cargar las subtareas')
+
+    await act(async () => { await result.current.refresh() })
+    expect(result.current.subtasks).toEqual([savedTask])
+    expect(result.current.error).toBeNull()
+  })
+
   it('no consulta el servicio cuando eventId es null', async () => {
     const { result } = renderHook(() =>
       useEventSubtasks(null),

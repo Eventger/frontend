@@ -3,6 +3,7 @@ import {
   test,
 } from '@playwright/test'
 import { dayPlan } from '../features/events/planning.fixtures'
+import { subtaskApiFixture } from '../features/events/subtask.fixtures'
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/event-types/', route => route.fulfill({ json: { success: true, data: [
@@ -18,7 +19,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/subtasks/70/', route => {
     const input = route.request().postDataJSON()
     const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(input.target_date))
-    return route.fulfill({ json: { success: true, data: {}, planning: dayPlan(date, Number(input.estimated_hours)) } })
+    return route.fulfill({ json: { success: true, data: { ...subtaskApiFixture, id: 70, name: 'Buscar proveedores', ...input }, planning: dayPlan(date, Number(input.estimated_hours)) } })
   })
 })
 
@@ -323,6 +324,75 @@ test('Sprint 3 permite resolver por teclado en móvil y conserva foco al cancela
   await expect(page.getByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('sprint3-resuelto-mobile.png'), fullPage: true })
 })
+
+for (const viewport of [
+  { name: 'móvil pequeño', width: 320, height: 568 },
+  { name: 'escritorio', width: 1440, height: 900 },
+]) {
+  test(`Sprint 3 conserva fecha, borrador y reintento tras una recarga fallida en ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    const event = { id: 21, type: 1, name: 'Boda Backend', date: '2099-12-31T23:59:59-05:00', location: 'Cali', contact: 'Laura 3001234567' }
+    let task = { ...subtaskApiFixture, target_date: '2099-12-21T04:59:59.000Z', estimated_hours: '2.00' }
+    let writes = 0
+    let taskReads = 0
+    let failReload = true
+    const warning = 'No pudimos actualizar la lista de tareas. Los cambios guardados se conservan.'
+    const warningStatus = page.getByRole('status').filter({ hasText: warning })
+    await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: { overdue: [], today: [], upcoming: [], completed: [] } } }))
+    await page.route(url => url.pathname === '/events/', route => route.fulfill({ json: { success: true, data: [event], pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 } } }))
+    await page.route('**/events/21/', route => route.fulfill({ json: { success: true, data: event } }))
+    await page.route('**/events/21/subtasks/', route => {
+      taskReads++
+      return writes && failReload
+        ? route.fulfill({ status: 503, json: { success: false } })
+        : route.fulfill({ json: { success: true, data: [task] } })
+    })
+    await page.route('**/subtasks/31/reschedule-preview/', route => {
+      const input = route.request().postDataJSON()
+      return route.fulfill({ json: { success: true, data: { ...dayPlan(input.target_date, Number(input.estimated_hours)), event_date: '2099-12-31' } } })
+    })
+    await page.route('**/subtasks/31/', route => {
+      expect(route.request().method()).toBe('PATCH')
+      writes++
+      task = { ...task, ...route.request().postDataJSON() }
+      // El servidor puede devolver el mismo instante normalizado a UTC.
+      task.target_date = new Date(task.target_date).toISOString()
+      return route.fulfill({ json: { success: true, data: task, planning: { ...dayPlan('2099-12-21', Number(task.estimated_hours)), event_date: '2099-12-31' } } })
+    })
+    await page.goto('/tests/visual/index.html?view=layout-navigation')
+    if (viewport.width < 1280) await page.getByRole('button', { name: 'Abrir menú' }).click()
+    await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Eventos', exact: true }).click()
+    await page.getByRole('region', { name: 'Lista de eventos' }).getByRole('link').click()
+    await page.getByRole('button', { name: 'Editar evento', exact: true }).click()
+    const tasks = page.getByRole('list', { name: 'Tareas agregadas' })
+    await expect(tasks.getByText('20/12/2099', { exact: true })).toBeVisible()
+    await page.getByLabel('Contacto *', { exact: true }).fill('Contacto sin guardar')
+    await page.getByRole('button', { name: `Reprogramar ${task.name}`, exact: true }).click()
+    await expect(page.getByLabel('Nueva fecha', { exact: true })).toHaveValue('2099-12-20')
+    await page.getByLabel('Nueva fecha', { exact: true }).fill('2099-12-21')
+    await page.getByRole('button', { name: 'Reprogramar', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeVisible()
+    await page.getByRole('button', { name: 'Volver al plan', exact: true }).click()
+    await expect(tasks.getByText('21/12/2099', { exact: true })).toHaveAttribute('datetime', '2099-12-21')
+    await expect(page.getByLabel('Contacto *', { exact: true })).toHaveValue('Contacto sin guardar')
+    await expect(warningStatus).toBeVisible()
+    const retry = page.getByRole('button', { name: 'Reintentar', exact: true })
+    await retry.scrollIntoViewIfNeeded()
+    expect((await retry.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+    expect(width.content).toBeLessThanOrEqual(width.viewport)
+    const readsBeforeRetry = taskReads
+    failReload = false
+    await retry.click()
+    await expect(warningStatus).toHaveCount(0)
+    await expect(page.getByText('Actualizando la lista de tareas…', { exact: true })).toHaveCount(0)
+    expect(writes).toBe(1)
+    expect(taskReads).toBe(readsBeforeRetry + 1)
+    await page.getByRole('button', { name: `Editar ${task.name}`, exact: true }).click()
+    await expect(page.getByLabel('Fecha límite *', { exact: true })).toHaveValue('2099-12-21')
+    await expect(page.getByLabel('Contacto *', { exact: true })).toHaveValue('Contacto sin guardar')
+  })
+}
 
 test('cambia entre navegación móvil y sidebar sin comprimir el contenido', async ({
   page,

@@ -78,6 +78,15 @@ export function useEventSubtasks(
     ],
   )
 
+  const refresh = useCallback(async (savedTask?: Subtask) => {
+    if (savedTask && savedTask.eventId === eventId) {
+      setSubtasks((current) => current.map((task) =>
+        task.id === savedTask.id ? savedTask : task,
+      ))
+    }
+    await loadSubtasks()
+  }, [eventId, loadSubtasks])
+
   useEffect(() => {
     if (!isAuthLoaded) {
       return
@@ -111,6 +120,6 @@ export function useEventSubtasks(
         : isLoading ||
           (eventId !== null && loadedEventId !== eventId),
     error,
-    refresh: loadSubtasks,
+    refresh,
   }
 }

@@ -583,6 +583,8 @@ export function EventDetailPage() {
                         eventTypes
                       }
                       subtasks={subtasks}
+                      subtasksError={subtasksError}
+                      isRefreshingSubtasks={isLoadingSubtasks}
                       isSubmitting={
                         isUpdatingEvent
                       }
@@ -602,6 +604,7 @@ export function EventDetailPage() {
                         handleDeleteSubtaskFromEdit
                       }
                       onSubtasksChanged={refreshSubtasks}
+                      onRetrySubtasks={refreshSubtasks}
                     />
                   </PageFlowSurface>
                 )}

@@ -2,7 +2,7 @@ import { apiRequest, ApiError } from '@/lib/api'
 import type { DayPlan } from '../types/planning.types'
 import type { SubtaskApiData, UpdateSubtaskInput } from '../types/subtask.types'
 import type { PlanningRequest } from '@/features/settings/services/planningPreferences.service'
-import { toDeadlineDateTime } from './subtasks.service'
+import { mapSubtaskResponse, toDeadlineDateTime } from './subtasks.service'
 
 export function getSchedulingConflict(error: unknown): DayPlan | null {
   if (!(error instanceof ApiError) || error.status !== 409) return null
@@ -31,5 +31,5 @@ export async function saveReschedule(id: number, date: string, hours: number, re
     }),
   })
   if (!response.success) throw new Error('No pudimos reprogramar la tarea.')
-  return response.planning
+  return { task: mapSubtaskResponse(response.data), plan: response.planning }
 }

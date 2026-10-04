@@ -17,7 +17,7 @@ type RequestFn = <T>(
   options?: RequestInit,
 ) => Promise<T>
 
-function mapSubtaskResponse(
+export function mapSubtaskResponse(
   subtask: SubtaskApiData,
 ): Subtask {
   return {

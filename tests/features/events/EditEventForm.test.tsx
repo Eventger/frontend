@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
@@ -9,6 +9,7 @@ import { dayPlan } from './planning.fixtures'
 import {
   createSubtaskInputFixture,
   eventFixture,
+  subtaskApiFixture,
   subtaskFixture,
 } from './subtask.fixtures'
 
@@ -39,6 +40,21 @@ function renderForm(
 }
 
 describe('EditEventForm', () => {
+  it.each(['2026-10-21T04:59:59.000Z', '2026-10-20T23:59:59-05:00', '2026-10-20'])('mantiene la fecha de Bogotá en la lista y al editar o reprogramar %s', async (targetDate) => {
+    const user = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      success: true, data: dayPlan('2026-10-20', subtaskFixture.estimatedHours),
+    }), { headers: { 'Content-Type': 'application/json' } })))
+    renderForm(undefined, { subtasks: [{ ...subtaskFixture, targetDate }] })
+    const tasks = screen.getByRole('list', { name: 'Tareas agregadas' })
+    expect(within(tasks).getByText('20/10/2026').getAttribute('datetime')).toBe('2026-10-20')
+
+    await user.click(screen.getByRole('button', { name: `Editar ${subtaskFixture.name}` }))
+    expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('2026-10-20')
+    await user.click(screen.getByRole('button', { name: `Reprogramar ${subtaskFixture.name}` }))
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-20')
+  })
+
   it.each([false, true])('conserva el borrador del evento al resolver=%s y el de la tarea al cancelar', async (resolve) => {
     const user = userEvent.setup()
     const writes: Record<string, unknown>[] = []
@@ -53,7 +69,7 @@ describe('EditEventForm', () => {
         return new Response(JSON.stringify({ success: true, data: dayPlan(body.target_date, Number(body.estimated_hours)) }), { headers })
       }
       writes.push(body)
-      return new Response(JSON.stringify({ success: true, data: {}, planning: dayPlan('2026-10-12', Number(body.estimated_hours)) }), { headers })
+      return new Response(JSON.stringify({ success: true, data: { ...subtaskApiFixture, ...body }, planning: dayPlan('2026-10-12', Number(body.estimated_hours)) }), { headers })
     }))
     renderForm(undefined, { subtasks: [subtaskFixture], onUpdateSubtask, onSubtasksChanged })
     await user.clear(screen.getByLabelText('Contacto *'))
@@ -78,6 +94,7 @@ describe('EditEventForm', () => {
       expect(writes).toHaveLength(1)
       expect(writes[0]).toMatchObject({ name: 'Transporte actualizado', details: 'Nota sin perder', state: 'pending', estimated_hours: '1.00' })
       expect(onSubtasksChanged).toHaveBeenCalledOnce()
+      expect(onSubtasksChanged).toHaveBeenCalledWith(expect.objectContaining({ name: 'Transporte actualizado', estimatedHours: 1, details: 'Nota sin perder', state: 'pending' }))
       expect((screen.getByLabelText('Nombre de la tarea *') as HTMLInputElement).value).toBe('')
     } else {
       await user.click(screen.getByRole('button', { name: 'Cancelar reprogramación' }))

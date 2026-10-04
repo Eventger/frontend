@@ -17,7 +17,7 @@ type Props = {
   initialInput?: UpdateSubtaskInput
   initialConflict?: DayPlan
   onClose: () => void
-  onSaved: () => Promise<void> | void
+  onSaved: (task: Subtask) => Promise<void> | void
 }
 
 const primary = 'h-11 rounded-[10px] bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca] sm:min-w-[160px]'
@@ -96,9 +96,9 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
     setError('')
     try {
       const result = await saveReschedule(task.id, date, numberHours, authenticatedRequest, initialInput)
-      setPlan(result)
+      setPlan(result.plan)
       // La escritura ya se confirmó; una recarga fallida no debe sugerir repetirla.
-      await Promise.resolve(onSaved()).catch(() => undefined)
+      await Promise.resolve(onSaved(result.task)).catch(() => undefined)
       setStage('success')
     } catch (failure) {
       const newConflict = getSchedulingConflict(failure)
