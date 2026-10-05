@@ -55,8 +55,8 @@ const listViews = [
   },
 ] as const
 
-function renderList(view: typeof listViews[number]) {
-  return render(<MemoryRouter><view.page /></MemoryRouter>)
+function renderList(view: typeof listViews[number], path: string = view.path) {
+  return render(<MemoryRouter initialEntries={[path]}><view.page /></MemoryRouter>)
 }
 
 function renderDetail() {
@@ -109,7 +109,7 @@ describe('estados de carga con hooks, servicios y respuestas HTTP', () => {
         let failed = true
         mockHttp(() => failed
           ? json({ success: false }, 503)
-          : json({ success: true, data: view.data, pagination: { page: 1, page_size: 6, total: 0, total_pages: 1 } }))
+          : json({ success: true, data: view.data }))
         renderList(view)
         await screen.findByRole('heading', { name: view.error })
 
@@ -122,6 +122,18 @@ describe('estados de carga con hooks, servicios y respuestas HTTP', () => {
     })
   }
 
+  it.each([
+    { path: '/eventos', empty: 'Aún no tienes eventos' },
+    { path: '/eventos?type=1', empty: 'No hay eventos de este tipo' },
+  ])('Eventos muestra el estado vacío sin paginación en $path', async ({ path, empty }) => {
+    mockHttp(() => json({ success: true, data: [] }))
+    renderList(listViews[0], path)
+
+    expect(await screen.findByRole('heading', { name: empty })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: listViews[0].error })).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it('Hoy vacío no consulta los eventos aunque ese servicio esté fallando', async () => {
     const fetchMock = mockHttp(path => path === '/hoy/'
       ? json({ success: true, data: emptyTasks })
@@ -133,12 +145,16 @@ describe('estados de carga con hooks, servicios y respuestas HTTP', () => {
     expect(fetchMock.mock.calls.some(([url]) => url.endsWith('/events/'))).toBe(false)
   })
 
-  it('una cuenta con eventos muestra sus datos y su progreso vacío', async () => {
-    mockHttp(path => json({ success: true, data: path === '/events/' ? [eventApi] : [], pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 } }))
+  it.each([
+    { format: 'con paginación', pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 } },
+    { format: 'sin paginación', pagination: undefined },
+  ])('una cuenta con eventos muestra sus datos y su progreso vacío $format', async ({ pagination }) => {
+    mockHttp(path => json({ success: true, data: path === '/events/' ? [eventApi] : [], pagination }))
     renderList(listViews[0])
 
     expect(await screen.findByRole('heading', { name: eventFixture.name })).toBeTruthy()
     expect(await screen.findByText('0 % · 0/0 tareas')).toBeTruthy()
+    expect(screen.getByRole('status', { name: 'Resumen de eventos' }).textContent).toBe('1 evento')
     expect(screen.queryByRole('heading', { name: listViews[0].empty })).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
   })

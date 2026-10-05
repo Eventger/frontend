@@ -79,6 +79,7 @@ describe('AddSubtaskDialog', () => {
     expect(screen.getByText('Selecciona la fecha límite.')).toBeTruthy()
     expect(screen.getByText('Ingresa el tiempo estimado.')).toBeTruthy()
     expect(onSubmit).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(screen.getByLabelText('Nombre de la tarea *'))
   })
 
   it('rechaza un tiempo estimado igual o menor que cero', async () => {

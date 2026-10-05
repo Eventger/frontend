@@ -874,6 +874,11 @@ test('los estados de feedback comparten iconografía y escala', async ({
       scenario.variant,
     )
 
+    if (scenario.view === 'delete-dialog') {
+      await expect(page.locator('[data-slot="dialog-content"]')).toHaveCSS('animation-name', 'none')
+      await expect(page.locator('[data-slot="dialog-overlay"]')).toHaveCSS('animation-name', 'none')
+    }
+
     const bounds =
       await icon.boundingBox()
 
@@ -1416,4 +1421,77 @@ for (const viewport of [
     const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
     expect(width.content).toBeLessThanOrEqual(width.viewport)
   })
+}
+
+for (const width of [320, 768, 1440]) {
+  test(`auditoría UX conserva tareas y muestra validaciones en ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: { overdue: [], today: [], upcoming: [], completed: [] } } }))
+    await page.route('**/event-types/', route => route.fulfill({ json: { success: true, data: [{ id: 0, name: 'Boda', description: '' }] } }))
+    await page.goto('/tests/visual/index.html?view=layout-navigation')
+    await page.getByRole('button', { name: 'Crear evento', exact: true }).click()
+    await page.getByRole('button', { name: 'Crear evento', exact: true }).click()
+    await expect(page.getByLabel('Nombre del evento *', { exact: true })).toBeFocused()
+    await expect(page.getByLabel('Contacto *', { exact: true })).toHaveAttribute('aria-invalid', 'true')
+    await page.getByLabel('Nombre del evento *', { exact: true }).fill('Evento de auditoría')
+    await page.getByRole('combobox', { name: 'Tipo de evento *', exact: true }).click()
+    await page.getByRole('option', { name: 'Boda', exact: true }).click()
+    await page.getByLabel('Fecha del evento *', { exact: true }).fill('2099-12-31')
+    await page.getByLabel('Lugar *', { exact: true }).fill('Cali')
+    await page.getByLabel('Contacto *', { exact: true }).fill('Ana 3001234567')
+    const name = 'Confirmar proveedores internacionales y coordinar transporte de invitados'
+    await page.getByLabel('Nombre de la tarea *', { exact: true }).fill(name)
+    await page.getByRole('button', { name: 'Crear evento', exact: true }).click()
+    await expect(page.getByLabel('Nombre de la tarea *', { exact: true })).toBeFocused()
+    await expect(page.getByText('Tienes una tarea sin agregar o guardar. Agrégala, guárdala o limpia sus campos antes de continuar.')).toBeVisible()
+    await page.getByLabel('Fecha límite *', { exact: true }).fill('2099-12-20')
+    await page.getByLabel('Tiempo estimado *', { exact: true }).fill('2.5')
+    await page.getByRole('button', { name: 'Agregar tarea', exact: true }).click()
+    await expect(page.getByText('20/12/2099', { exact: true })).toBeVisible()
+    await expect(page.getByText('2.5 h', { exact: true })).toBeVisible()
+    for (const action of ['Editar', 'Eliminar']) {
+      const button = page.getByRole('button', { name: `${action} ${name}`, exact: true })
+      const box = await button.boundingBox()
+      expect(box!.width).toBeGreaterThanOrEqual(44)
+      expect(box!.height).toBeGreaterThanOrEqual(44)
+    }
+    const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
+    await page.screenshot({ path: testInfo.outputPath('crear-tarea-visible.png'), fullPage: true })
+    await page.getByLabel('Fecha del evento *', { exact: true }).fill('2099-12-01')
+    await page.getByRole('button', { name: 'Crear evento', exact: true }).click()
+    await expect(page.getByLabel('Fecha del evento *', { exact: true })).toBeFocused()
+    await expect(page.getByText('Hay tareas con fecha posterior al evento. Ajusta sus fechas o la fecha del evento.')).toBeVisible()
+  })
+}
+
+for (const width of [390, 1440]) {
+  for (const filtered of [false, true]) {
+    test(`estados vacíos distinguen fallo y respuesta sin paginación en ${width}px con filtro=${filtered}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 })
+      let failed = true
+      await page.route(url => url.pathname === '/events/', route => failed
+        ? route.fulfill({ status: 503, json: { success: false } })
+        : route.fulfill({ json: { success: true, data: [] } }))
+      await page.goto(`/tests/visual/index.html?view=events-pagination${filtered ? '&type=1' : ''}`)
+      await expect(page.getByRole('heading', { name: 'No pudimos cargar tus eventos' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Aún no tienes eventos' })).toHaveCount(0)
+      await expect(page.getByRole('heading', { name: 'No hay eventos de este tipo' })).toHaveCount(0)
+      failed = false
+      await page.getByRole('button', { name: 'Reintentar', exact: true }).click()
+      await expect(page.getByRole('heading', { name: filtered ? 'No hay eventos de este tipo' : 'Aún no tienes eventos' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'No pudimos cargar tus eventos' })).toHaveCount(0)
+      const filter = page.getByRole('combobox', { name: 'Tipo de evento', exact: true })
+      await expect(filter).toHaveCount(filtered ? 1 : 0)
+      if (filtered) {
+        await page.getByRole('button', { name: 'Ver todos los eventos' }).click()
+        await expect(page.getByRole('heading', { name: 'Aún no tienes eventos' })).toBeVisible()
+        await expect(filter).toHaveCount(0)
+        await expect(page).not.toHaveURL(/type=/)
+      }
+      await expect(page.getByRole('navigation', { name: 'Paginación de eventos' })).toHaveCount(0)
+      const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
+    })
+  }
 }

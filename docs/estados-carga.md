@@ -18,6 +18,11 @@ Los fallos de autenticación tampoco confirman que una cuenta no tenga datos.
 
 ## Correcciones y regresiones
 
+- Eventos acepta también el contrato anterior: `success: true` y `data` como
+  lista, sin `pagination`. La ausencia de esos metadatos no convierte una lista
+  vacía válida en un error. Para esa respuesta completa, el frontend aplica el
+  filtro antes de contar y presentar páginas de seis eventos; si la API incluye
+  paginación, conserva sus resultados y totales.
 - Hoy usa `/hoy/`, la ruta canónica del backend, y comprueba `success` antes de
   interpretar sus grupos. Si todos están vacíos, no necesita consultar eventos
   para completar los nombres de tareas.

@@ -60,3 +60,22 @@ Antes de publicar un cambio de validación, actualizar en conjunto:
 3. Las capas de texto de Figma para registro y recuperación.
 4. Las capturas o PDF de evidencia UX afectados.
 5. La política de contraseñas en Clerk, si cambia el requisito real.
+
+## Ajustes de la auditoría del 4 de octubre de 2026
+
+- Una contraseña incorrecta o un identificador inexistente muestran el mismo
+  mensaje junto a las credenciales: «El correo o la contraseña no son correctos.
+  Revisa tus datos e inténtalo de nuevo.». Ambos campos se asocian al mensaje y
+  el foco vuelve a la contraseña. No se propone crear otra cuenta como solución
+  a una contraseña incorrecta. Los errores no reconocidos del proveedor siguen
+  usando el feedback general.
+- La recuperación asocia los errores de formato de código y longitud de
+  contraseña al campo mediante `aria-describedby` y `aria-invalid`; también
+  recupera el foco al repetir el mismo error. El mínimo de 15 caracteres se
+  explica antes del envío de la nueva contraseña.
+- Recuperar la contraseña utiliza la misma activación de sesión que el login:
+  espera la respuesta, respeta los pasos adicionales de verificación y permite
+  reintentar la activación sin volver a enviar una contraseña ya actualizada.
+- La galería histórica `auth-feedback-review` todavía contiene el modal de
+  «Cuenta no encontrada». Es una fixture visual, no el flujo vigente de login;
+  debe sustituirse al actualizar las referencias Figma.

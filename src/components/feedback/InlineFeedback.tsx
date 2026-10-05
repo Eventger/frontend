@@ -10,6 +10,7 @@ import type { FeedbackVariant } from '@/components/feedback/FeedbackIcon'
 import { cn } from '@/lib/utils'
 
 type InlineFeedbackProps = {
+  id?: string
   children: ReactNode
   variant?: FeedbackVariant
   className?: string
@@ -30,6 +31,7 @@ const variantStyles: Record<
 }
 
 export function InlineFeedback({
+  id,
   children,
   variant = 'error',
   className,
@@ -47,6 +49,7 @@ export function InlineFeedback({
 
   return (
     <div
+      id={id}
       role={
         isError ? 'alert' : 'status'
       }

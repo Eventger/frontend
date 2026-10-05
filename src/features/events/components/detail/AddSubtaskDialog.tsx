@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
+import { focusFirstError } from '@/lib/formFocus'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/feedback/FieldError'
 import { Input } from '@/components/ui/input'
@@ -167,6 +168,7 @@ export function AddSubtaskDialog({
     }
 
     setErrors(nextErrors)
+    focusFirstError(nextErrors, { name: 'subtask-name', targetDate: 'subtask-date', estimatedHours: 'subtask-hours', details: 'subtask-details' })
 
     return (
       Object.keys(nextErrors).length === 0

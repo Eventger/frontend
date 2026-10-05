@@ -409,7 +409,7 @@ describe('LoginPage', () => {
   it('muestra los errores de contraseña y conexión', async () => {
     const user = userEvent.setup()
     password.mockResolvedValueOnce({
-      error: new Error('credenciales'),
+      error: { errors: [{ code: 'form_password_incorrect' }] },
     })
     renderLogin()
     await fillLoginForm(user)
@@ -419,15 +419,9 @@ describe('LoginPage', () => {
       }),
     )
     expect(
-      await screen.findByRole('alertdialog', {
-        name: 'No encontramos tu cuenta',
-      }),
+      await screen.findByText('El correo o la contraseña no son correctos. Revisa tus datos e inténtalo de nuevo.'),
     ).toBeTruthy()
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Cerrar',
-      }),
-    )
+
 
     password.mockRejectedValueOnce(
       new Error('red'),
@@ -444,39 +438,26 @@ describe('LoginPage', () => {
     ).toBeTruthy()
   })
 
-  it('ofrece crear una cuenta cuando no encuentra las credenciales', async () => {
+  it.each(['form_password_incorrect', 'form_identifier_not_found'])('permite corregir %s sin afirmar que la cuenta no existe', async code => {
     const user = userEvent.setup()
-    password.mockResolvedValue({
-      error: new Error(
-        'credenciales',
-      ),
-    })
+    password.mockResolvedValue({ error: { errors: [{ code }] } })
     renderLogin()
-
     await fillLoginForm(user)
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Iniciar sesión',
-      }),
-    )
+    await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
+    expect(await screen.findByText('El correo o la contraseña no son correctos. Revisa tus datos e inténtalo de nuevo.')).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(document.activeElement).toBe(screen.getByLabelText('Contraseña'))
+    expect((screen.getByLabelText('Correo electrónico') as HTMLInputElement).value).toBe('ana@example.com')
+  })
 
-    expect(
-      await screen.findByText(
-        'Verifica tu correo electrónico o crea una cuenta nueva.',
-      ),
-    ).toBeTruthy()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Crear cuenta',
-      }),
-    )
-
-    expect(
-      screen.getByRole('heading', {
-        name: 'Crear cuenta destino',
-      }),
-    ).toBeTruthy()
+  it.each(['too_many_requests', 'internal_clerk_error'])('no atribuye %s a las credenciales', async code => {
+    const user = userEvent.setup()
+    password.mockResolvedValue({ error: { errors: [{ code }] } })
+    renderLogin()
+    await fillLoginForm(user)
+    await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
+    expect(await screen.findByRole('alertdialog', { name: 'No pudimos iniciar sesión' })).toBeTruthy()
+    expect(screen.queryByText('No encontramos tu cuenta')).toBeNull()
   })
 
   it('mantiene la sesión pendiente y permite mostrar la contraseña', async () => {
@@ -715,6 +696,11 @@ describe('LoginPage', () => {
       ),
     ).toBeTruthy()
 
+    expect(codeInput.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(codeInput)
+    expect(codeInput.getAttribute('aria-describedby')).toContain('login-recovery-error')
+    await user.click(screen.getByRole('button', { name: 'Verificar código' }))
+    expect(document.activeElement).toBe(codeInput)
     await user.clear(codeInput)
     await user.type(codeInput, '123456')
     await user.click(
@@ -745,6 +731,8 @@ describe('LoginPage', () => {
       ),
     ).toBeTruthy()
 
+    expect(newPassword.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(newPassword)
     await user.clear(newPassword)
     await user.type(
       newPassword,
@@ -856,9 +844,59 @@ describe('LoginPage', () => {
 
     await user.click(updateButton)
     expect(
-      await screen.findByText(
-        'La contraseña se actualizó, pero no pudimos activar la sesión.',
-      ),
+      await screen.findByRole('alertdialog', { name: 'No pudimos iniciar sesión' }),
     ).toBeTruthy()
   })
+  it('espera la activación tras recuperar y reintenta solo la sesión si falla', async () => {
+    const user = userEvent.setup()
+    create.mockResolvedValue({ error: null })
+    sendRecoveryCode.mockResolvedValue({ error: null })
+    verifyRecoveryCode.mockResolvedValue({ error: null })
+    submitRecoveryPassword.mockResolvedValue({ error: null })
+    let finish!: (result: { error: Error | null }) => void
+    finalize.mockImplementationOnce(({ navigate }) => {
+      navigate({ session: null, decorateUrl })
+      return new Promise(resolve => { finish = resolve })
+    })
+    renderLogin({ from: '/eventos' })
+    await user.type(screen.getByLabelText('Correo electrónico'), 'ana@example.com')
+    await user.click(screen.getByRole('button', { name: '¿Olvidaste tu contraseña?' }))
+    await user.type(await screen.findByLabelText('Código de verificación'), '123456')
+    await user.click(screen.getByRole('button', { name: 'Verificar código' }))
+    await user.type(await screen.findByLabelText('Nueva contraseña'), 'Una contraseña segura 2026')
+    await user.click(screen.getByRole('button', { name: 'Actualizar contraseña' }))
+    expect(screen.queryByRole('heading', { name: 'Eventos privados' })).toBeNull()
+    await act(async () => finish({ error: new Error('sesión') }))
+    expect(await screen.findByRole('alertdialog', { name: 'No pudimos iniciar sesión' })).toBeTruthy()
+    finalize.mockImplementationOnce(async ({ navigate }) => {
+      navigate({ session: null, decorateUrl })
+      return { error: null }
+    })
+    await user.click(screen.getByRole('button', { name: 'Intentar de nuevo' }))
+    expect(await screen.findByRole('heading', { name: 'Eventos privados' })).toBeTruthy()
+    expect(submitRecoveryPassword).toHaveBeenCalledOnce()
+    expect(finalize).toHaveBeenCalledTimes(2)
+  })
+
+  it.each(['needs_second_factor', 'needs_client_trust'])('respeta %s después de recuperar la contraseña', async status => {
+    const user = userEvent.setup()
+    create.mockResolvedValue({ error: null })
+    sendRecoveryCode.mockResolvedValue({ error: null })
+    verifyRecoveryCode.mockResolvedValue({ error: null })
+    submitRecoveryPassword.mockImplementation(async () => {
+      signInStatus = status
+      return { error: null }
+    })
+    renderLogin()
+    await user.type(screen.getByLabelText('Correo electrónico'), 'ana@example.com')
+    await user.click(screen.getByRole('button', { name: '¿Olvidaste tu contraseña?' }))
+    await user.type(await screen.findByLabelText('Código de verificación'), '123456')
+    await user.click(screen.getByRole('button', { name: 'Verificar código' }))
+    await user.type(await screen.findByLabelText('Nueva contraseña'), 'Una contraseña segura 2026')
+    await user.click(screen.getByRole('button', { name: 'Actualizar contraseña' }))
+    expect(await screen.findByRole('heading', { name: 'Verifica tu acceso' })).toBeTruthy()
+    expect(finalize).not.toHaveBeenCalled()
+    expect(screen.queryByRole('heading', { name: 'Eventos privados' })).toBeNull()
+  })
+
 })

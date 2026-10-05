@@ -73,6 +73,7 @@ describe('EditSubtaskDialog', () => {
       screen.getByText('Ingresa un tiempo estimado válido.'),
     ).toBeTruthy()
     expect(onSubmit).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(screen.getByLabelText('Nombre de la tarea *'))
   })
 
   it('rechaza horas no positivas y una fecha posterior al evento', async () => {

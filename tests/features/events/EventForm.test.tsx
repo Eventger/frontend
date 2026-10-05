@@ -73,6 +73,7 @@ describe('EventForm', () => {
       screen.getByText('Ingresa un contacto para el evento.'),
     ).toBeTruthy()
     expect(onSubmit).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(screen.getByLabelText('Nombre del evento *'))
   })
 
   it('envía una sola vez los datos válidos, incluido typeId 0', async () => {
@@ -328,4 +329,50 @@ describe('EventForm', () => {
         .disabled,
     ).toBe(true)
   })
+  it('conserva la tarea editada al eliminar una fila anterior', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<EventForm initialValues={validInput} initialSubtasks={initialSubtasks} onSubmit={onSubmit} onCancel={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Editar Contratar música' }))
+    await user.click(screen.getByRole('button', { name: 'Eliminar Reservar salón' }))
+    await user.clear(screen.getByLabelText('Nombre de la tarea *'))
+    await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Música actualizada')
+    await user.click(screen.getByRole('button', { name: 'Guardar tarea' }))
+    await user.click(screen.getByRole('button', { name: 'Crear evento' }))
+    expect(onSubmit).toHaveBeenCalledWith(validInput, [{ ...initialSubtasks[1], name: 'Música actualizada' }])
+  })
+
+  it('evita perder una tarea escrita pero aún no agregada', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<EventForm initialValues={validInput} onSubmit={onSubmit} onCancel={vi.fn()} />)
+    await user.type(screen.getByLabelText('Nombre de la tarea *'), 'No perder esta tarea')
+    await user.click(screen.getByRole('button', { name: 'Crear evento' }))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText('Tienes una tarea sin agregar o guardar. Agrégala, guárdala o limpia sus campos antes de continuar.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Limpiar' }))
+    await user.click(screen.getByRole('button', { name: 'Crear evento' }))
+    expect(onSubmit).toHaveBeenCalledWith(validInput, [])
+  })
+
+  it('revalida las tareas agregadas al adelantar la fecha del evento', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(<EventForm initialValues={{ ...validInput, eventDate: '2099-10-01' }} initialSubtasks={initialSubtasks} onSubmit={onSubmit} onCancel={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Crear evento' }))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText('Hay tareas con fecha posterior al evento. Ajusta sus fechas o la fecha del evento.')).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByLabelText('Fecha del evento *'))
+  })
+
+  it('permite reintentar el catálogo sin perder los datos escritos', async () => {
+    const user = userEvent.setup()
+    const retry = vi.fn()
+    vi.mocked(useEventTypes).mockReturnValue({ eventTypes: [], isLoading: false, error: 'No pudimos cargar los tipos de evento.', retry })
+    render(<EventForm initialValues={validInput} onSubmit={vi.fn()} onCancel={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Reintentar tipos de evento' }))
+    expect(retry).toHaveBeenCalledOnce()
+    expect((screen.getByLabelText('Nombre del evento *') as HTMLInputElement).value).toBe(validInput.name)
+  })
+
 })

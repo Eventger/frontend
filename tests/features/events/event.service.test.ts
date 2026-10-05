@@ -79,6 +79,18 @@ describe('createEvent', () => {
 })
 
 describe('getEvents', () => {
+  const legacyEvents = Array.from({ length: 8 }, (_, index) => ({
+    id: index + 1,
+    user: 7,
+    name: `Evento ${index + 1}`,
+    type: 1,
+    date: '2099-12-31T00:00:00.000Z',
+    location: 'Cali',
+    contact: 'Laura',
+    created_at: '2099-01-01T10:00:00.000Z',
+    updated_at: '2099-01-01T10:00:00.000Z',
+  }))
+
   beforeEach(() => {
     vi.mocked(apiRequest).mockReset()
   })
@@ -125,6 +137,59 @@ describe('getEvents', () => {
     await getEvents(2, request, 3)
     expect(request).toHaveBeenCalledWith('/events/?page=2&type=3')
     expect(apiRequest).not.toHaveBeenCalled()
+  })
+
+  it('acepta una lista vacía exitosa sin metadatos de paginación', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({ success: true, data: [] })
+
+    await expect(getEvents(3)).resolves.toEqual({
+      events: [],
+      pagination: { page: 1, pageSize: 6, total: 0, totalPages: 1 },
+    })
+  })
+
+  it.each([
+    { requestedPage: 1, page: 1, ids: [1, 2, 3, 4, 5, 6] },
+    { requestedPage: 2, page: 2, ids: [7, 8] },
+    { requestedPage: 99, page: 2, ids: [7, 8] },
+  ])('pagina la lista sin metadatos al solicitar la página $requestedPage', async ({ requestedPage, page, ids }) => {
+    vi.mocked(apiRequest).mockResolvedValue({ success: true, data: legacyEvents })
+
+    const result = await getEvents(requestedPage)
+
+    expect(result.events.map(event => event.id)).toEqual(ids)
+    expect(result.events[0].typeId).toBe(1)
+    expect(result.events[0].eventDate).toBe(legacyEvents[0].date)
+    expect(result.pagination).toEqual({ page, pageSize: 6, total: 8, totalPages: 2 })
+  })
+
+  it('filtra la lista sin metadatos antes de contar y paginar', async () => {
+    const request = vi.fn().mockResolvedValue({
+      success: true,
+      data: [{ ...legacyEvents[0], id: 9, type: 2 }, ...legacyEvents],
+    })
+
+    const result = await getEvents(2, request, 1)
+
+    expect(result.events.map(event => event.id)).toEqual([7, 8])
+    expect(result.pagination).toEqual({ page: 2, pageSize: 6, total: 8, totalPages: 2 })
+
+    await expect(getEvents(1, request, 3)).resolves.toEqual({
+      events: [],
+      pagination: { page: 1, pageSize: 6, total: 0, totalPages: 1 },
+    })
+  })
+
+  it.each([
+    null,
+    { data: [] },
+    { success: true },
+    { success: true, data: null },
+    { success: true, data: {} },
+  ])('rechaza respuestas inválidas sin convertirlas en listas vacías: %j', async response => {
+    vi.mocked(apiRequest).mockResolvedValue(response)
+
+    await expect(getEvents()).rejects.toThrow('Could not retrieve events')
   })
 })
 

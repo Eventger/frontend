@@ -101,10 +101,28 @@ export async function getEvents(
       `/events/?${query}`,
     )
 
-  if (!response.success) {
+  if (response?.success !== true || !Array.isArray(response.data)) {
     throw new Error(
       'Could not retrieve events',
     )
+  }
+
+  // El contrato anterior devuelve la lista completa sin metadatos.
+  // Conservamos filtro y páginas mientras el backend adopta la paginación.
+  if (response.pagination === undefined) {
+    const events = typeId === null
+      ? response.data
+      : response.data.filter(event => event.type === typeId)
+    const pageSize = 6
+    const total = events.length
+    const totalPages = Math.max(1, Math.ceil(total / pageSize))
+    const currentPage = Math.min(Math.max(1, page), totalPages)
+    const start = (currentPage - 1) * pageSize
+
+    return {
+      events: events.slice(start, start + pageSize).map(mapEventResponse),
+      pagination: { page: currentPage, pageSize, total, totalPages },
+    }
   }
 
   return {
