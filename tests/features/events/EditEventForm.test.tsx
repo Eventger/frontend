@@ -323,4 +323,35 @@ describe('EditEventForm', () => {
     ).toBeTruthy()
     expect(screen.queryByRole('heading', { name: '¿Eliminar tarea?' })).toBeNull()
   })
+  it('enfoca el primer campo inválido al guardar el evento', async () => {
+    const user = userEvent.setup()
+    renderForm()
+    const contact = screen.getByLabelText('Contacto *')
+    await user.clear(contact)
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(document.activeElement).toBe(contact)
+  })
+
+  it('no descarta una tarea pendiente al guardar el evento', async () => {
+    const user = userEvent.setup()
+    const onSubmit = renderForm()
+    await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Borrador')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText('Tienes una tarea sin agregar o guardar. Agrégala, guárdala o limpia sus campos antes de continuar.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Limpiar tarea' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('impide guardar o salir mientras una tarea se está guardando', async () => {
+    const user = userEvent.setup()
+    const onSubmit = renderForm(undefined, { subtasks: [subtaskFixture], onUpdateSubtask: () => new Promise(() => {}) })
+    await user.click(screen.getByRole('button', { name: `Editar ${subtaskFixture.name}` }))
+    await user.click(screen.getByRole('button', { name: 'Guardar tarea' }))
+    expect((screen.getByRole('button', { name: 'Guardar cambios' }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: 'Cancelar' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
 })

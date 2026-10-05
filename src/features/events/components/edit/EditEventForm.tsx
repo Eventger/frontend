@@ -12,6 +12,7 @@ import {
   Trash2,
 } from 'lucide-react'
 
+import { focusFirstError } from '@/lib/formFocus'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FieldError } from '@/components/feedback/FieldError'
@@ -161,6 +162,8 @@ export function EditEventForm({
   const [rescheduling, setRescheduling] = useState<{ task: Subtask; input?: UpdateSubtaskInput; conflict?: DayPlan } | null>(null)
   const [rescheduleSaved, setRescheduleSaved] = useState(false)
 
+  const [pendingTaskError, setPendingTaskError] = useState('')
+
   const updateField = <
     K extends keyof FormValues,
   >(
@@ -224,7 +227,14 @@ export function EditEventForm({
         'Ingresa un contacto para el evento.'
     }
 
+    if (!nextErrors.eventDate && values.eventDate && subtasks.some(task => getCalendarDate(task.targetDate) > values.eventDate)) {
+      nextErrors.eventDate = 'Hay tareas con fecha posterior al evento. Ajusta sus fechas o la fecha del evento.'
+    }
     setErrors(nextErrors)
+    focusFirstError(nextErrors, {
+      name: 'event-name', typeId: 'event-type', eventDate: 'event-date',
+      location: 'event-location', contact: 'event-contact',
+    })
 
     return (
       Object.keys(nextErrors).length === 0
@@ -266,6 +276,9 @@ export function EditEventForm({
     }
 
     setSubtaskErrors(nextErrors)
+    focusFirstError(nextErrors, {
+      name: 'edit-event-task-name', targetDate: 'edit-event-task-date', estimatedHours: 'edit-event-task-hours', details: 'edit-event-task-details', state: 'edit-event-task-state',
+    })
 
     return (
       Object.keys(nextErrors).length === 0
@@ -276,6 +289,7 @@ export function EditEventForm({
     setEditingSubtask(null)
     setSubtaskValues(emptySubtaskValues)
     setSubtaskErrors({})
+    setPendingTaskError('')
     setTaskActionError('')
   }
 
@@ -294,14 +308,11 @@ export function EditEventForm({
       details: subtask.details,
     })
     setSubtaskErrors({})
+    setPendingTaskError('')
     setTaskActionError('')
 
-    document
-      .getElementById('edit-task-form')
-      ?.scrollIntoView?.({
-        behavior: 'smooth',
-        block: 'center',
-      })
+    document.getElementById('edit-event-task-name')?.focus()
+
   }
 
   const handleSaveSubtask = async () => {
@@ -381,8 +392,15 @@ export function EditEventForm({
       FormEvent<HTMLFormElement>,
   ) => {
     submitEvent.preventDefault()
+    if (isTaskBusy) return
 
     if (!validate()) {
+      return
+    }
+
+    if (editingSubtask !== null || Object.entries(subtaskValues).some(([key, value]) => key !== 'state' && value.trim())) {
+      setPendingTaskError('Tienes una tarea sin agregar o guardar. Agrégala, guárdala o limpia sus campos antes de continuar.')
+      document.getElementById('edit-event-task-name')?.focus()
       return
     }
 
@@ -644,6 +662,8 @@ export function EditEventForm({
             Las tareas se guardan por separado. Cancelar el formulario solo descarta los cambios del evento.
           </p>
 
+          {pendingTaskError && <InlineFeedback id="pending-task-error" className="mt-3">{pendingTaskError}</InlineFeedback>}
+
           <div
             id="edit-task-form"
             className="mt-5 rounded-[10px] border border-[#d9dee7] bg-[#f7f8fc] p-4"
@@ -671,9 +691,7 @@ export function EditEventForm({
                     subtaskErrors.name,
                   )}
                   aria-describedby={
-                    subtaskErrors.name
-                      ? 'edit-event-task-name-error'
-                      : undefined
+                    [subtaskErrors.name && 'edit-event-task-name-error', pendingTaskError && 'pending-task-error'].filter(Boolean).join(' ') || undefined
                   }
                   onChange={(inputEvent) =>
                     updateSubtaskField(
@@ -987,7 +1005,7 @@ export function EditEventForm({
           <Button
             type="button"
             variant="outline"
-            disabled={isSubmitting}
+            disabled={isTaskBusy}
             onClick={onCancel}
             className="h-11 rounded-[10px] border-[#d9dee7] sm:w-[124px]"
           >
@@ -996,7 +1014,7 @@ export function EditEventForm({
 
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isTaskBusy}
             className="h-11 rounded-[10px] bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[178px]"
           >
             {isSubmitting

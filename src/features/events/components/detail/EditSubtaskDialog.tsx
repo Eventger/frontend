@@ -3,6 +3,7 @@ import {
   type FormEvent,
 } from 'react'
 
+import { focusFirstError } from '@/lib/formFocus'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/feedback/FieldError'
 import {
@@ -130,6 +131,7 @@ export function EditSubtaskDialog({
     }
 
     setErrors(nextErrors)
+    focusFirstError(nextErrors, { name: 'edit-subtask-name', targetDate: 'edit-subtask-date', estimatedHours: 'edit-subtask-hours', details: 'edit-subtask-details' })
 
     return (
       Object.keys(nextErrors)

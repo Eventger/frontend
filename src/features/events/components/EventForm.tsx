@@ -12,10 +12,12 @@ import {
   Trash2,
 } from 'lucide-react'
 
+import { focusFirstError } from '@/lib/formFocus'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { FieldError } from '@/components/feedback/FieldError'
+import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 
 import {
   Select,
@@ -141,6 +143,7 @@ export function EventForm({
     isLoading:
       isLoadingEventTypes,
     error: eventTypesError,
+    retry: retryEventTypes,
   } = useEventTypes()
 
 
@@ -191,6 +194,8 @@ export function EventForm({
   /*
    * ACTUALIZAR DATOS DEL EVENTO
    */
+
+  const [pendingTaskError, setPendingTaskError] = useState('')
 
   const updateField = <
     K extends keyof CreateEventInput,
@@ -271,7 +276,14 @@ export function EventForm({
         'Ingresa un contacto para el evento.'
     }
 
+    if (!nextErrors.eventDate && values.eventDate && subtasks.some(task => task.targetDate > values.eventDate)) {
+      nextErrors.eventDate = 'Hay tareas con fecha posterior al evento. Ajusta sus fechas o la fecha del evento.'
+    }
     setErrors(nextErrors)
+    focusFirstError(nextErrors, {
+      name: 'event-name', typeId: 'event-type', eventDate: 'event-date',
+      location: 'event-location', contact: 'event-contact',
+    })
 
     return (
       Object.keys(nextErrors)
@@ -328,6 +340,9 @@ export function EventForm({
     }
 
     setSubtaskErrors(nextErrors)
+    focusFirstError(nextErrors, {
+      name: 'subtask-name', targetDate: 'subtask-target-date', estimatedHours: 'subtask-estimated-hours', details: 'subtask-details',
+    })
 
     return (
       Object.keys(nextErrors)
@@ -391,6 +406,7 @@ export function EventForm({
     )
 
     setSubtaskErrors({})
+    setPendingTaskError('')
 
   }
 
@@ -422,6 +438,9 @@ export function EventForm({
     })
 
     setSubtaskErrors({})
+    setPendingTaskError('')
+
+    document.getElementById('subtask-name')?.focus()
 
   }
 
@@ -445,6 +464,8 @@ export function EventForm({
       indexToDelete
     ) {
       handleCancelSubtask()
+    } else if (editingSubtaskIndex !== null && indexToDelete < editingSubtaskIndex) {
+      setEditingSubtaskIndex(editingSubtaskIndex - 1)
     }
   }
 
@@ -461,6 +482,7 @@ export function EventForm({
     )
 
     setSubtaskErrors({})
+    setPendingTaskError('')
 
   }
 
@@ -474,8 +496,15 @@ export function EventForm({
       FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault()
+    if (isSubmitting) return
 
     if (!validate()) {
+      return
+    }
+
+    if (editingSubtaskIndex !== null || Object.values(subtaskValues).some(value => value.trim())) {
+      setPendingTaskError('Tienes una tarea sin agregar o guardar. Agrégala, guárdala o limpia sus campos antes de continuar.')
+      document.getElementById('subtask-name')?.focus()
       return
     }
 
@@ -656,6 +685,7 @@ export function EventForm({
                   {eventTypesError}
                 </FieldError>
               )}
+              {eventTypesError && <Button type="button" variant="link" disabled={isSubmitting || isLoadingEventTypes} onClick={() => void retryEventTypes()} className="min-h-11 px-0">Reintentar tipos de evento</Button>}
 
             </div>
 
@@ -829,6 +859,7 @@ export function EventForm({
 
 
       <section className="mt-2 rounded-[16px] border border-[#d9dee7] bg-white p-5">
+        {pendingTaskError && <InlineFeedback id="pending-task-error" className="mb-3">{pendingTaskError}</InlineFeedback>}
         <p className="text-[13px] text-[#667085]">
           Agrega las tareas principales antes de crear el evento.
         </p>
@@ -857,9 +888,7 @@ export function EventForm({
                   subtaskErrors.name,
                 )}
                 aria-describedby={
-                  subtaskErrors.name
-                    ? 'create-subtask-name-error'
-                    : undefined
+                  [subtaskErrors.name && 'create-subtask-name-error', pendingTaskError && 'pending-task-error'].filter(Boolean).join(' ') || undefined
                 }
                 onChange={(event) =>
                   updateSubtaskField(
@@ -1021,19 +1050,19 @@ export function EventForm({
                 (subtask, index) => (
                   <div
                     key={`${subtask.name}-${index}`}
-                    className="flex min-h-12 items-center gap-3 rounded-[8px] border border-[#d9dee7] bg-white px-3 py-2"
+                    className="grid min-h-12 grid-cols-[minmax(0,1fr)_44px_44px] items-center gap-x-3 gap-y-2 rounded-[8px] border border-[#d9dee7] bg-white px-3 py-2 md:grid-cols-[15px_minmax(0,1fr)_130px_90px_44px_44px]"
                   >
                     <GripVertical
                       size={15}
-                      className="shrink-0 text-[#98a2b3]"
+                      className="hidden shrink-0 text-[#98a2b3] md:block"
                       aria-hidden="true"
                     />
 
-                    <p className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#17212b]">
+                    <p title={subtask.name} className="col-span-3 min-w-0 break-words text-[12px] font-medium text-[#17212b] md:col-span-1 md:truncate">
                       {subtask.name}
                     </p>
 
-                    <div className="hidden min-w-[130px] items-center gap-2 text-[11px] text-[#667085] sm:flex">
+                    <div className="col-start-1 row-start-2 flex items-center gap-2 text-[11px] text-[#667085] md:col-auto md:row-auto">
                       <CalendarDays
                         size={15}
                         aria-hidden="true"
@@ -1043,7 +1072,7 @@ export function EventForm({
                       )}
                     </div>
 
-                    <div className="hidden min-w-[90px] items-center gap-2 text-[11px] text-[#667085] sm:flex">
+                    <div className="col-start-1 row-start-3 flex items-center gap-2 text-[11px] text-[#667085] md:col-auto md:row-auto">
                       <Clock3
                         size={15}
                         aria-hidden="true"
@@ -1060,7 +1089,7 @@ export function EventForm({
                         handleEditSubtask(index)
                       }
                       aria-label={`Editar ${subtask.name}`}
-                      className="size-8 text-[#667085] hover:bg-[#eef2ff] hover:text-[#4f46e5]"
+                      className="col-start-2 row-span-2 row-start-2 size-11 text-[#667085] hover:bg-[#eef2ff] hover:text-[#4f46e5] md:col-auto md:row-span-1 md:row-auto"
                     >
                       <Pencil size={15} />
                     </Button>
@@ -1076,7 +1105,7 @@ export function EventForm({
                         )
                       }
                       aria-label={`Eliminar ${subtask.name}`}
-                      className="size-8 text-[#d92d20] hover:bg-[#fef2f2] hover:text-[#b42318]"
+                      className="col-start-3 row-span-2 row-start-2 size-11 text-[#d92d20] hover:bg-[#fef2f2] hover:text-[#b42318] md:col-auto md:row-span-1 md:row-auto"
                     >
                       <Trash2 size={15} />
                     </Button>

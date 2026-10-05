@@ -3,6 +3,7 @@ import {
 } from 'lucide-react'
 
 import {
+  useEffect,
   useRef,
   useState,
   type FormEvent,
@@ -18,6 +19,7 @@ import { useSignIn } from '@clerk/react'
 import {
   NEW_PASSWORD_MIN_LENGTH_ERROR,
   PASSWORD_MIN_LENGTH,
+  PASSWORD_MIN_LENGTH_HINT,
 } from '@/features/auth/auth.constants'
 
 import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
@@ -41,7 +43,6 @@ import lockIcon from '@/assets/auth/lock.svg'
 type LoginFeedback =
   | 'general-error'
   | 'network-error'
-  | 'invalid-credentials'
   | 'account-created'
   | null
 
@@ -133,6 +134,10 @@ export function LoginPage() {
     setShowPassword,
   ] = useState(false)
 
+  const [credentialsError, setCredentialsError] = useState('')
+  const [recoveryError, setRecoveryError] = useState('')
+  const recoveryInputRef = useRef<HTMLInputElement>(null)
+
   const emailInputRef =
     useRef<HTMLInputElement>(
       null,
@@ -145,6 +150,17 @@ export function LoginPage() {
 
   const isLoading =
     fetchStatus === 'fetching' || isCompleting
+
+  useEffect(() => {
+    if (isLoading) return
+    if (recoveryError) recoveryInputRef.current?.focus()
+    else if (credentialsError) passwordInputRef.current?.focus()
+  }, [credentialsError, recoveryError, isLoading])
+
+  const showRecoveryFieldError = (message: string) => {
+    setRecoveryError(message)
+    recoveryInputRef.current?.focus()
+  }
 
   const validate = () => {
     let isValid = true
@@ -241,6 +257,8 @@ export function LoginPage() {
 
   const performLogin =
     async () => {
+      if (isLoading) return
+      setCredentialsError('')
       setLastAttempt('password')
       setGeneralError('')
       setFeedback(null)
@@ -267,9 +285,12 @@ export function LoginPage() {
       }
 
       if (error) {
-        setFeedback(
-          'invalid-credentials',
-        )
+        const errors = 'errors' in error && Array.isArray(error.errors) ? error.errors : []
+        if (errors.some(item => ['form_password_incorrect', 'form_identifier_not_found'].includes(item.code))) {
+          setCredentialsError('El correo o la contraseña no son correctos. Revisa tus datos e inténtalo de nuevo.')
+        } else {
+          setFeedback('general-error')
+        }
 
         return
       }
@@ -362,6 +383,10 @@ export function LoginPage() {
 
   const handleStartPasswordRecovery =
     async () => {
+      if (isLoading) return
+      setCredentialsError('')
+      setRecoveryError('')
+      setPasswordError('')
       setEmailError('')
       setGeneralError('')
       setFeedback(null)
@@ -438,7 +463,8 @@ export function LoginPage() {
         FormEvent<HTMLFormElement>,
     ) => {
       event.preventDefault()
-
+      if (isLoading) return
+      setRecoveryError('')
       setGeneralError('')
 
       if (
@@ -450,7 +476,7 @@ export function LoginPage() {
             recoveryCode.trim(),
           )
         ) {
-          setGeneralError(
+          showRecoveryFieldError(
             'Ingresa el código de 6 dígitos que enviamos a tu correo.',
           )
 
@@ -467,7 +493,7 @@ export function LoginPage() {
               })
 
           if (result.error) {
-            setGeneralError(
+            showRecoveryFieldError(
               'El código no es válido o ya expiró.',
             )
 
@@ -490,7 +516,7 @@ export function LoginPage() {
         newPassword.length <
         PASSWORD_MIN_LENGTH
       ) {
-        setGeneralError(
+        showRecoveryFieldError(
           NEW_PASSWORD_MIN_LENGTH_ERROR,
         )
 
@@ -517,43 +543,12 @@ export function LoginPage() {
           return
         }
 
-        const finalizeResult =
-          await signIn.finalize({
-            navigate: ({
-              decorateUrl,
-            }) => {
-              const url =
-                decorateUrl(
-                  destination,
-                )
-
-              if (
-                url.startsWith(
-                  'http',
-                )
-              ) {
-                window.location.href =
-                  url
-
-                return
-              }
-
-              navigate(
-                url,
-                {
-                  replace: true,
-                },
-              )
-            },
-          })
-
-        if (
-          finalizeResult.error
-        ) {
-          setGeneralError(
-            'La contraseña se actualizó, pero no pudimos activar la sesión.',
-          )
+        if (signIn.status === 'needs_second_factor' || signIn.status === 'needs_client_trust') {
+          setRecoveryStep(null)
+          setVerificationStep(true)
+          return
         }
+        await finalizeSuccessfulLogin()
       } catch {
         setGeneralError(
           'No pudimos actualizar la contraseña. Inténtalo de nuevo.',
@@ -640,7 +635,11 @@ export function LoginPage() {
                 </label>
 
                 <Input
+                  key={recoveryStep}
+                  ref={recoveryInputRef}
                   id="login-recovery"
+                  aria-invalid={Boolean(recoveryError)}
+                  aria-describedby={[recoveryStep === 'password' && 'login-recovery-hint', recoveryError && 'login-recovery-error'].filter(Boolean).join(' ') || undefined}
                   type={
                     recoveryStep ===
                     'code'
@@ -696,6 +695,7 @@ export function LoginPage() {
                       )
                     }
 
+                    setRecoveryError('')
                     setGeneralError('')
                   }}
                   disabled={
@@ -704,6 +704,9 @@ export function LoginPage() {
                   autoFocus
                   className="mt-2 h-11 rounded-[10px] px-3 text-[13px]"
                 />
+
+                {recoveryStep === 'password' && <p id="login-recovery-hint" className="mt-2 text-[12px] text-[#667085]">{PASSWORD_MIN_LENGTH_HINT}</p>}
+                {recoveryError && <FieldError id="login-recovery-error" className="mt-2">{recoveryError}</FieldError>}
 
                 {generalError && (
                   <InlineFeedback
@@ -728,7 +731,9 @@ export function LoginPage() {
 
                 <button
                   type="button"
+                  disabled={isLoading}
                   onClick={() => {
+                    setRecoveryError('')
                     setRecoveryStep(
                       null,
                     )
@@ -782,17 +787,16 @@ export function LoginPage() {
                     required
                     aria-invalid={
                       Boolean(
-                        emailError,
+                        emailError || credentialsError,
                       )
                     }
                     aria-describedby={
-                      emailError
-                        ? 'login-email-error'
-                        : undefined
+                      [emailError && 'login-email-error', credentialsError && 'login-credentials-error'].filter(Boolean).join(' ') || undefined
                     }
                     onChange={(
                       event,
                     ) => {
+                      setCredentialsError('')
                       setEmail(
                         event.target.value,
                       )
@@ -863,17 +867,16 @@ export function LoginPage() {
                       required
                       aria-invalid={
                         Boolean(
-                          passwordError,
+                          passwordError || credentialsError,
                         )
                       }
                       aria-describedby={
-                        passwordError
-                          ? 'login-password-error'
-                          : undefined
+                        [passwordError && 'login-password-error', credentialsError && 'login-credentials-error'].filter(Boolean).join(' ') || undefined
                       }
                       onChange={(
                         event,
                       ) => {
+                        setCredentialsError('')
                         setPassword(
                           event.target.value,
                         )
@@ -942,12 +945,15 @@ export function LoginPage() {
                     </FieldError>
                   )}
 
+                  {credentialsError && <InlineFeedback id="login-credentials-error" className="mt-3">{credentialsError}</InlineFeedback>}
+
                   <div className="mt-[9px] flex justify-end">
                     <button
                       type="button"
                       onClick={
                         handleStartPasswordRecovery
                       }
+                      disabled={isLoading}
                       className="inline-flex min-h-11 items-center rounded-sm px-1 text-[12px] font-semibold text-[#4f46e5] hover:text-[#3730a3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
                     >
                       ¿Olvidaste tu contraseña?
@@ -1091,29 +1097,7 @@ export function LoginPage() {
         }}
       />
 
-      <AuthFeedbackModal
-        open={
-          feedback ===
-          'invalid-credentials'
-        }
-        variant="error"
-        title="No encontramos tu cuenta"
-        description="Verifica tu correo electrónico o crea una cuenta nueva."
-        secondaryLabel="Cerrar"
-        primaryLabel="Crear cuenta"
-        onSecondary={() =>
-          setFeedback(null)
-        }
-        onPrimary={() => {
-          setFeedback(null)
-          navigate(
-            '/crear-cuenta',
-            {
-              viewTransition: true,
-            },
-          )
-        }}
-      />
+
 
     </main>
   )

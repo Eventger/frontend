@@ -104,6 +104,12 @@ describe('PasswordDialog', () => {
     expect(dialog.getByText('Las contraseñas deben coincidir.')).toBeTruthy()
     expect(document.activeElement).toBe(screen.getByLabelText('Nueva contraseña'))
     expect(fixture.user.updatePassword).not.toHaveBeenCalled()
+    await user.clear(screen.getByLabelText('Nueva contraseña'))
+    await user.type(screen.getByLabelText('Nueva contraseña'), 'Mi nueva clave segura 2026')
+    await user.clear(screen.getByLabelText('Confirmar nueva contraseña'))
+    await user.type(screen.getByLabelText('Confirmar nueva contraseña'), 'Mi nueva clave segura 2026')
+    expect(screen.getByLabelText('Nueva contraseña').getAttribute('aria-invalid')).toBe('false')
+    expect(screen.queryByText('Las contraseñas deben coincidir.')).toBeNull()
   })
 
   it('explica el rechazo de Clerk sin anunciar un cambio exitoso', async () => {

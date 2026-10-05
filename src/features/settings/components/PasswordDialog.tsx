@@ -63,7 +63,11 @@ export function PasswordDialog({ user, onClose, onSaved }: PasswordDialogProps) 
         {fields.map((field) => (
           <div key={field.key} className="space-y-2">
             <label htmlFor={`account-password-${field.key}`} className="text-sm font-medium">{field.label}</label>
-            <Input id={`account-password-${field.key}`} type={visible ? 'text' : 'password'} autoComplete={field.autoComplete} value={field.value} onChange={(event) => field.setValue(event.target.value)} disabled={busy} className={`${settingsInput} app-password-input`} aria-invalid={Boolean(errors[field.key])} aria-describedby={`${field.key === 'new' ? 'account-password-hint ' : ''}${errors[field.key] ? `account-password-${field.key}-error` : ''}`.trim() || undefined} />
+            <Input id={`account-password-${field.key}`} type={visible ? 'text' : 'password'} autoComplete={field.autoComplete} value={field.value} onChange={(event) => {
+              field.setValue(event.target.value)
+              setErrors(current => ({ ...current, [field.key]: '', ...(field.key === 'new' ? { confirmation: '' } : {}) }))
+              setError('')
+            }} disabled={busy} className={`${settingsInput} app-password-input`} aria-invalid={Boolean(errors[field.key])} aria-describedby={`${field.key === 'new' ? 'account-password-hint ' : ''}${errors[field.key] ? `account-password-${field.key}-error` : ''}`.trim() || undefined} />
             {field.key === 'new' && <p id="account-password-hint" className="text-xs text-[#667085]">{PASSWORD_MIN_LENGTH_HINT}</p>}
             {errors[field.key] && <FieldError id={`account-password-${field.key}-error`}>{errors[field.key]}</FieldError>}
           </div>
