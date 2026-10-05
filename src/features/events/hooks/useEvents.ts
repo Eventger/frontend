@@ -6,18 +6,20 @@ import {
 } from 'react'
 
 import { getEvents } from '@/features/events/services/event.service'
-import type { Event } from '@/features/events/types/event.types'
+import type { EventsPageData } from '@/features/events/types/event.types'
 import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 
-export function useEvents() {
+export function useEvents(page = 1, typeId: number | null = null) {
+  const requestKey = `${page}:${typeId ?? 'all'}`
   const {
     authenticatedRequest,
     isAuthLoaded,
     isSignedIn,
   } = useAuthenticatedApi()
 
-  const [events, setEvents] =
-    useState<Event[]>([])
+  const [data, setData] =
+    useState<EventsPageData | null>(null)
+  const [settledRequest, setSettledRequest] = useState<string | null>(null)
 
   const [isLoading, setIsLoading] =
     useState(true)
@@ -37,11 +39,13 @@ export function useEvents() {
 
         const data =
           await getEvents(
+            page,
             authenticatedRequest,
+            typeId,
           )
 
         if (version === requestVersion.current) {
-          setEvents(data)
+          setData(data)
         }
       } catch (error) {
         if (version === requestVersion.current) {
@@ -54,10 +58,11 @@ export function useEvents() {
       } finally {
         if (version === requestVersion.current) {
           setIsLoading(false)
+          setSettledRequest(requestKey)
         }
       }
     },
-    [authenticatedRequest],
+    [authenticatedRequest, page, typeId, requestKey],
   )
 
   useEffect(() => {
@@ -86,11 +91,12 @@ export function useEvents() {
   ])
 
   return {
-    events,
+    events: data?.events ?? [],
+    pagination: data?.pagination ?? null,
     isLoading:
       isAuthLoaded && !isSignedIn
         ? false
-        : isLoading,
+        : isLoading || settledRequest !== requestKey,
     error,
     retry: loadEvents,
   }

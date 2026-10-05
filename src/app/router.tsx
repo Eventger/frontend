@@ -11,6 +11,8 @@ import { EventsPage } from '@/features/events/pages/EventsPage'
 import { CreateEventPage } from '@/features/events/pages/CreateEventPage'
 import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
 import { TodayPage } from '@/features/today/pages/TodayPage'
+import { SettingsPage } from '@/features/settings/pages/SettingsPage'
+import { SecurityPage } from '@/features/settings/pages/SecurityPage'
 
 export const router =
   createBrowserRouter([
@@ -39,6 +41,14 @@ export const router =
         </ProtectedRoute>
       ),
       children: [
+        {
+          path: '/configuracion',
+          element: <SettingsPage />,
+        },
+        {
+          path: '/configuracion/seguridad',
+          element: <SecurityPage />,
+        },
         {
           path: '/hoy',
           element: <TodayPage />,

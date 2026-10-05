@@ -4,11 +4,14 @@ import {
 } from 'react'
 
 import { useNavigate } from 'react-router'
+import { usePlanningPreferences } from '@/features/settings/hooks/usePlanningPreferences'
+import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
 
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageContent } from '@/components/layout/PageContent'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageHeaderCreateButton } from '@/components/layout/PageHeaderCreateButton'
+import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 
 import { TodayEmptyState } from '@/features/today/components/TodayEmptyState'
 import { TodayErrorState } from '@/features/today/components/TodayErrorState'
@@ -25,8 +28,6 @@ import { useToday } from '@/features/today/hooks/useToday'
 import type {
   TodayTaskItem,
 } from '@/features/today/types/today.types'
-
-const DAILY_LIMIT_HOURS = 6
 
 function formatTodayDate(
   month: 'long' | 'short' =
@@ -61,6 +62,9 @@ function getPlannedHours(
 
 export function TodayPage() {
   const navigate = useNavigate()
+  const preferences = usePlanningPreferences()
+  const dailyLimitHours = preferences.isLoading || preferences.error ? undefined : preferences.dailyLimitHours
+  const [reschedulingTask, setReschedulingTask] = useState<TodayTaskItem | null>(null)
 
   const {
     data,
@@ -99,6 +103,7 @@ export function TodayPage() {
   ) => {
     navigate(
       `/evento/${task.eventId}`,
+      { viewTransition: true },
     )
   }
 
@@ -239,7 +244,7 @@ export function TodayPage() {
         : 'Organiza primero lo que requiere atención'
 
   return (
-    <PageContainer>
+    <PageContainer breadcrumbs={[{ label: 'Hoy' }]}>
       <PageContent>
         <PageHeader
           title="Hoy"
@@ -325,13 +330,20 @@ export function TodayPage() {
                     plannedHours
                   }
                   dailyLimitHours={
-                    DAILY_LIMIT_HOURS
+                    dailyLimitHours
                   }
                   isFiltered={
                     hasActiveFilters
                   }
                 />
               </div>
+
+              {!hasActiveFilters && dailyLimitHours !== undefined && plannedHours > dailyLimitHours && (
+                <InlineFeedback variant="warning" className="mt-4">
+                  Tu planificación de hoy supera el límite diario de {dailyLimitHours} horas. Revisa tus tareas para reducir la sobrecarga.
+                </InlineFeedback>
+              )}
+              {preferences.error && <InlineFeedback variant="warning">{preferences.error} <button type="button" onClick={() => { void preferences.refresh() }} className="ml-2 min-h-11 underline">Reintentar</button></InlineFeedback>}
 
               <div className="mt-4">
                 <TodayFilters
@@ -389,9 +401,8 @@ export function TodayPage() {
                       filteredOverdue
                     }
                     group="overdue"
-                    onOpenTask={
-                      handleOpenTask
-                    }
+                    onOpenTask={handleOpenTask}
+                    onRescheduleTask={setReschedulingTask}
                   />
 
                   <TodayTaskSection
@@ -401,9 +412,8 @@ export function TodayPage() {
                       filteredToday
                     }
                     group="today"
-                    onOpenTask={
-                      handleOpenTask
-                    }
+                    onOpenTask={handleOpenTask}
+                    onRescheduleTask={setReschedulingTask}
                   />
 
                   <TodayTaskSection
@@ -413,15 +423,15 @@ export function TodayPage() {
                       filteredUpcoming
                     }
                     group="upcoming"
-                    onOpenTask={
-                      handleOpenTask
-                    }
+                    onOpenTask={handleOpenTask}
+                    onRescheduleTask={setReschedulingTask}
                   />
                 </main>
               )}
             </>
           )}
       </PageContent>
+      {reschedulingTask && <RescheduleTaskDialog key={reschedulingTask.id} task={reschedulingTask} onClose={() => setReschedulingTask(null)} onSaved={retry} />}
     </PageContainer>
   )
 }

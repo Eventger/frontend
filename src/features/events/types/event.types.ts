@@ -40,6 +40,24 @@ export interface EventApiData {
 export interface EventsApiResponse {
   success: boolean
   data: EventApiData[]
+  pagination: {
+    page: number
+    page_size: number
+    total: number
+    total_pages: number
+  }
+}
+
+export interface EventPagination {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+export interface EventsPageData {
+  events: Event[]
+  pagination: EventPagination
 }
 
 export interface EventApiResponse {

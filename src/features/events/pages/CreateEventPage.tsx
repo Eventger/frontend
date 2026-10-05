@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/react'
 
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageFlowSurface } from '@/components/layout/PageFlowSurface'
+import { usePageFlowNavigation } from '@/components/layout/usePageFlowNavigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 import { AuthLoadingState } from '@/features/auth/components/AuthLoadingState'
@@ -152,26 +153,29 @@ function CreateEventContent({ userId }: { userId: string }) {
     }
   }
 
+  const flowContentRef = usePageFlowNavigation(view)
+
   return (
     <PageContainer
-      className={
-        view === 'form'
-          ? 'md:py-6'
-          : undefined
-      }
+      breadcrumbs={[
+        { label: 'Hoy', to: '/hoy' },
+        { label: 'Eventos', to: '/eventos' },
+        { label: view === 'success' ? 'Evento creado' : createdEvent ? 'Tareas pendientes' : 'Crear evento' },
+      ]}
     >
       <div
+        ref={flowContentRef}
         key={view}
-        className="event-flow-view"
+        className={view === 'form' ? undefined : 'event-flow-view'}
       >
         {view === 'form' && (
-          <PageFlowSurface>
+          <>
             <PageHeader
               title="Crear evento"
               description="Completa la información básica de tu evento y agrega las tareas principales para dejarlo listo."
             />
 
-            <div className="mt-4">
+            <PageFlowSurface className="mt-4">
               <EventForm
                 initialValues={
                   submittedData
@@ -190,8 +194,8 @@ function CreateEventContent({ userId }: { userId: string }) {
                   isSubmitting
                 }
               />
-            </div>
-          </PageFlowSurface>
+            </PageFlowSurface>
+          </>
         )}
 
         {view === 'success' &&
