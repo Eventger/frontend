@@ -1464,3 +1464,34 @@ for (const width of [320, 768, 1440]) {
     await expect(page.getByText('Hay tareas con fecha posterior al evento. Ajusta sus fechas o la fecha del evento.')).toBeVisible()
   })
 }
+
+for (const width of [390, 1440]) {
+  for (const filtered of [false, true]) {
+    test(`estados vacíos distinguen fallo y respuesta sin paginación en ${width}px con filtro=${filtered}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 })
+      let failed = true
+      await page.route(url => url.pathname === '/events/', route => failed
+        ? route.fulfill({ status: 503, json: { success: false } })
+        : route.fulfill({ json: { success: true, data: [] } }))
+      await page.goto(`/tests/visual/index.html?view=events-pagination${filtered ? '&type=1' : ''}`)
+      await expect(page.getByRole('heading', { name: 'No pudimos cargar tus eventos' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Aún no tienes eventos' })).toHaveCount(0)
+      await expect(page.getByRole('heading', { name: 'No hay eventos de este tipo' })).toHaveCount(0)
+      failed = false
+      await page.getByRole('button', { name: 'Reintentar', exact: true }).click()
+      await expect(page.getByRole('heading', { name: filtered ? 'No hay eventos de este tipo' : 'Aún no tienes eventos' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'No pudimos cargar tus eventos' })).toHaveCount(0)
+      const filter = page.getByRole('combobox', { name: 'Tipo de evento', exact: true })
+      await expect(filter).toHaveCount(filtered ? 1 : 0)
+      if (filtered) {
+        await page.getByRole('button', { name: 'Ver todos los eventos' }).click()
+        await expect(page.getByRole('heading', { name: 'Aún no tienes eventos' })).toBeVisible()
+        await expect(filter).toHaveCount(0)
+        await expect(page).not.toHaveURL(/type=/)
+      }
+      await expect(page.getByRole('navigation', { name: 'Paginación de eventos' })).toHaveCount(0)
+      const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+      expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
+    })
+  }
+}

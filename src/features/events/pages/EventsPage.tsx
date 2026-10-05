@@ -29,6 +29,7 @@ export function EventsPage() {
   } = useEvents(page, typeId)
 
   const hasEvents = events.length > 0
+  const showTypeFilter = hasEvents || typeId !== null
 
   const handleTypeChange = (value: string) => {
     setSearchParams(previous => {
@@ -69,8 +70,10 @@ export function EventsPage() {
         />
 
         <div className="mt-10">
-          <EventsTypeFilter typeId={typeId} onChange={handleTypeChange} />
-          <div className="mt-6">
+          {showTypeFilter && (
+            <EventsTypeFilter typeId={typeId} onChange={handleTypeChange} />
+          )}
+          <div className={showTypeFilter ? 'mt-6' : undefined}>
             {isLoading && (
               <EventsLoadingState />
             )}

@@ -93,7 +93,7 @@ describe('EventsPage', () => {
     expect(retry).toHaveBeenCalledOnce()
   })
 
-  it('muestra el estado vacío', () => {
+  it('muestra el estado vacío sin el filtro de tipo', () => {
     vi.mocked(useEvents).mockReturnValue({
       events: [],
       pagination: null,
@@ -107,6 +107,8 @@ describe('EventsPage', () => {
     expect(
       screen.getByRole('heading', { name: 'Aún no tienes eventos' }),
     ).toBeTruthy()
+    expect(screen.queryByRole('combobox', { name: 'Tipo de evento' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Limpiar filtro' })).toBeNull()
     expect(
       screen.getByText(
         'Crea tu primer evento para organizar sus tareas y hacer seguimiento a su preparación.',
@@ -126,6 +128,7 @@ describe('EventsPage', () => {
     renderPage()
 
     expect(screen.getByRole('heading', { name: event.name })).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: 'Tipo de evento' })).toBeTruthy()
     expect(
       screen.getByText('0 % · 0/0 tareas'),
     ).toBeTruthy()
@@ -197,6 +200,7 @@ describe('EventsPage', () => {
     vi.mocked(useEvents).mockReturnValue({ events: [], pagination: null, isLoading: false, error: null, retry: vi.fn() })
     renderPage('/eventos?type=2')
     expect(screen.getByRole('heading', { name: 'No hay eventos de este tipo' })).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: 'Tipo de evento' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Aún no tienes eventos' })).toBeNull()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Ver todos los eventos' }))
     expect(useEvents).toHaveBeenLastCalledWith(1, null)

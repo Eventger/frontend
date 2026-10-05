@@ -126,14 +126,14 @@ matriz completa después de ese último ajuste CSS. Se repitieron lint y build.
 ## Validación de la rama del PR
 
 La rama `fix/ux-auth-formularios` se preparó desde `origin/main` en un checkout
-separado. Incluye solo las correcciones de esta auditoría. Las sugerencias de
-direcciones, sus servicios/pruebas y los cambios del listado de eventos siguen
-en el workspace original y no forman parte de este PR.
+separado. Incluye las correcciones de esta auditoría y los estados vacíos de
+Eventos. Las sugerencias de direcciones y sus servicios/pruebas permanecen fuera
+del PR, conservados en el workspace original.
 
-- `npm run validate`: **355 pruebas en 45 archivos**, lint, tipos, cobertura y
+- `npm run validate`: **368 pruebas en 45 archivos**, lint, tipos, cobertura y
   build correctos. Los números anteriores corresponden al workspace completo
   durante la auditoría, que incluía trabajo concurrente.
-- **17/17 escenarios de navegador correctos** sobre el contenido de la rama:
+- Validación previa de autenticación/formularios: **17/17 escenarios de navegador correctos**:
   login y registro en seis tamaños, errores accesibles, movimiento reducido y
   creación de eventos a 320, 768 y 1440 px.
 - Dependencias instaladas con `npm ci --ignore-scripts --prefer-offline`.
@@ -142,4 +142,24 @@ en el workspace original y no forman parte de este PR.
 
 ```bash
 VITE_API_URL=https://api.eventger.test npm run test:responsive -- --grep 'auditoría UX|los estados de feedback comparten|los formularios comparten|login no produce|signup no produce' --output=/tmp/eventger-ux-pr-browser-verified --reporter=list
+```
+
+### Estados vacíos de Eventos incluidos
+
+Una respuesta exitosa con `data: []` y sin `pagination` presenta «Aún no tienes
+eventos», o «No hay eventos de este tipo» si hay un filtro. Los fallos HTTP y
+las respuestas inválidas conservan su estado de error con reintento. En el
+contrato anterior, la lista completa se filtra antes de contar y paginar; las
+respuestas con metadatos conservan la paginación del servidor.
+
+El filtro se oculta cuando no hay eventos sin un tipo seleccionado; sigue
+visible si un tipo no tiene coincidencias y permite limpiar la selección.
+Las pruebas de servicio e integración cubren ambos contratos, errores y
+reintentos. La validación completa pasó con 368 pruebas; **14/14 escenarios de
+navegador** comprobaron paginación, filtros y vacíos. Los cuatro casos nuevos
+cubren error → reintento → vacío sin paginación en móvil y escritorio,
+con y sin filtro, incluida la acción «Ver todos los eventos».
+
+```bash
+VITE_API_URL=https://api.eventger.test npm run test:responsive -- --grep 'estados vacíos distinguen|filtro por tipo de evento integra|paginación de eventos limita' --output=/tmp/eventger-empty-pr-browser --reporter=list
 ```
