@@ -1,3 +1,5 @@
+import { getApiFieldError } from '@/lib/api'
+import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 import {
   useState,
 } from 'react'
@@ -286,6 +288,8 @@ export function EventDetailPage() {
     setIsAddSubtaskOpen(true)
   }
 
+  const [eventRetryError, setEventRetryError] = useState('')
+
   const handleUpdateEvent = async (
     data: UpdateEventInput,
   ) => {
@@ -293,6 +297,7 @@ export function EventDetailPage() {
       return
     }
 
+    setEventRetryError('')
     setSubmittedEventData(data)
     setIsUpdatingEvent(true)
 
@@ -309,7 +314,8 @@ export function EventDetailPage() {
       setView(
         'event-edit-success',
       )
-    } catch {
+    } catch (error) {
+      if (getApiFieldError(error, 'date')) throw error
       setView(
         'event-edit-error',
       )
@@ -324,9 +330,12 @@ export function EventDetailPage() {
         return
       }
 
-      await handleUpdateEvent(
-        submittedEventData,
-      )
+      try {
+        await handleUpdateEvent(submittedEventData)
+      } catch (error) {
+        setEventRetryError(getApiFieldError(error, 'date') ?? 'No pudimos guardar el evento. Revisa los datos e inténtalo de nuevo.')
+        setView('event-edit')
+      }
     }
 
   const handleCancelEventEdit =
@@ -570,6 +579,7 @@ export function EventDetailPage() {
               {!isLoadingEventTypes &&
                 !eventTypesError && (
                   <PageFlowSurface className="mt-4">
+                    {eventRetryError && <InlineFeedback className="mb-4">{eventRetryError}</InlineFeedback>}
                     <EditEventForm
                       key={
                         currentEvent.id

@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
 import { dayPlan, schedulingTask } from './planning.fixtures'
 import { subtaskApiFixture } from './subtask.fixtures'
@@ -15,7 +15,77 @@ function show(conflict = false) {
   render(<RescheduleTaskDialog task={schedulingTask} initialConflict={conflict ? dayPlan() : undefined} initialInput={conflict ? { name: 'Proveedor actualizado', targetDate: '2026-10-12', estimatedHours: 2, details: 'Conservar esta nota', state: 'pending' } : undefined} onClose={closed} onSaved={saved} />)
 }
 
+async function selectDuration(user: ReturnType<typeof userEvent.setup>, label: string, value: string) {
+  await user.click(screen.getByRole('combobox', { name: label }))
+  await user.click(screen.getByRole('option', { name: value }))
+}
+
 describe('RescheduleTaskDialog', () => {
+  afterEach(() => { vi.useRealTimers() })
+
+  it('usa hoy en Bogotá como mínimo y bloquea fechas pasadas aunque se ingresen manualmente', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T02:00:00Z'))
+    show()
+    const date = screen.getByLabelText('Nueva fecha') as HTMLInputElement
+    expect(date.min).toBe('2026-10-07')
+    fireEvent.change(date, { target: { value: '2026-10-06' } })
+    expect(screen.getByText('No puedes reprogramar una tarea para una fecha anterior a hoy.')).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(writes).toHaveLength(0)
+    fireEvent.change(date, { target: { value: '2026-10-07' } })
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('propone hoy al abrir una tarea vencida y conserva la fecha original como información', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-11T12:00:00Z'))
+    show()
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-11')
+    expect(screen.getByText(/Actualmente: sábado, 10 de octubre/)).toBeTruthy()
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+  })
+  it('pide confirmación antes de guardar y conserva la duración al volver', async () => {
+    const user = userEvent.setup(); show(true)
+    await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
+    await user.click(screen.getByRole('radio', { name: /Reducir el tiempo estimado/ }))
+    await selectDuration(user, 'Horas', '1')
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await screen.findByRole('heading', { name: '¿Estás seguro?' })
+    expect(screen.getByText('¿Seguro que quieres reprogramar la subtarea?')).toBeTruthy()
+    expect(screen.getByText('Quedarías con 6 h para ese día (tu límite es 6 h).')).toBeTruthy()
+    expect(writes).toHaveLength(0)
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.getByRole('combobox', { name: 'Horas' }).textContent).toBe('1')
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
+    await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
+    expect(writes).toHaveLength(1)
+    expect(writes[0].estimated_hours).toBe('1.00')
+  })
+  it('confirma Aplicar opción sin esperar a que termine la recarga de tareas', async () => {
+    let finishRefresh!: () => void
+    saved.mockReturnValueOnce(new Promise<void>(resolve => { finishRefresh = resolve }))
+    const user = userEvent.setup(); show(true)
+    await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(false))
+    await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
+    await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
+    expect((screen.getByRole('button', { name: 'Volver al plan' }) as HTMLButtonElement).disabled).toBe(false)
+    expect((screen.getByRole('button', { name: 'Cerrar' }) as HTMLButtonElement).disabled).toBe(false)
+    expect(writes).toHaveLength(1)
+    await act(async () => { finishRefresh() })
+  })
+  it.each([false, true])('permite cerrar con la X en el estado de conflicto=%s', async (conflict) => {
+    const user = userEvent.setup(); show(conflict)
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }))
+    expect(closed).toHaveBeenCalledOnce()
+    expect(writes).toHaveLength(0)
+  })
   beforeEach(() => {
     writes = []; patchStatus = 200; saved.mockReset(); closed.mockReset()
     vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
@@ -25,6 +95,7 @@ describe('RescheduleTaskDialog', () => {
       if (options.method === 'PATCH') {
         writes.push(body)
         const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(body.target_date))
+        if (patchStatus === 400) return json({ success: false, errors: { target_date: ['La fecha límite no puede ser posterior a la fecha del evento.'] } }, 400)
         if (patchStatus === 409) return json({ success: false, data: { ...dayPlan(date), planned_hours: '7', existing_hours: '5', has_conflict: true, overload_hours: '1' } }, 409)
         return json({ success: true, data: { ...subtaskApiFixture, id: schedulingTask.id, name: schedulingTask.name, details: '', ...body }, planning: dayPlan(date, Number(body.estimated_hours)) })
       }
@@ -55,6 +126,7 @@ describe('RescheduleTaskDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
     await waitFor(() => expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(false))
     await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
     expect(await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeTruthy()
     expect(writes[0].target_date).toBe('2026-10-14T04:59:59.000Z')
   })
@@ -63,12 +135,15 @@ describe('RescheduleTaskDialog', () => {
     const user = userEvent.setup(); show(true)
     await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
     await user.click(screen.getByRole('radio', { name: /Reducir el tiempo estimado/ }))
-    fireEvent.change(screen.getByLabelText('Horas estimadas'), { target: { value: '1.5' } })
-    await screen.findByText('Tu límite diario es 6 h. La sobrecarga sería de 0,5 h.')
+    await selectDuration(user, 'Horas', '1')
+    await selectDuration(user, 'Minutos', '30')
+    await screen.findByText('Tu límite diario es 6 h. La sobrecarga sería de 30 min.')
     expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.change(screen.getByLabelText('Horas estimadas'), { target: { value: '1' } })
+    await selectDuration(user, 'Horas', '1')
+    await selectDuration(user, 'Minutos', '0')
     await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
     await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
     await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
     expect(writes[0]).toMatchObject({ estimated_hours: '1.00', name: 'Proveedor actualizado', details: 'Conservar esta nota', state: 'pending' })
   })
@@ -80,23 +155,47 @@ describe('RescheduleTaskDialog', () => {
     fireEvent.change(screen.getByLabelText('Otra fecha'), { target: { value: '2026-10-15' } })
     await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
     await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
     await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
     expect(writes[0].target_date).toBe('2026-10-16T04:59:59.000Z')
   })
 
-  it('explica la precisión inválida de horas y permite corregirla', async () => {
+  it('ofrece horas enteras y no permite una duración de cero', async () => {
     const user = userEvent.setup(); show(true)
     await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
     await user.click(screen.getByRole('radio', { name: /Reducir el tiempo estimado/ }))
-    fireEvent.change(screen.getByLabelText('Horas estimadas'), { target: { value: '0.001' } })
-    expect(screen.getByText(/con un máximo de dos decimales/)).toBeTruthy()
+    await user.click(screen.getByRole('combobox', { name: 'Horas' }))
+    expect(screen.queryByRole('option', { name: '0.001' })).toBeNull()
+    await user.click(screen.getByRole('option', { name: '0' }))
+    expect(screen.getByText(/horas enteras y minutos entre 0 y 59/)).toBeTruthy()
     expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(true)
     expect(writes).toHaveLength(0)
-    fireEvent.change(screen.getByLabelText('Horas estimadas'), { target: { value: '1' } })
+    await selectDuration(user, 'Horas', '1')
+    await selectDuration(user, 'Minutos', '0')
     await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
     await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
     await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
     expect(writes[0].estimated_hours).toBe('1.00')
+  })
+
+  it('valida minutos y convierte una duración menor de una hora al contrato del backend', async () => {
+    const user = userEvent.setup(); show(true)
+    await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
+    await user.click(screen.getByRole('radio', { name: /Reducir el tiempo estimado/ }))
+    await selectDuration(user, 'Horas', '0')
+    await user.click(screen.getByRole('combobox', { name: 'Minutos' }))
+    expect(screen.queryByRole('option', { name: '60' })).toBeNull()
+    expect(screen.queryByRole('option', { name: '-1' })).toBeNull()
+    await user.click(screen.getByRole('option', { name: '0' }))
+    expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(writes).toHaveLength(0)
+    await selectDuration(user, 'Minutos', '45')
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
+    await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
+    expect(writes[0].estimated_hours).toBe('0.75')
   })
 
   it('recupera un conflicto recibido al guardar y permite cancelar', async () => {
@@ -117,4 +216,21 @@ describe('RescheduleTaskDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(writes).toHaveLength(0)
   })
+  it('conserva la fecha y muestra el error del servidor si el evento cambió después de la vista previa', async () => {
+    const user = userEvent.setup(); patchStatus = 400; show()
+    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-13' } })
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
+    await screen.findByText('La fecha límite no puede ser posterior a la fecha del evento.')
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-13')
+    expect(saved).not.toHaveBeenCalled()
+    expect(screen.queryByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeNull()
+    patchStatus = 200
+    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-14' } })
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
+    await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
+    expect(saved).toHaveBeenCalledOnce()
+  })
+
 })

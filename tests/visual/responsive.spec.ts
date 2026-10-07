@@ -322,9 +322,123 @@ test('Sprint 3 permite resolver por teclado en móvil y conserva foco al cancela
   expect(await dialog.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1)
   await page.screenshot({ path: testInfo.outputPath('sprint3-resolucion-mobile.png'), fullPage: true })
   await dialog.getByRole('button', { name: 'Aplicar opción' }).click()
+  await expect(dialog.getByRole('heading', { name: '¿Estás seguro?' })).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('sprint3-confirmacion-mobile.png'), fullPage: true })
+  await dialog.getByRole('button', { name: 'Aceptar' }).click()
   await expect(page.getByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('sprint3-resuelto-mobile.png'), fullPage: true })
 })
+
+test('Sprint 3 muestra tres tareas en conflicto sin desplazar el diálogo en escritorio', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1182, height: 842 })
+  await page.goto('/tests/visual/index.html?view=conflict')
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeVisible()
+  await expect(dialog.getByRole('list', { name: 'Tareas que forman la carga del día' }).getByRole('listitem')).toHaveCount(3)
+  await expect(dialog.getByRole('button', { name: 'Resolver conflicto' })).toBeVisible()
+  expect(await dialog.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+  await page.screenshot({ path: testInfo.outputPath('sprint3-conflicto-tres-tareas.png'), fullPage: true })
+})
+
+test('Sprint 3 mantiene encabezado y acciones visibles con muchas tareas en conflicto', async ({ page }) => {
+  await page.setViewportSize({ width: 1182, height: 842 })
+  await page.goto('/tests/visual/index.html?view=conflict-many')
+  const dialog = page.getByRole('dialog')
+  const tasks = dialog.getByRole('list', { name: 'Tareas que forman la carga del día' })
+  await expect(tasks.getByRole('listitem')).toHaveCount(11)
+  expect(await tasks.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(0)
+  expect(await dialog.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+  await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeInViewport()
+  await expect(dialog.getByRole('button', { name: 'Resolver conflicto' })).toBeInViewport()
+})
+
+test('Sprint 3 conserva el tamaño del diálogo al resolver la sobrecarga', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1182, height: 842 })
+  await page.goto('/tests/visual/index.html?view=conflict')
+  const dialog = page.getByRole('dialog')
+  const conflictWidth = (await dialog.boundingBox())?.width
+  await dialog.getByRole('button', { name: 'Resolver conflicto' }).click()
+  await expect(dialog.getByRole('heading', { name: 'Resolver sobrecarga' })).toBeInViewport()
+  await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeInViewport()
+  expect((await dialog.boundingBox())?.width).toBe(conflictWidth)
+  expect(await dialog.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+  await page.screenshot({ path: testInfo.outputPath('sprint3-resolver-sobrecarga.png'), fullPage: true })
+})
+
+test('Sprint 3 muestra la resolución sin sugerencia completa sin scroll en escritorio', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 974, height: 876 })
+  await page.route('**/subtasks/70/reschedule-preview/', route => {
+    const input = route.request().postDataJSON()
+    return route.fulfill({ json: { success: true, data: {
+      ...dayPlan(input.target_date, Number(input.estimated_hours)),
+      existing_hours: '1.25', planned_hours: '3.25', daily_limit_hours: '1',
+      overload_hours: '2.25', has_conflict: true, suggestion: null,
+    } } })
+  })
+  await page.goto('/tests/visual/index.html?view=conflict-no-suggestion')
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: 'Resolver conflicto' }).click()
+  await expect(dialog.getByText('1 h 15 min', { exact: true })).toBeVisible()
+  const body = dialog.getByRole('group', { name: 'Alternativa de resolución' }).locator('..')
+  expect(await body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+  await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeInViewport()
+  await page.screenshot({ path: testInfo.outputPath('sprint3-sin-sugerencia-completo.png'), fullPage: true })
+  await page.setViewportSize({ width: 749, height: 674 })
+  await dialog.evaluate(async element => { await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => undefined))) })
+  expect(await body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+  await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeInViewport()
+  const dateBounds = await dialog.getByLabel('Otra fecha').boundingBox()
+  const previewBounds = await dialog.getByText('Vista previa de carga', { exact: true }).boundingBox()
+  await dialog.getByRole('radio', { name: /Reducir el tiempo/ }).check()
+  await expect(dialog.getByLabel('Minutos', { exact: true })).toBeVisible()
+  await dialog.getByRole('combobox', { name: 'Minutos' }).click()
+  await page.getByRole('option', { name: '45', exact: true }).click()
+  await expect(dialog.getByRole('combobox', { name: 'Minutos' })).toHaveText('45')
+  await dialog.evaluate(async element => { await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => undefined))) })
+  await expect(dialog.getByText('Vista previa de carga', { exact: true })).toBeVisible()
+  const hoursBounds = await dialog.getByLabel('Horas', { exact: true }).boundingBox()
+  const reducedPreviewBounds = await dialog.getByText('Vista previa de carga', { exact: true }).boundingBox()
+  expect(Math.abs(hoursBounds!.y - dateBounds!.y)).toBeLessThanOrEqual(1)
+  expect(Math.abs(reducedPreviewBounds!.y - previewBounds!.y)).toBeLessThanOrEqual(1)
+  expect(await body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+})
+
+for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 }]) {
+  test(`Sprint 3 mantiene la posición y dimensiones durante todo el flujo en ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/tests/visual/index.html?view=reschedule')
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeEnabled()
+    const initialBounds = await dialog.boundingBox()
+    async function checkBounds() {
+      const bounds = await dialog.boundingBox()
+      expect(bounds).not.toBeNull()
+      for (const key of ['x', 'y', 'width', 'height'] as const) {
+        expect(Math.abs(bounds![key] - initialBounds![key])).toBeLessThanOrEqual(1)
+      }
+    }
+    await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+    await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeEnabled()
+    await dialog.getByRole('button', { name: 'Reprogramar', exact: true }).click()
+    await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeVisible()
+    await checkBounds()
+    await dialog.getByRole('button', { name: 'Resolver conflicto' }).click()
+    await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeEnabled()
+    await checkBounds()
+    await dialog.getByRole('radio', { name: /Elegir manualmente/ }).check()
+    await expect(dialog.getByLabel('Otra fecha')).toBeVisible()
+    await checkBounds()
+    await dialog.getByRole('radio', { name: /Reducir el tiempo/ }).check()
+    await expect(dialog.getByLabel('Horas', { exact: true })).toBeVisible()
+    await checkBounds()
+    await dialog.getByRole('radio', { name: /Mover Buscar proveedores/ }).check()
+    await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeEnabled()
+    await dialog.getByRole('button', { name: 'Aplicar opción' }).click()
+    await dialog.getByRole('button', { name: 'Aceptar' }).click()
+    await expect(dialog.getByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeVisible()
+    await checkBounds()
+  })
+}
 
 for (const viewport of [
   { name: 'móvil pequeño', width: 320, height: 568 },
