@@ -4,6 +4,7 @@ import {
 } from '@playwright/test'
 import { dayPlan } from '../features/events/planning.fixtures'
 import { subtaskApiFixture } from '../features/events/subtask.fixtures'
+import { addressApiFixture, addressFixture } from '../features/events/address.fixtures'
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/event-types/', route => route.fulfill({ json: { success: true, data: [
@@ -748,6 +749,39 @@ test('la confirmación de eliminar cuenta cabe en móvil y permite cancelar', as
   await expect(dialog).toHaveCount(0)
 })
 
+for (const width of [390, 1440]) {
+  test(`la eliminación de cuenta espera al backend y permite reintentar en ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    let attempts = 0
+    await page.route(url => url.pathname === '/api/auth/me/', async route => {
+      const request = route.request()
+      expect(request.method()).toBe('DELETE')
+      expect(request.headers().authorization).toBe('Bearer visual-audit-token')
+      expect(request.headers()['x-account-deletion-confirmation']).toBe('ELIMINAR')
+      expect(request.postData()).toBeNull()
+      attempts += 1
+      await route.fulfill(attempts === 1
+        ? { status: 503, json: { success: false, message: 'No pudimos completar la eliminación.' } }
+        : { status: 204 })
+    })
+    await page.goto('/tests/visual/index.html?view=security')
+    await page.getByRole('button', { name: 'Eliminar cuenta', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '¿Eliminar tu cuenta?' })
+    await expect(dialog.getByText('Se eliminarán tu perfil y acceso en Clerk, además de tus eventos, tareas y preferencias de Eventger.')).toBeVisible()
+    await expect(dialog.getByRole('button', { name: 'Eliminar definitivamente' })).toBeDisabled()
+    expect(attempts).toBe(0)
+    await dialog.getByLabel('Escribe ELIMINAR para confirmar').fill('ELIMINAR')
+    await dialog.getByRole('button', { name: 'Eliminar definitivamente' }).click()
+    await expect(dialog.getByText('No pudimos eliminar tu cuenta. Inténtalo de nuevo.')).toBeVisible()
+    await expect(page).toHaveURL(/view=security/)
+    const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
+    await dialog.getByRole('button', { name: 'Eliminar definitivamente' }).click()
+    await expect(page).toHaveURL('http://127.0.0.1:4175/')
+    expect(attempts).toBe(2)
+  })
+}
+
 test('la tarjeta de tarea no duplica acciones de gestión', async ({
   page,
 }) => {
@@ -1422,6 +1456,55 @@ for (const viewport of [
     expect(width.content).toBeLessThanOrEqual(width.viewport)
   })
 }
+
+test.describe('sugerencias de direcciones', () => {
+  test.use({ hasTouch: true })
+
+  for (const viewport of [
+    { name: 'mobile', width: 390, height: 844 },
+    { name: 'tablet', width: 768, height: 1024 },
+    { name: 'desktop-compact', width: 1024, height: 768 },
+    { name: 'laptop', width: 1366, height: 768 },
+    { name: 'reference', width: 1440, height: 900 },
+    { name: 'wide', width: 1920, height: 1080 },
+  ]) {
+    test(`el campo Lugar permite seleccionar direcciones sin overflow en ${viewport.name}`, async ({ page }, testInfo) => {
+      await page.setViewportSize(viewport)
+      await page.route(url => url.origin === 'https://photon.komoot.io', route => route.fulfill({ json: addressApiFixture }))
+      await page.route(url => url.pathname === '/events/', route => route.fulfill({ json: { success: true, data: [] } }))
+      await page.goto('/tests/visual/index.html?view=events-pagination')
+      await expect(page.getByRole('heading', { name: 'Aún no tienes eventos' })).toBeVisible()
+      await page.getByRole('button', { name: 'Crear evento', exact: true }).first().click()
+
+      const input = page.getByRole('combobox', { name: 'Lugar *', exact: true })
+      await input.fill('Chipichape Cali')
+      const option = page.getByRole('option', { name: /Centro Comercial Chipichape/ })
+      await expect(option).toBeVisible()
+      await page.evaluate(() => document.fonts.ready)
+      const menu = page.getByRole('listbox', { name: 'Direcciones sugeridas' })
+      const bounds = await menu.boundingBox()
+      expect(bounds!.x).toBeGreaterThanOrEqual(0)
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width)
+      expect(bounds!.y).toBeGreaterThanOrEqual(0)
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height)
+      await page.screenshot({ path: testInfo.outputPath(`direcciones-${viewport.name}.png`) })
+
+      if (viewport.width < 768) await option.tap()
+      else await input.press('ArrowDown').then(() => input.press('Enter'))
+      await expect(input).toHaveValue(addressFixture.address)
+      await expect(menu).toHaveCount(0)
+      await expect(input).toBeFocused()
+      const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
+      expect(width.content).toBeLessThanOrEqual(width.viewport)
+
+      await input.fill('Chipichape')
+      await expect(option).toBeVisible()
+      await input.press('Escape')
+      await expect(menu).toHaveCount(0)
+      await expect(input).toHaveValue('Chipichape')
+    })
+  }
+})
 
 for (const width of [320, 768, 1440]) {
   test(`auditoría UX conserva tareas y muestra validaciones en ${width}px`, async ({ page }, testInfo) => {

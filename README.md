@@ -13,6 +13,17 @@ antes de paginar. Cambiar o limpiar el tipo vuelve a la primera página; la URL
 conserva `type` junto con `page` y distingue un filtro sin coincidencias de una
 cuenta sin eventos.
 
+«Lugar» sugiere direcciones al crear y editar eventos mediante
+[Photon (OpenStreetMap)](https://github.com/komoot/photon), sin clave de mapas.
+Espera 500 ms tras escribir al menos tres caracteres y muestra hasta cinco
+resultados. Permite seleccionar con ratón, pantalla táctil o flechas y Enter.
+La dirección seleccionada se guarda
+como texto en `location` (máximo 255 caracteres), usando el contrato existente.
+Si la búsqueda falla, el campo permite escribir y guardar el lugar completo.
+Las consultas al proveedor no incluyen el token de Clerk ni cookies de Eventger.
+El servicio público admite uso moderado y no garantiza disponibilidad; para un
+volumen mayor se debe configurar una instancia de Photon o un proveedor propio.
+
 La tarjeta de usuario abre `/configuracion`; `/configuracion/seguridad` permite
 administrar la contraseña y las sesiones con el diseño de Eventger. Perfil y
 correo usan formularios propios; el nuevo correo se verifica antes de hacerlo
@@ -29,11 +40,17 @@ La [API de usuario de Clerk](https://clerk.com/docs/react/reference/objects/user
 define las operaciones utilizadas y los ajustes que deben estar habilitados en
 la instancia: nombre/apellido, correo, contraseña y eliminación de cuenta.
 
-**Alcance del borrado:** la confirmación elimina la cuenta de Clerk y su acceso.
-El backend actual sólo expone `GET /api/auth/me/` para el perfil; no implementa la
-eliminación de la cuenta y sus eventos/tareas. La interfaz explica que estos datos
-no se borran con esta acción. Ese borrado requiere un endpoint o webhook del
-backend; no se simula ni se orquesta eliminando eventos desde el navegador.
+**Alcance del borrado:** la confirmación «ELIMINAR» llama a `DELETE /api/auth/me/`
+con la sesión del organizador y el encabezado `X-Account-Deletion-Confirmation`.
+El backend elimina la identidad en Clerk, el
+usuario de Eventger y sus eventos, tareas y preferencias; sólo después de su
+respuesta 204 el frontend limpia el borrador propio y cierra la sesión.
+El endpoint exige una [reverificación reciente de Clerk](https://clerk.com/docs/guides/secure/reverification)
+(`strict`), que el diálogo solicita mediante `useReverification`. Cada intento
+obtiene un token actualizado. Si la eliminación falla, mantiene el diálogo para
+reintentar; un fallo al cerrar sesión después del borrado no repite la eliminación.
+Requiere desplegar el backend con este contrato antes del frontend. Las pruebas
+usan HTTP/Clerk simulados; no eliminan cuentas reales.
 
 ## Desarrollo
 

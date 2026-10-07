@@ -51,6 +51,19 @@ el frontend no reemplaza la validación del proveedor de identidad.
 - El acceso a rutas privadas ocurre después de que `signIn.finalize()` termina
   correctamente. No se anuncia una sesión activa antes de completar ese paso.
 
+## Eliminación de cuenta
+
+- La tarjeta de Seguridad indica: «Se eliminarán tu cuenta, eventos y tareas.
+  Esta acción no se puede deshacer.»
+- El diálogo exige escribir «ELIMINAR» y explica: «Se eliminarán tu perfil y
+  acceso en Clerk, además de tus eventos, tareas y preferencias de Eventger.»
+- La reverificación se solicita antes de cualquier borrado. Cancelarla no borra
+  datos. Un fallo del servicio muestra «No pudimos eliminar tu cuenta. Inténtalo
+  de nuevo.» y permite reintentar.
+- Si el borrado terminó pero falló el cierre de sesión, muestra «Tu cuenta se
+  eliminó. No pudimos cerrar la sesión en este dispositivo. Inténtalo de nuevo.»
+  y la acción pasa a «Cerrar sesión», sin volver a enviar el borrado.
+
 ## Lista de sincronización
 
 Antes de publicar un cambio de validación, actualizar en conjunto:

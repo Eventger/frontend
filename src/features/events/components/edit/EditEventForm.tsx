@@ -15,6 +15,7 @@ import {
 import { focusFirstError } from '@/lib/formFocus'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { EventLocationInput } from '../EventLocationInput'
 import { FieldError } from '@/components/feedback/FieldError'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 import {
@@ -582,7 +583,7 @@ export function EditEventForm({
                   Lugar *
                 </label>
 
-                <Input
+                <EventLocationInput
                   id="event-location"
                   value={values.location}
                   disabled={isSubmitting}
@@ -594,10 +595,10 @@ export function EditEventForm({
                       ? 'edit-event-location-error'
                       : undefined
                   }
-                  onChange={(inputEvent) =>
+                  onChange={(address) =>
                     updateField(
                       'location',
-                      inputEvent.target.value,
+                      address,
                     )
                   }
                   className="h-[42px] rounded-[8px] border-[#d9dee7]"

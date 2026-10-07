@@ -26,11 +26,14 @@ export class ApiError extends Error {
   }
 }
 
+export type ApiRequestOptions = RequestInit & { expectedStatus?: number }
+
 export async function apiRequest<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiRequestOptions = {},
 ): Promise<T> {
-  const headers = new Headers(options.headers)
+  const { expectedStatus, ...requestOptions } = options
+  const headers = new Headers(requestOptions.headers)
 
   headers.set('Accept', 'application/json')
 
@@ -39,7 +42,7 @@ export async function apiRequest<T>(
   }
 
   const response = await fetch(`${getApiUrl()}${path}`, {
-    ...options,
+    ...requestOptions,
     headers,
   })
 
@@ -48,7 +51,7 @@ export async function apiRequest<T>(
       ? null
       : await response.json().catch(() => null)
 
-  if (!response.ok) {
+  if (!response.ok || (expectedStatus !== undefined && response.status !== expectedStatus)) {
     throw new ApiError(response.status, body)
   }
 
