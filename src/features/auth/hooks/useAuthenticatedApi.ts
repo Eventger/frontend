@@ -1,9 +1,9 @@
 import { useCallback } from 'react'
 import { useAuth } from '@clerk/react'
 
-import { apiRequest } from '@/lib/api'
+import { apiRequest, type ApiRequestOptions } from '@/lib/api'
 
-export function useAuthenticatedApi() {
+export function useAuthenticatedApi({ freshToken = false }: { freshToken?: boolean } = {}) {
   const {
     getToken,
     isLoaded,
@@ -13,7 +13,7 @@ export function useAuthenticatedApi() {
   const authenticatedRequest = useCallback(
     async <T>(
       path: string,
-      options: RequestInit = {},
+      options: ApiRequestOptions = {},
     ): Promise<T> => {
       if (!isLoaded || !isSignedIn) {
         throw new Error(
@@ -21,7 +21,7 @@ export function useAuthenticatedApi() {
         )
       }
 
-      const token = await getToken()
+      const token = freshToken ? await getToken({ skipCache: true }) : await getToken()
 
       if (!token) {
         throw new Error(
@@ -46,6 +46,7 @@ export function useAuthenticatedApi() {
       getToken,
       isLoaded,
       isSignedIn,
+      freshToken,
     ],
   )
 

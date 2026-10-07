@@ -69,7 +69,7 @@ function SecuritySettings({ user, currentSessionId }: { user: UserResource; curr
             </ul>}
             {notice && <InlineFeedback variant="success" className="mt-3">{notice}</InlineFeedback>}
           </SettingsCard>
-          <SettingsCard title="Eliminar cuenta" description="Se eliminarán tu perfil y acceso en Clerk. Esta acción no se puede deshacer." tone="danger" headerIcon={<Trash2 size={20} aria-hidden="true" />} className="py-8 sm:py-8" action={<Button type="button" disabled={!user.deleteSelfEnabled} className="min-h-11 h-auto w-full whitespace-normal rounded-[10px] bg-[#b42318] px-4 py-3 font-semibold text-white hover:bg-[#912018] focus-visible:ring-[#b42318] sm:w-auto sm:min-w-[177px]" onClick={() => setDialog('delete')}>Eliminar cuenta</Button>}>
+          <SettingsCard title="Eliminar cuenta" description="Se eliminarán tu cuenta, eventos y tareas. Esta acción no se puede deshacer." tone="danger" headerIcon={<Trash2 size={20} aria-hidden="true" />} className="py-8 sm:py-8" action={<Button type="button" disabled={!user.deleteSelfEnabled} className="min-h-11 h-auto w-full whitespace-normal rounded-[10px] bg-[#b42318] px-4 py-3 font-semibold text-white hover:bg-[#912018] focus-visible:ring-[#b42318] sm:w-auto sm:min-w-[177px]" onClick={() => setDialog('delete')}>Eliminar cuenta</Button>}>
             <p className="mt-6 text-xs leading-[18px] text-[#b42318]">{user.deleteSelfEnabled ? 'Solicitaremos una confirmación adicional antes de eliminar tu cuenta.' : 'La eliminación de cuenta no está habilitada para tu cuenta.'}</p>
           </SettingsCard>
         </div>

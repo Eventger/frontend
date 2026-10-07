@@ -15,6 +15,7 @@ import {
 import { focusFirstError } from '@/lib/formFocus'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { EventLocationInput } from './EventLocationInput'
 import { Textarea } from '@/components/ui/textarea'
 import { FieldError } from '@/components/feedback/FieldError'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
@@ -763,7 +764,7 @@ export function EventForm({
                 Lugar *
               </label>
 
-              <Input
+              <EventLocationInput
                 id="event-location"
                 value={
                   values.location
@@ -779,10 +780,10 @@ export function EventForm({
                     ? 'create-event-location-error'
                     : undefined
                 }
-                onChange={(event) =>
+                onChange={(address) =>
                   updateField(
                     'location',
-                    event.target.value,
+                    address,
                   )
                 }
                 className={`h-[42px] rounded-[8px] ${

@@ -1,4 +1,4 @@
-import { useSession, useUser } from '@clerk/react'
+import { useAuth, useClerk, useReverification, useSession, useUser } from '@clerk/react'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -19,6 +19,9 @@ function renderPage() {
 
 describe('SecurityPage', () => {
   beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })))
+    vi.mocked(useClerk().signOut).mockReset().mockResolvedValue(undefined)
+    vi.mocked(useReverification).mockImplementation(fetcher => (async (...args: unknown[]) => fetcher(...args)) as never)
     fixture = settingsUserFixture()
     vi.mocked(useUser).mockReturnValue({ isLoaded: true, isSignedIn: true, user: fixture.resource })
     vi.mocked(useSession).mockReturnValue({ isLoaded: true, isSignedIn: true, session: { id: 'session-current' } } as never)
@@ -129,12 +132,26 @@ describe('SecurityPage', () => {
     renderPage()
     await user.click(screen.getByRole('button', { name: 'Eliminar cuenta' }))
     const dialog = within(screen.getByRole('dialog', { name: '¿Eliminar tu cuenta?' }))
-    expect(dialog.getByText('Los eventos y tareas de Eventger no se eliminan con esta acción. Perderás el acceso a ellos.')).toBeTruthy()
+    expect(dialog.getByText('Se eliminarán tu perfil y acceso en Clerk, además de tus eventos, tareas y preferencias de Eventger.')).toBeTruthy()
     await user.click(dialog.getByRole('button', { name: 'Eliminar definitivamente' }))
     expect(fixture.user.delete).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+    sessionStorage.setItem(`eventger:create-event-draft:${fixture.user.id}`, 'borrador propio')
+    sessionStorage.setItem('eventger:create-event-draft:user-other', 'borrador ajeno')
     await user.type(dialog.getByLabelText('Escribe ELIMINAR para confirmar'), 'ELIMINAR')
     await user.click(dialog.getByRole('button', { name: 'Eliminar definitivamente' }))
-    expect(fixture.user.delete).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
+    const [url, options] = vi.mocked(fetch).mock.calls[0]
+    expect(url).toBe('https://api.eventger.test/api/auth/me/')
+    expect(options?.method).toBe('DELETE')
+    expect(new Headers(options?.headers).get('X-Account-Deletion-Confirmation')).toBe('ELIMINAR')
+    expect(options?.body).toBeUndefined()
+    expect(new Headers(options?.headers).get('Authorization')).toBe('Bearer test-token')
+    expect(useAuth().getToken).toHaveBeenCalledWith({ skipCache: true })
+    expect(fixture.user.delete).not.toHaveBeenCalled()
+    expect(useClerk().signOut).toHaveBeenCalledOnce()
+    expect(sessionStorage.getItem(`eventger:create-event-draft:${fixture.user.id}`)).toBeNull()
+    expect(sessionStorage.getItem('eventger:create-event-draft:user-other')).toBe('borrador ajeno')
     expect(await screen.findByRole('heading', { name: 'Acceso destino' })).toBeTruthy()
   })
 
@@ -144,13 +161,59 @@ describe('SecurityPage', () => {
     await user.click(screen.getByRole('button', { name: 'Eliminar cuenta' }))
     await user.click(screen.getByRole('button', { name: 'Conservar mi cuenta' }))
     expect(fixture.user.delete).not.toHaveBeenCalled()
-    fixture.user.delete.mockRejectedValueOnce(new Error('network'))
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('network'))
     await user.click(screen.getByRole('button', { name: 'Eliminar cuenta' }))
     await user.type(screen.getByLabelText('Escribe ELIMINAR para confirmar'), 'ELIMINAR')
     await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
     expect(await screen.findByText('No pudimos eliminar tu cuenta. Inténtalo de nuevo.')).toBeTruthy()
     expect((screen.getByRole('button', { name: 'Eliminar definitivamente' }) as HTMLButtonElement).disabled).toBe(false)
     expect(screen.queryByRole('heading', { name: 'Acceso destino' })).toBeNull()
+    expect(useClerk().signOut).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
+    expect(await screen.findByRole('heading', { name: 'Acceso destino' })).toBeTruthy()
+  })
+
+  it('cancelar la reverificación conserva la cuenta y los datos', async () => {
+    vi.mocked(useReverification).mockImplementation(() => (async () => {
+      throw { code: 'reverification_cancelled' }
+    }) as never)
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('button', { name: 'Eliminar cuenta' }))
+    await user.type(screen.getByLabelText('Escribe ELIMINAR para confirmar'), 'ELIMINAR')
+    await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
+    expect(fetch).not.toHaveBeenCalled()
+    expect(useClerk().signOut).not.toHaveBeenCalled()
+    expect(screen.queryByRole('heading', { name: 'Acceso destino' })).toBeNull()
+  })
+
+  it('espera la confirmación del backend antes de cerrar sesión y bloquea otro envío', async () => {
+    const pending = deferred<Response>()
+    vi.mocked(fetch).mockReturnValueOnce(pending.promise)
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('button', { name: 'Eliminar cuenta' }))
+    await user.type(screen.getByLabelText('Escribe ELIMINAR para confirmar'), 'ELIMINAR')
+    await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
+    expect((screen.getByRole('button', { name: 'Eliminando…' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(useClerk().signOut).not.toHaveBeenCalled()
+    pending.resolve(new Response(null, { status: 204 }))
+    expect(await screen.findByRole('heading', { name: 'Acceso destino' })).toBeTruthy()
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('reintenta sólo cerrar sesión si la cuenta ya se eliminó', async () => {
+    vi.mocked(useClerk().signOut).mockRejectedValueOnce(new Error('network'))
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('button', { name: 'Eliminar cuenta' }))
+    await user.type(screen.getByLabelText('Escribe ELIMINAR para confirmar'), 'ELIMINAR')
+    await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }))
+    expect(await screen.findByText('Tu cuenta se eliminó. No pudimos cerrar la sesión en este dispositivo. Inténtalo de nuevo.')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: /^Cerrar sesión$/ }))
+    expect(await screen.findByRole('heading', { name: 'Acceso destino' })).toBeTruthy()
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(useClerk().signOut).toHaveBeenCalledTimes(2)
   })
 
   it('vuelve a configuración sin abrir el perfil estándar', async () => {
