@@ -1,9 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 
 import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
+import { TodayPage } from '@/features/today/pages/TodayPage'
+import { buildTodayApiTask } from '../today/today.fixtures'
 import { dayPlan } from './planning.fixtures'
 import { eventFixture, subtaskApiFixture } from './subtask.fixtures'
 
@@ -15,6 +17,43 @@ function json(body: unknown, status = 200) {
 }
 
 describe('reprogramación con hooks, servicios y respuestas HTTP', () => {
+  it('mantiene la confirmación de Aplicar opción en Hoy mientras se recarga la lista', async () => {
+    const user = userEvent.setup()
+    let task = buildTodayApiTask({ target_date: '2026-10-10', estimated_hours: '2.00' })
+    let reads = 0
+    let writes = 0
+    let finishRefresh!: (response: Response) => void
+    const refresh = new Promise<Response>(resolve => { finishRefresh = resolve })
+    const todayResponse = () => json({ success: true, data: { overdue: [task], today: [], upcoming: [], completed: [] } })
+    vi.stubGlobal('fetch', vi.fn(async (input: string, options?: RequestInit) => {
+      const path = new URL(input).pathname
+      if (path === '/api/auth/preferences/') return json({ success: true, data: { daily_limit_hours: '6.00', daily_limit_configured: true } })
+      if (path === '/hoy/') return ++reads === 1 ? todayResponse() : refresh
+      const body = JSON.parse(String(options?.body))
+      if (path === `/subtasks/${task.id}/reschedule-preview/`) return json({ success: true, data: dayPlan(body.target_date, Number(body.estimated_hours)) })
+      if (path === `/subtasks/${task.id}/` && options?.method === 'PATCH') {
+        writes++
+        task = { ...task, ...body }
+        return json({ success: true, data: task, planning: dayPlan('2026-10-13', Number(body.estimated_hours)) })
+      }
+      throw new Error(`Solicitud inesperada: ${path}`)
+    }))
+    render(<MemoryRouter><TodayPage /></MemoryRouter>)
+    await user.click(await screen.findByRole('button', { name: `Reprogramar tarea: ${task.name}` }))
+    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-12' } })
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false))
+    await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
+    await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(false))
+    await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
+    await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
+    await waitFor(() => expect(reads).toBe(2))
+    expect(writes).toBe(1)
+    await user.click(screen.getByRole('button', { name: 'Volver al plan' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await act(async () => { finishRefresh(todayResponse()) })
+  })
   it.each([503, 'network'] as const)('mantiene el cambio confirmado y el borrador si la recarga falla con %s', async (failure) => {
     const user = userEvent.setup()
     let savedTask = { ...subtaskApiFixture, estimated_hours: '2.00' }

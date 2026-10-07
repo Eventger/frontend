@@ -1,4 +1,5 @@
-import { render, screen, within } from '@testing-library/react'
+import { ApiError } from '@/lib/api'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
   MemoryRouter,
@@ -643,4 +644,34 @@ describe('EventDetailPage', () => {
       expect.any(Function),
     )
   })
+  it('muestra la validación de fecha junto al campo sin perder el borrador y permite corregirla', async () => {
+    const message = 'La fecha del evento no puede ser anterior a la fecha límite de sus tareas. Reprograma primero estas tareas: Catering.'
+    vi.mocked(updateEvent).mockRejectedValueOnce(new ApiError(400, { success: false, errors: { date: [message] } }))
+    renderPage()
+    const user = await submitEventEdit('Nombre conservado', 'Contacto conservado')
+    await screen.findByText(message)
+    expect((screen.getByLabelText('Nombre del evento *') as HTMLInputElement).value).toBe('Nombre conservado')
+    expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto conservado')
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Fecha del evento *')))
+    expect(screen.queryByRole('heading', { name: 'Cambios no guardados' })).toBeNull()
+    vi.mocked(updateEvent).mockResolvedValue({ ...eventFixture, name: 'Nombre conservado', contact: 'Contacto conservado' })
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(updateEvent).toHaveBeenCalledTimes(2)
+    expect(updateEvent).toHaveBeenLastCalledWith(eventFixture.id, expect.objectContaining({ name: 'Nombre conservado', contact: 'Contacto conservado' }), expect.any(Function))
+  })
+
+  it('vuelve al formulario con el mensaje de fecha si un reintento tras error de red recibe una validación', async () => {
+    const message = 'Reprograma primero estas tareas: Catering.'
+    vi.mocked(updateEvent)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockRejectedValueOnce(new ApiError(400, { errors: { date: [message] } }))
+    renderPage()
+    const user = await submitEventEdit('Borrador conservado', 'Contacto conservado')
+    await screen.findByRole('heading', { name: 'Cambios no guardados' })
+    await user.click(screen.getByRole('button', { name: 'Intentar de nuevo' }))
+    await screen.findByText(message)
+    expect((screen.getByLabelText('Nombre del evento *') as HTMLInputElement).value).toBe('Borrador conservado')
+    expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto conservado')
+  })
+
 })

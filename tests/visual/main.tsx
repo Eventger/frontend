@@ -451,9 +451,19 @@ const view = new URLSearchParams(
   window.location.search,
 ).get('view')
 
-function RescheduleFixture({ conflict = false }: { conflict?: boolean }) {
+function RescheduleFixture({ conflict = false, manyTasks = false, noSuggestion = false }: { conflict?: boolean; manyTasks?: boolean; noSuggestion?: boolean }) {
   const [open, setOpen] = useState(true)
-  return <AppShell breadcrumbs={eventBreadcrumbs}><PageHeader title="Boda Laura & Daniel" description="Plan logístico" /><button type="button" className="mt-5 min-h-11 rounded-lg bg-[#4f46e5] px-4 text-white" onClick={() => setOpen(true)}>Abrir reprogramación</button>{open && <RescheduleTaskDialog task={schedulingTask} initialConflict={conflict ? dayPlan() : undefined} initialInput={conflict ? { name: schedulingTask.name, targetDate: '2026-10-12', estimatedHours: 2, details: '' } : undefined} onClose={() => setOpen(false)} onSaved={() => undefined} />}</AppShell>
+  const conflictPlan = conflict ? {
+    ...dayPlan(),
+    ...(noSuggestion ? { suggestion: null } : {}),
+    tasks: manyTasks ? Array.from({ length: 10 }, (_, index) => ({
+      id: 71 + index, name: `Tarea planificada ${index + 1}`, event_name: 'Jornada y estados', estimated_hours: '0.5',
+    })) : [
+      { id: 71, name: 'Hoy: revisar logística', event_name: 'Jornada y estados', estimated_hours: '2.5' },
+      { id: 72, name: 'Hoy: coordinar equipo', event_name: 'Jornada y estados', estimated_hours: '2.5' },
+    ],
+  } : undefined
+  return <AppShell breadcrumbs={eventBreadcrumbs}><PageHeader title="Boda Laura & Daniel" description="Plan logístico" /><button type="button" className="mt-5 min-h-11 rounded-lg bg-[#4f46e5] px-4 text-white" onClick={() => setOpen(true)}>Abrir reprogramación</button>{open && <RescheduleTaskDialog task={schedulingTask} initialConflict={conflictPlan} initialInput={conflict ? { name: schedulingTask.name, targetDate: '2026-10-12', estimatedHours: 2, details: '' } : undefined} onClose={() => setOpen(false)} onSaved={() => undefined} />}</AppShell>
 }
 
 function BreadcrumbsFixture() {
@@ -487,6 +497,8 @@ const fixtures: Record<string, ReactNode> = {
   security: <AppShell fullPage><SecurityPage /></AppShell>,
   reschedule: <RescheduleFixture />,
   conflict: <RescheduleFixture conflict />,
+  'conflict-many': <RescheduleFixture conflict manyTasks />,
+  'conflict-no-suggestion': <RescheduleFixture conflict noSuggestion />,
   breadcrumbs: <BreadcrumbsFixture />,
 }
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
 
 import { EditEventForm } from '@/features/events/components/edit/EditEventForm'
@@ -40,6 +40,51 @@ function renderForm(
 }
 
 describe('EditEventForm', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('limita el calendario de tareas entre hoy en Bogotá y el evento y valida fechas manuales', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T02:00:00Z'))
+    const onCreateSubtask = vi.fn().mockResolvedValue(undefined)
+    renderForm(undefined, { onCreateSubtask })
+    const date = screen.getByLabelText('Fecha límite *') as HTMLInputElement
+    expect(date.min).toBe('2026-10-07')
+    expect(date.max).toBe('2026-10-24')
+    fireEvent.change(screen.getByLabelText('Nombre de la tarea *'), { target: { value: 'Tarea nueva' } })
+    fireEvent.change(screen.getByLabelText('Tiempo estimado *'), { target: { value: '1' } })
+    fireEvent.change(date, { target: { value: '2026-10-06' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar tarea' }))
+    expect(screen.getByText('No puedes programar una tarea para una fecha anterior a hoy.')).toBeTruthy()
+    expect(onCreateSubtask).not.toHaveBeenCalled()
+    fireEvent.change(date, { target: { value: '2026-10-25' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar tarea' }))
+    expect(screen.getByText('La fecha límite debe ser anterior al 24/10/2026.')).toBeTruthy()
+    expect(onCreateSubtask).not.toHaveBeenCalled()
+    fireEvent.change(date, { target: { value: '2026-10-07' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar tarea' }))
+    await waitFor(() => expect(onCreateSubtask).toHaveBeenCalledWith(expect.objectContaining({ targetDate: '2026-10-07' })))
+  })
+
+  it('conserva la edición de una tarea vencida sin permitir moverla a otro día pasado', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T02:00:00Z'))
+    const onUpdateSubtask = vi.fn().mockResolvedValue(undefined)
+    const task = { ...subtaskFixture, targetDate: '2026-10-05' }
+    renderForm(undefined, { subtasks: [task], onUpdateSubtask })
+    fireEvent.click(screen.getByRole('button', { name: `Editar ${task.name}` }))
+    const date = screen.getByLabelText('Fecha límite *') as HTMLInputElement
+    expect(date.min).toBe('2026-10-07')
+    expect(date.max).toBe('2026-10-24')
+    fireEvent.change(date, { target: { value: '2026-10-06' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar tarea' }))
+    expect(screen.getByText('No puedes programar una tarea para una fecha anterior a hoy.')).toBeTruthy()
+    expect(onUpdateSubtask).not.toHaveBeenCalled()
+    fireEvent.change(date, { target: { value: '2026-10-05' } })
+    fireEvent.change(screen.getByLabelText('Nota opcional'), { target: { value: 'Nota corregida' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar tarea' }))
+    await waitFor(() => expect(onUpdateSubtask).toHaveBeenCalledWith(task, expect.objectContaining({ targetDate: '2026-10-05', details: 'Nota corregida' })))
+  })
+
   it.each(['2026-10-21T04:59:59.000Z', '2026-10-20T23:59:59-05:00', '2026-10-20'])('mantiene la fecha de Bogotá en la lista y al editar o reprogramar %s', async (targetDate) => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
@@ -81,14 +126,18 @@ describe('EditEventForm', () => {
     await user.type(screen.getByLabelText('Nota opcional'), 'Nota sin perder')
     fireEvent.change(screen.getByLabelText('Fecha límite *'), { target: { value: '2026-10-12' } })
     await user.click(screen.getByRole('button', { name: 'Guardar tarea' }))
-    await screen.findByText('7,5 h / 6 h')
+    await screen.findByText('7 h 30 min / 6 h')
 
     if (resolve) {
       await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
       await user.click(screen.getByRole('radio', { name: /Reducir el tiempo estimado/ }))
-      fireEvent.change(screen.getByLabelText('Horas estimadas'), { target: { value: '1' } })
+      await user.click(screen.getByRole('combobox', { name: 'Horas' }))
+      await user.click(screen.getByRole('option', { name: '1' }))
+      await user.click(screen.getByRole('combobox', { name: 'Minutos' }))
+      await user.click(screen.getByRole('option', { name: '0' }))
       await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
       await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+      await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
       await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
       await user.click(screen.getByRole('button', { name: 'Volver al plan' }))
       expect(writes).toHaveLength(1)

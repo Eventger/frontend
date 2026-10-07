@@ -1,3 +1,4 @@
+import { getApiFieldError } from '@/lib/api'
 import {
   useState,
   type FormEvent,
@@ -126,6 +127,7 @@ export function EditEventForm({
   onSubtasksChanged,
   onRetrySubtasks,
 }: EditEventFormProps) {
+  const today = getCalendarDate(new Date())
   const [values, setValues] =
     useState<FormValues>({
       name: event.name,
@@ -164,6 +166,7 @@ export function EditEventForm({
   const [rescheduleSaved, setRescheduleSaved] = useState(false)
 
   const [pendingTaskError, setPendingTaskError] = useState('')
+  const [submitError, setSubmitError] = useState('')
 
   const updateField = <
     K extends keyof FormValues,
@@ -256,6 +259,11 @@ export function EditEventForm({
     if (!subtaskValues.targetDate) {
       nextErrors.targetDate =
         'Selecciona la fecha límite.'
+    } else if (
+      subtaskValues.targetDate < today &&
+      (!editingSubtask || subtaskValues.targetDate !== getCalendarDate(editingSubtask.targetDate))
+    ) {
+      nextErrors.targetDate = 'No puedes programar una tarea para una fecha anterior a hoy.'
     } else if (
       values.eventDate &&
       subtaskValues.targetDate >
@@ -405,13 +413,24 @@ export function EditEventForm({
       return
     }
 
-    await onSubmit({
-      name: values.name.trim(),
-      typeId: values.typeId,
-      eventDate: values.eventDate,
-      location: values.location.trim(),
-      contact: values.contact.trim(),
-    })
+    setSubmitError('')
+    try {
+      await onSubmit({
+        name: values.name.trim(),
+        typeId: values.typeId,
+        eventDate: values.eventDate,
+        location: values.location.trim(),
+        contact: values.contact.trim(),
+      })
+    } catch (error) {
+      const message = getApiFieldError(error, 'date')
+      if (message) {
+        setErrors((current) => ({ ...current, eventDate: message }))
+        requestAnimationFrame(() => document.getElementById('event-date')?.focus())
+      } else {
+        setSubmitError('No pudimos guardar el evento. Conservamos tus cambios para que puedas intentarlo de nuevo.')
+      }
+    }
   }
 
   const isTaskBusy =
@@ -419,6 +438,7 @@ export function EditEventForm({
 
   return (
     <>
+      {submitError && <InlineFeedback>{submitError}</InlineFeedback>}
       <form
         onSubmit={handleSubmit}
         noValidate
@@ -721,6 +741,7 @@ export function EditEventForm({
                 <Input
                   id="edit-event-task-date"
                   type="date"
+                  min={today}
                   max={
                     values.eventDate || undefined
                   }

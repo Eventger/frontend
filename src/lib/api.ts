@@ -26,6 +26,16 @@ export class ApiError extends Error {
   }
 }
 
+export function getApiFieldError(error: unknown, field: string): string | null {
+  if (!(error instanceof ApiError) || error.status !== 400) return null
+  const body = error.body
+  if (typeof body !== 'object' || body === null || !('errors' in body)) return null
+  const errors = body.errors
+  if (typeof errors !== 'object' || errors === null || !(field in errors)) return null
+  const messages = (errors as Record<string, unknown>)[field]
+  return Array.isArray(messages) && typeof messages[0] === 'string' ? messages[0] : null
+}
+
 export type ApiRequestOptions = RequestInit & { expectedStatus?: number }
 
 export async function apiRequest<T>(

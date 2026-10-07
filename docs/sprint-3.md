@@ -24,7 +24,9 @@ la API; la sección existente de preferencias cubre la pantalla 22.
    muestra las cifras; cancelar conserva la tarea original.
 4. Resolver moviendo al día recomendado, seleccionando otra fecha o reduciendo
    horas. La alternativa se recalcula; **Aplicar opción** requiere un plan viable.
-5. Confirmar éxito; Hoy vuelve a consultar sus grupos y el editor vuelve a cargar
+5. **Aplicar opción** abre una revisión de fecha, duración y carga resultante.
+   **Cancelar** conserva los valores elegidos; **Aceptar** guarda la tarea.
+6. Mostrar éxito en cuanto el backend confirma; Hoy vuelve a consultar sus grupos y el editor vuelve a cargar
    las tareas sin descartar el borrador del evento.
 
 También se intercepta el conflicto al editar fecha/horas en el formulario ya
@@ -88,3 +90,31 @@ fixtures de pruebas; no representan datos de una cuenta real):
 Antes de la entrega del equipo: añadir al Documento Único enlaces al PR,
 capturas del flujo con una cuenta real, endpoints y estas decisiones; verificar
 el despliegue. No se creó PR ni se desplegó desde este trabajo.
+
+## Corrección de errores de fecha (7 de octubre de 2026)
+
+El calendario «Fecha límite» de las tareas dentro de Editar evento también usa
+hoy en Bogotá como mínimo y la fecha del evento como máximo. El formulario
+rechaza fechas manuales fuera de ese rango; permite conservar el día original
+de una tarea vencida para editar sus otros campos.
+
+La reprogramación admite fechas entre hoy en Bogotá y la fecha del evento.
+Ambos calendarios usan ese mínimo; una fecha pasada ingresada manualmente también
+bloquea el envío. Al abrir una tarea vencida se propone hoy y se conserva la fecha
+original como información. El backend rechaza la vista previa de una fecha pasada
+y los cambios que muevan una tarea al pasado; las notas y el estado de una tarea
+ya vencida pueden editarse conservando su fecha histórica.
+
+Si el backend rechaza la nueva fecha del evento, el mensaje aparece junto al
+campo de fecha y el foco vuelve al campo cuando termina el envío. El formulario
+conserva sus valores para corregirlos. Si un reintento después de un error de red
+recibe esa validación, vuelve al formulario mostrando el motivo y el borrador.
+El diálogo de reprogramación también muestra `errors.target_date` al guardar,
+por ejemplo si la fecha del evento cambió después de consultar la vista previa;
+no muestra éxito ni descarta la fecha seleccionada ante ese rechazo.
+
+Validación de esta corrección: `npm run validate` aprobó lint, tipos, las **403
+pruebas** (49 archivos), cobertura y build. Las **3 pruebas de navegador** de
+Sprint 3 también aprobaron. Una ejecución simultánea de cobertura y Chromium
+agotó el timeout de dos casos; la validación completa repetida sin Chromium en
+paralelo aprobó sin cambiar los límites de tiempo ni la configuración.
