@@ -285,7 +285,12 @@ for (const viewport of viewports) {
 
         await expect(page.locator('body')).toBeVisible()
         if (view === 'security') await expect(page.getByText('2 sesiones')).toBeVisible()
-        if (view === 'reschedule') await expect(page.getByRole('button', { name: 'Reprogramar', exact: true })).toBeEnabled()
+        if (view === 'reschedule') {
+          await expect(page.getByLabel('Nueva fecha')).toBeEmpty()
+          await expect(page.getByText('Elige una fecha')).toBeVisible()
+          await expect(page.getByText('Aquí verás la carga del día antes de reprogramar.')).toBeVisible()
+          await expect(page.getByRole('button', { name: 'Reprogramar', exact: true })).toBeDisabled()
+        }
         if (view === 'conflict') await expect(page.getByText('7 h / 6 h')).toBeVisible()
 
         const dimensions = await page.evaluate(() => ({
@@ -408,7 +413,7 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
     await page.setViewportSize(viewport)
     await page.goto('/tests/visual/index.html?view=reschedule')
     const dialog = page.getByRole('dialog')
-    await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeEnabled()
+    await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeDisabled()
     const initialBounds = await dialog.boundingBox()
     async function checkBounds() {
       const bounds = await dialog.boundingBox()
@@ -483,7 +488,7 @@ for (const viewport of [
     await expect(tasks.getByText('20/12/2099', { exact: true })).toBeVisible()
     await page.getByLabel('Contacto *', { exact: true }).fill('Contacto sin guardar')
     await page.getByRole('button', { name: `Reprogramar ${task.name}`, exact: true }).click()
-    await expect(page.getByLabel('Nueva fecha', { exact: true })).toHaveValue('2099-12-20')
+    await expect(page.getByLabel('Nueva fecha', { exact: true })).toHaveValue('')
     await page.getByLabel('Nueva fecha', { exact: true }).fill('2099-12-21')
     await page.getByRole('button', { name: 'Reprogramar', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeVisible()

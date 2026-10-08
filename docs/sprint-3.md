@@ -100,8 +100,9 @@ de una tarea vencida para editar sus otros campos.
 
 La reprogramación admite fechas entre hoy en Bogotá y la fecha del evento.
 Ambos calendarios usan ese mínimo; una fecha pasada ingresada manualmente también
-bloquea el envío. Al abrir una tarea vencida se propone hoy y se conserva la fecha
-original como información. El backend rechaza la vista previa de una fecha pasada
+bloquea el envío. Al abrir el diálogo, la nueva fecha queda vacía y no se consulta
+la carga hasta que el usuario elija un día; la fecha original se conserva como
+información. El backend rechaza la vista previa de una fecha pasada
 y los cambios que muevan una tarea al pasado; las notas y el estado de una tarea
 ya vencida pueden editarse conservando su fecha histórica.
 
