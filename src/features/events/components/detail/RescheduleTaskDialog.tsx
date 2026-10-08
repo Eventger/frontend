@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { XIcon } from 'lucide-react'
+import { CalendarDays, XIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -40,15 +40,14 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const [stage, setStage] = useState<'preview' | 'conflict' | 'resolve' | 'confirm' | 'success'>(initialConflict ? 'conflict' : 'preview')
   const today = getCalendarDate(new Date())
   const [date, setDate] = useState(() => {
-    const initialDate = initialInput?.targetDate ?? getCalendarDate(task.targetDate)
-    return initialDate < today && !initialConflict ? today : initialDate
+    return initialConflict ? (initialInput?.targetDate ?? getCalendarDate(task.targetDate)) : ''
   })
   const [hours, setHours] = useState(String(initialInput?.estimatedHours ?? task.estimatedHours))
   const [durationInput, setDurationInput] = useState<{ hours: string; minutes: string } | null>(null)
   const [plan, setPlan] = useState<DayPlan | null>(initialConflict ?? null)
   const [conflict, setConflict] = useState<DayPlan | null>(initialConflict ?? null)
   const [option, setOption] = useState<'recommended' | 'manual' | 'reduce'>('manual')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [reload, setReload] = useState(0)
@@ -138,8 +137,12 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const title = stage === 'preview' ? 'Reprogramar tarea' : stage === 'conflict' ? `Sobrecarga para el ${dateLabel(conflict?.date ?? date)}` : stage === 'resolve' ? 'Resolver sobrecarga' : stage === 'confirm' ? '¿Estás seguro?' : 'Tarea reprogramada correctamente'
   const limit = plan ? hoursLabel(plan.daily_limit_hours) : ''
   const associatedEventDate = plan?.event_date ?? eventDate
-  const loadPreview = <div aria-live="polite" className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-[12px] border p-3 sm:p-4 ${plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}>
-    {!valid ? <p role="alert">{date && date < today ? 'No puedes reprogramar una tarea para una fecha anterior a hoy.' : 'Selecciona una fecha e ingresa una duración mayor que cero, con horas enteras y minutos entre 0 y 59.'}</p> : loading ? <p role="status">Consultando la carga del día…</p> : ready && plan ? <><p className="text-sm font-semibold">Vista previa de carga</p><dl className="mt-3 grid grid-cols-3 gap-3">
+  const loadPreview = <div aria-live="polite" className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-[12px] border p-3 sm:p-4 ${ready && plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}>
+    {!date ? <div className="flex min-h-[122px] flex-col items-center justify-center text-center">
+      <span className="flex size-10 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]" aria-hidden="true"><CalendarDays size={20} /></span>
+      <p className="mt-2 text-sm font-semibold text-[#17212b]">Elige una fecha</p>
+      <p className="mt-1 max-w-[280px] text-[13px] leading-5 text-[#667085]">Aquí verás la carga del día antes de reprogramar.</p>
+    </div> : !valid ? <p role="alert">{date < today ? 'No puedes reprogramar una tarea para una fecha anterior a hoy.' : 'Selecciona una fecha e ingresa una duración mayor que cero, con horas enteras y minutos entre 0 y 59.'}</p> : loading ? <p role="status">Consultando la carga del día…</p> : ready && plan ? <><p className="text-sm font-semibold">Vista previa de carga</p><dl className="mt-3 grid grid-cols-3 gap-3">
       {[{ label: 'Existentes', value: plan.existing_hours }, { label: 'Esta tarea', value: plan.added_hours }, { label: 'Total previsto', value: plan.planned_hours }].map(item => <div key={item.label} className="min-w-0"><dt className="text-xs text-[#667085]">{item.label}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-[#17212b]">{hoursLabel(item.value)}</dd></div>)}
     </dl><p className={`mt-3 border-t border-[#dde2ea] pt-3 text-[13px] ${plan.has_conflict ? 'text-[#b54708]' : 'text-[#027a48]'}`}>{plan.has_conflict ? `Tu límite diario es ${limit}. La sobrecarga sería de ${hoursLabel(plan.overload_hours)}.` : `La carga está dentro de tu límite diario de ${limit}.`}</p></> : null}
   </div>

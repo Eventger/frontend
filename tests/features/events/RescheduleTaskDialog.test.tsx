@@ -29,6 +29,12 @@ describe('RescheduleTaskDialog', () => {
     show()
     const date = screen.getByLabelText('Nueva fecha') as HTMLInputElement
     expect(date.min).toBe('2026-10-07')
+    expect(date.value).toBe('')
+    expect(screen.getByText('Elige una fecha')).toBeTruthy()
+    expect(screen.getByText('Aquí verás la carga del día antes de reprogramar.')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(vi.mocked(fetch)).not.toHaveBeenCalled()
+    expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.change(date, { target: { value: '2026-10-06' } })
     expect(screen.getByText('No puedes reprogramar una tarea para una fecha anterior a hoy.')).toBeTruthy()
     expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
@@ -38,12 +44,14 @@ describe('RescheduleTaskDialog', () => {
     expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false)
   })
 
-  it('propone hoy al abrir una tarea vencida y conserva la fecha original como información', async () => {
+  it('deja vacía la nueva fecha de una tarea vencida y conserva la fecha original como información', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-10-11T12:00:00Z'))
     show()
-    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-11')
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
     expect(screen.getByText(/Actualmente: sábado, 10 de octubre/)).toBeTruthy()
+    expect(vi.mocked(fetch)).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-11' } })
     await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
   })
   it('pide confirmación antes de guardar y conserva la duración al volver', async () => {
@@ -105,7 +113,6 @@ describe('RescheduleTaskDialog', () => {
 
   it('guarda una fecha sin conflicto y confirma la carga', async () => {
     const user = userEvent.setup(); show()
-    await waitFor(() => expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false))
     fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-13' } })
     await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
@@ -129,6 +136,21 @@ describe('RescheduleTaskDialog', () => {
     await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
     expect(await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeTruthy()
     expect(writes[0].target_date).toBe('2026-10-14T04:59:59.000Z')
+  })
+
+  it('vuelve al estado vacío si se borra una fecha con sobrecarga', async () => {
+    show()
+    const date = screen.getByLabelText('Nueva fecha') as HTMLInputElement
+    fireEvent.change(date, { target: { value: '2026-10-12' } })
+    await screen.findByText('Tu límite diario es 6 h. La sobrecarga sería de 1 h.')
+    const previewRequests = vi.mocked(fetch).mock.calls.length
+
+    fireEvent.change(date, { target: { value: '' } })
+    expect(screen.getByText('Elige una fecha')).toBeTruthy()
+    expect(screen.queryByText('Tu límite diario es 6 h. La sobrecarga sería de 1 h.')).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(previewRequests)
   })
 
   it('recalcula una reducción insuficiente y conserva los otros campos al resolver', async () => {
@@ -200,6 +222,7 @@ describe('RescheduleTaskDialog', () => {
 
   it('recupera un conflicto recibido al guardar y permite cancelar', async () => {
     const user = userEvent.setup(); patchStatus = 409; show()
+    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-11' } })
     await waitFor(() => expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false))
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     expect(await screen.findByText('7 h / 6 h')).toBeTruthy()
@@ -211,6 +234,7 @@ describe('RescheduleTaskDialog', () => {
   it('no guarda cuando falla la vista previa y permite reintentar', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
     const user = userEvent.setup(); show()
+    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-13' } })
     expect(await screen.findByText('No pudimos consultar la carga de ese día. Inténtalo de nuevo.')).toBeTruthy()
     expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))

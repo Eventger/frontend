@@ -97,7 +97,8 @@ describe('EditEventForm', () => {
     await user.click(screen.getByRole('button', { name: `Editar ${subtaskFixture.name}` }))
     expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('2026-10-20')
     await user.click(screen.getByRole('button', { name: `Reprogramar ${subtaskFixture.name}` }))
-    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-20')
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
+    expect(screen.getByText(/Actualmente: martes, 20 de octubre/)).toBeTruthy()
   })
 
   it.each([false, true])('conserva el borrador del evento al resolver=%s y el de la tarea al cancelar', async (resolve) => {
