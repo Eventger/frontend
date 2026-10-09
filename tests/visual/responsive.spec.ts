@@ -3,7 +3,7 @@ import {
   test,
 } from '@playwright/test'
 import { dayPlan } from '../features/events/planning.fixtures'
-import { subtaskApiFixture } from '../features/events/subtask.fixtures'
+import { eventFixture, subtaskApiFixture } from '../features/events/subtask.fixtures'
 import { addressApiFixture, addressFixture } from '../features/events/address.fixtures'
 
 test.beforeEach(async ({ page }) => {
@@ -12,6 +12,11 @@ test.beforeEach(async ({ page }) => {
     { id: 3, name: 'Corporativo', description: '' }, { id: 4, name: 'Cumpleaños', description: '' },
     { id: 5, name: 'Otro', description: '' },
   ] } }))
+  await page.route('**/events/21/', route => route.fulfill({ json: { success: true, data: {
+    id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+    date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+    created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+  } } }))
   await page.route('**/api/auth/preferences/', route => route.fulfill({ json: { success: true, data: { daily_limit_hours: '6.00', daily_limit_configured: true } } }))
   await page.route('**/subtasks/70/reschedule-preview/', route => {
     const input = route.request().postDataJSON()
@@ -449,6 +454,8 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
     await page.setViewportSize(viewport)
     await page.goto('/tests/visual/index.html?view=reschedule')
     const dialog = page.getByRole('dialog')
+    await expect(dialog.getByLabel('Nueva fecha')).toHaveValue('')
+    await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toBeVisible()
     await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeDisabled()
     const initialBounds = await dialog.boundingBox()
     async function checkBounds() {

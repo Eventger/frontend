@@ -1,7 +1,7 @@
 import type { DayPlan } from '@/features/events/types/planning.types'
 
 export const schedulingTask = {
-  id: 70, name: 'Buscar proveedores', targetDate: '2026-10-10', estimatedHours: 2,
+  id: 70, eventId: 21, name: 'Buscar proveedores', targetDate: '2026-10-10', estimatedHours: 2,
 }
 
 export function dayPlan(date = '2026-10-12', hours = 2): DayPlan {

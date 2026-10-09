@@ -10,12 +10,13 @@ import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 import { formatCalendarDate, getCalendarDate } from '@/lib/calendar'
 import { getApiFieldError } from '@/lib/api'
 import { formatHoursDuration } from '@/lib/duration'
+import { getEventById } from '../../services/event.service'
 import { getSchedulingConflict, previewReschedule, saveReschedule } from '../../services/planning.service'
 import type { DayPlan } from '../../types/planning.types'
 import type { Subtask, UpdateSubtaskInput } from '../../types/subtask.types'
 
 type Props = {
-  task: Pick<Subtask, 'id' | 'name' | 'targetDate' | 'estimatedHours'>
+  task: Pick<Subtask, 'id' | 'name' | 'targetDate' | 'estimatedHours'> & Partial<Pick<Subtask, 'eventId'>>
   eventDate?: string
   initialInput?: UpdateSubtaskInput
   initialConflict?: DayPlan
@@ -37,6 +38,7 @@ function previewError(error: unknown) {
 
 export function RescheduleTaskDialog({ task, eventDate, initialInput, initialConflict, onClose, onSaved }: Props) {
   const { authenticatedRequest } = useAuthenticatedApi()
+  const [taskEventDate, setTaskEventDate] = useState<string>()
   const [stage, setStage] = useState<'preview' | 'conflict' | 'resolve' | 'confirm' | 'success'>(initialConflict ? 'conflict' : 'preview')
   const today = getCalendarDate(new Date())
   const [date, setDate] = useState(() => {
@@ -69,6 +71,15 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
     && Math.abs(numberHours * 100 - Math.round(numberHours * 100)) < 1e-7
   const hasMatchingPlan = valid && plan?.date === date && Number(plan.added_hours) === numberHours
   const ready = hasMatchingPlan && !loading && !error
+
+  useEffect(() => {
+    if (eventDate || task.eventId === undefined) return
+    let active = true
+    void getEventById(task.eventId, authenticatedRequest)
+      .then(event => { if (active) setTaskEventDate(event.eventDate) })
+      .catch(() => undefined)
+    return () => { active = false }
+  }, [authenticatedRequest, eventDate, task.eventId])
 
   useEffect(() => {
     if (stage === 'success' || stage === 'confirm') return
@@ -141,7 +152,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   if (originalWholeHours > 24) hourOptions.push(originalWholeHours)
   const title = stage === 'preview' ? 'Reprogramar tarea' : stage === 'conflict' || stage === 'resolve' ? `Sobrecarga para el ${dateLabel(conflict?.date ?? date)}` : stage === 'confirm' ? '¿Estás seguro?' : 'Tarea reprogramada correctamente'
   const limit = plan ? hoursLabel(plan.daily_limit_hours) : ''
-  const associatedEventDate = plan?.event_date ?? eventDate
+  const associatedEventDate = plan?.event_date ?? eventDate ?? taskEventDate
   const loadPreview = <div aria-live="polite" aria-busy={loading} className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-[12px] border p-3 sm:p-4 ${hasMatchingPlan && plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}>
     {!date ? <div className="flex min-h-[122px] flex-col items-center justify-center text-center">
       <span className="flex size-10 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]" aria-hidden="true"><CalendarDays size={20} /></span>

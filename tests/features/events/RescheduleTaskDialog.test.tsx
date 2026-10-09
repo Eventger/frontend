@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
 import { dayPlan, schedulingTask } from './planning.fixtures'
-import { subtaskApiFixture } from './subtask.fixtures'
+import { eventFixture, subtaskApiFixture } from './subtask.fixtures'
 
 const saved = vi.fn()
 const closed = vi.fn()
@@ -33,7 +33,9 @@ describe('RescheduleTaskDialog', () => {
     expect(screen.getByText('Elige una fecha')).toBeTruthy()
     expect(screen.getByText('Aquí verás la carga del día antes de reprogramar.')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
-    expect(vi.mocked(fetch)).not.toHaveBeenCalled()
+    expect(await screen.findByText(/Fecha del evento: 24 de octubre de 2026/)).toBeTruthy()
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(1)
+    expect(vi.mocked(fetch).mock.calls[0][0]).toContain('/events/21/')
     expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.change(date, { target: { value: '2026-10-06' } })
     expect(screen.getByText('No puedes reprogramar una tarea para una fecha anterior a hoy.')).toBeTruthy()
@@ -50,7 +52,8 @@ describe('RescheduleTaskDialog', () => {
     show()
     expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
     expect(screen.getByText(/Actualmente: sábado, 10 de octubre/)).toBeTruthy()
-    expect(vi.mocked(fetch)).not.toHaveBeenCalled()
+    expect(await screen.findByText(/Fecha del evento: 24 de octubre de 2026/)).toBeTruthy()
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(1)
     fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-11' } })
     await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
   })
@@ -97,8 +100,13 @@ describe('RescheduleTaskDialog', () => {
   beforeEach(() => {
     writes = []; patchStatus = 200; saved.mockReset(); closed.mockReset()
     vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
-      const body = JSON.parse(String(options.body))
+      const body = options.body ? JSON.parse(String(options.body)) : undefined
       expect(new Headers(options.headers).get('Authorization')).toBe('Bearer test-token')
+      if (url.endsWith('/events/21/')) return json({ success: true, data: {
+        id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+        date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+        created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+      } })
       if (url.endsWith('/reschedule-preview/')) return json({ success: true, data: dayPlan(body.target_date, Number(body.estimated_hours)) })
       if (options.method === 'PATCH') {
         writes.push(body)
