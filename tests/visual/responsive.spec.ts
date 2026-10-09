@@ -618,11 +618,17 @@ test('los selectores de evento mantienen estable el scroll al abrir opciones', a
 
   const measure = async (trigger: import('@playwright/test').Locator) => trigger.evaluate(element => ({
     left: element.getBoundingClientRect().left,
+    width: element.getBoundingClientRect().width,
     top: element.getBoundingClientRect().top,
     scrollY: window.scrollY,
     pageHeight: document.documentElement.scrollHeight,
     viewportWidth: document.documentElement.clientWidth,
     contentWidth: document.documentElement.scrollWidth,
+    routeLeft: document.querySelector('main')!.getBoundingClientRect().left,
+    routeWidth: document.querySelector('main')!.getBoundingClientRect().width,
+    sectionLeft: element.closest('section')?.getBoundingClientRect().left,
+    sectionWidth: element.closest('section')?.getBoundingClientRect().width,
+    bodyMarginRight: getComputedStyle(document.body).marginRight,
     bodyOverflowY: getComputedStyle(document.body).overflowY,
   }))
   const createType = page.locator('#event-type')
@@ -632,6 +638,10 @@ test('los selectores de evento mantienen estable el scroll al abrir opciones', a
   const createAfter = await measure(createType)
   expect(createAfter).toEqual(createBefore)
   expect(createAfter.bodyOverflowY).not.toBe('hidden')
+  await page.mouse.click(1450, 820)
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeHidden()
+  await expect(page.locator('body')).not.toHaveAttribute('data-scroll-locked')
+  expect(await measure(createType)).toEqual(createBefore)
 
   await page.goto('/evento/21')
   // La navegación descarta el getter; vuelve a simular la scrollbar clásica.
@@ -640,6 +650,17 @@ test('los selectores de evento mantienen estable el scroll al abrir opciones', a
     get: () => window.innerWidth - 15,
   }))
   await page.getByRole('button', { name: 'Editar evento', exact: true }).click()
+  const editType = page.locator('#event-type')
+  await editType.scrollIntoViewIfNeeded()
+  const editTypeBefore = await measure(editType)
+  await editType.click()
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeVisible()
+  expect(await measure(editType)).toEqual(editTypeBefore)
+  await page.mouse.click(1450, 820)
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeHidden()
+  await expect(page.locator('body')).not.toHaveAttribute('data-scroll-locked')
+  expect(await measure(editType)).toEqual(editTypeBefore)
+
   await page.getByRole('button', { name: `Editar ${task.name}`, exact: true }).click()
   const taskState = page.locator('#edit-event-task-state')
   await taskState.scrollIntoViewIfNeeded()

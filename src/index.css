@@ -103,9 +103,13 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Conserva gutter y scrollbar mientras Radix mantiene el bloqueo, incluido el cierre del Select. */
-html body[data-scroll-locked]:has([data-slot="select-content"]) {
+/* Radix añade un margen compensatorio que desplaza el contenido durante el bloqueo del scroll. */
+html body[data-scroll-locked] {
   margin-right: 0 !important;
+}
+
+/* El Select mantiene visible la scrollbar; RemoveScroll sigue bloqueando la rueda del fondo. */
+html body[data-scroll-locked]:has([data-slot="select-content"]) {
   overflow: visible !important;
 }
 
