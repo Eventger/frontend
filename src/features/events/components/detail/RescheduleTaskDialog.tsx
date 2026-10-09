@@ -47,6 +47,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const [plan, setPlan] = useState<DayPlan | null>(initialConflict ?? null)
   const [conflict, setConflict] = useState<DayPlan | null>(initialConflict ?? null)
   const [option, setOption] = useState<'recommended' | 'manual' | 'reduce'>('manual')
+  const [hasOpenedResolution, setHasOpenedResolution] = useState(false)
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -65,7 +66,8 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
     && validDuration && Boolean(hours.trim()) && Number.isFinite(numberHours)
     && numberHours > 0 && numberHours < 100_000_000
     && Math.abs(numberHours * 100 - Math.round(numberHours * 100)) < 1e-7
-  const ready = valid && !loading && plan?.date === date && Number(plan.added_hours) === numberHours && !error
+  const hasMatchingPlan = valid && plan?.date === date && Number(plan.added_hours) === numberHours
+  const ready = hasMatchingPlan && !loading && !error
 
   useEffect(() => {
     if (stage === 'success' || stage === 'confirm') return
@@ -92,6 +94,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   function showConflict(result: DayPlan) {
     setConflict(result)
     setPlan(result)
+    setHasOpenedResolution(false)
     setDate(result.date)
     setHours(result.added_hours)
     setDurationInput(null)
@@ -137,12 +140,12 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const title = stage === 'preview' ? 'Reprogramar tarea' : stage === 'conflict' ? `Sobrecarga para el ${dateLabel(conflict?.date ?? date)}` : stage === 'resolve' ? 'Resolver sobrecarga' : stage === 'confirm' ? '¿Estás seguro?' : 'Tarea reprogramada correctamente'
   const limit = plan ? hoursLabel(plan.daily_limit_hours) : ''
   const associatedEventDate = plan?.event_date ?? eventDate
-  const loadPreview = <div aria-live="polite" className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-[12px] border p-3 sm:p-4 ${ready && plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}>
+  const loadPreview = <div aria-live="polite" aria-busy={loading} className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-[12px] border p-3 sm:p-4 ${hasMatchingPlan && plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}>
     {!date ? <div className="flex min-h-[122px] flex-col items-center justify-center text-center">
       <span className="flex size-10 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]" aria-hidden="true"><CalendarDays size={20} /></span>
       <p className="mt-2 text-sm font-semibold text-[#17212b]">Elige una fecha</p>
       <p className="mt-1 max-w-[280px] text-[13px] leading-5 text-[#667085]">Aquí verás la carga del día antes de reprogramar.</p>
-    </div> : !valid ? <p role="alert">{date < today ? 'No puedes reprogramar una tarea para una fecha anterior a hoy.' : 'Selecciona una fecha e ingresa una duración mayor que cero, con horas enteras y minutos entre 0 y 59.'}</p> : loading ? <p role="status">Consultando la carga del día…</p> : ready && plan ? <><p className="text-sm font-semibold">Vista previa de carga</p><dl className="mt-3 grid grid-cols-3 gap-3">
+    </div> : !valid ? <p role="alert">{date < today ? 'No puedes reprogramar una tarea para una fecha anterior a hoy.' : 'Selecciona una fecha e ingresa una duración mayor que cero, con horas enteras y minutos entre 0 y 59.'}</p> : loading && !hasMatchingPlan ? <p role="status">Consultando la carga del día…</p> : hasMatchingPlan && plan ? <><p className="text-sm font-semibold">Vista previa de carga</p><dl className="mt-3 grid grid-cols-3 gap-3">
       {[{ label: 'Existentes', value: plan.existing_hours }, { label: 'Esta tarea', value: plan.added_hours }, { label: 'Total previsto', value: plan.planned_hours }].map(item => <div key={item.label} className="min-w-0"><dt className="text-xs text-[#667085]">{item.label}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-[#17212b]">{hoursLabel(item.value)}</dd></div>)}
     </dl><p className={`mt-3 border-t border-[#dde2ea] pt-3 text-[13px] ${plan.has_conflict ? 'text-[#b54708]' : 'text-[#027a48]'}`}>{plan.has_conflict ? `Tu límite diario es ${limit}. La sobrecarga sería de ${hoursLabel(plan.overload_hours)}.` : `La carga está dentro de tu límite diario de ${limit}.`}</p></> : null}
   </div>
@@ -209,12 +212,18 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
         <div className={`mt-5 flex shrink-0 flex-col-reverse gap-3 sm:flex-row sm:justify-end ${stage === 'success' || stage === 'confirm' ? 'sm:justify-center' : ''}`}>
           {stage !== 'success' && <Button type="button" variant="outline" disabled={busy} className={secondary} onClick={() => {
             if (stage === 'confirm') { setError(''); setStage('resolve') }
-            else if (stage === 'resolve' && conflict) showConflict(conflict)
+            else if (stage === 'resolve' && conflict) { setError(''); setStage('conflict') }
             else onClose()
           }}>{stage === 'resolve' ? 'Volver' : stage === 'conflict' ? 'Cancelar reprogramación' : 'Cancelar'}</Button>}
           <Button type="button" disabled={busy || ((stage === 'preview' || stage === 'resolve' || stage === 'confirm') && (!ready || (stage !== 'preview' && Boolean(plan?.has_conflict))))} className={primary} onClick={() => {
             if (stage === 'success') onClose()
-            else if (stage === 'conflict' && conflict) { setStage('resolve'); choose(conflict.suggestion ? 'recommended' : 'manual') }
+            else if (stage === 'conflict' && conflict) {
+              if (!hasOpenedResolution) {
+                choose(conflict.suggestion ? 'recommended' : 'manual')
+                setHasOpenedResolution(true)
+              }
+              setStage('resolve')
+            }
             else if (stage === 'resolve') setStage('confirm')
             else void save()
           }}>{busy ? 'Guardando…' : stage === 'preview' ? 'Reprogramar' : stage === 'conflict' ? 'Resolver conflicto' : stage === 'resolve' ? 'Aplicar opción' : stage === 'confirm' ? 'Aceptar' : 'Volver al plan'}</Button>
