@@ -48,6 +48,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const [conflict, setConflict] = useState<DayPlan | null>(initialConflict ?? null)
   const [option, setOption] = useState<'recommended' | 'manual' | 'reduce'>('manual')
   const [hasOpenedResolution, setHasOpenedResolution] = useState(false)
+  const [canReturnToPreview, setCanReturnToPreview] = useState(false)
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -94,6 +95,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   function showConflict(result: DayPlan) {
     setConflict(result)
     setPlan(result)
+    setCanReturnToPreview(true)
     setHasOpenedResolution(false)
     setDate(result.date)
     setHours(result.added_hours)
@@ -213,8 +215,9 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
           {stage !== 'success' && <Button type="button" variant="outline" disabled={busy} className={secondary} onClick={() => {
             if (stage === 'confirm') { setError(''); setStage('resolve') }
             else if (stage === 'resolve' && conflict) { setError(''); setStage('conflict') }
+            else if (stage === 'conflict' && canReturnToPreview) { setError(''); setStage('preview') }
             else onClose()
-          }}>{stage === 'resolve' ? 'Volver' : stage === 'conflict' ? 'Cancelar reprogramación' : 'Cancelar'}</Button>}
+          }}>{stage === 'resolve' || (stage === 'conflict' && canReturnToPreview) ? 'Volver' : stage === 'conflict' ? 'Cancelar reprogramación' : 'Cancelar'}</Button>}
           <Button type="button" disabled={busy || ((stage === 'preview' || stage === 'resolve' || stage === 'confirm') && (!ready || (stage !== 'preview' && Boolean(plan?.has_conflict))))} className={primary} onClick={() => {
             if (stage === 'success') onClose()
             else if (stage === 'conflict' && conflict) {

@@ -130,12 +130,21 @@ describe('RescheduleTaskDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     expect(await screen.findByText('7 h / 6 h')).toBeTruthy()
     expect(writes).toHaveLength(0)
-    await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
-    await waitFor(() => expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(false))
-    await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
-    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
+    expect(screen.getByRole('button', { name: /^Volver$/ })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: /^Volver$/ }))
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-12')
+    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-13' } })
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     expect(await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeTruthy()
     expect(writes[0].target_date).toBe('2026-10-14T04:59:59.000Z')
+  })
+
+  it('conserva cancelar reprogramación al abrir directamente un conflicto', async () => {
+    const user = userEvent.setup(); show(true)
+    await user.click(screen.getByRole('button', { name: 'Cancelar reprogramación' }))
+    expect(closed).toHaveBeenCalledOnce()
+    expect(writes).toHaveLength(0)
   })
 
   it('vuelve al estado vacío si se borra una fecha con sobrecarga', async () => {
@@ -220,15 +229,16 @@ describe('RescheduleTaskDialog', () => {
     expect(writes[0].estimated_hours).toBe('0.75')
   })
 
-  it('recupera un conflicto recibido al guardar y permite cancelar', async () => {
+  it('recupera un conflicto recibido al guardar y permite volver a la fecha', async () => {
     const user = userEvent.setup(); patchStatus = 409; show()
     fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-11' } })
     await waitFor(() => expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false))
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     expect(await screen.findByText('7 h / 6 h')).toBeTruthy()
     expect(saved).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Cancelar reprogramación' }))
-    expect(closed).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: /^Volver$/ }))
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-11')
+    expect(closed).not.toHaveBeenCalled()
   })
 
   it('no guarda cuando falla la vista previa y permite reintentar', async () => {
