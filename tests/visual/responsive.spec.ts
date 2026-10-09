@@ -673,18 +673,17 @@ test('la regla de prioridad responde al cursor y permanece sobre las tareas', as
     '/tests/visual/index.html?view=today',
   )
 
-  await page
-    .getByRole('button', {
-      name: '¿Cómo funciona?',
-    })
-    .hover()
+  const guideButton = page.getByRole('button', { name: '¿Cómo funciona?' })
+  const guideBar = guideButton.locator('xpath=ancestor::aside')
+  const dialog = page.getByRole('dialog', { name: 'Regla de prioridad' })
+  await guideBar.hover({ position: { x: 100, y: 22 } })
+  await expect(dialog).toBeHidden()
 
-  const dialog = page.getByRole(
-    'dialog',
-    {
-      name: 'Regla de prioridad',
-    },
-  )
+  await guideButton.hover()
+  await expect(dialog).toBeVisible()
+  await dialog.hover()
+  await expect(dialog).toBeVisible()
+
   const taskAction = page
     .getByRole('button', {
       name: /Ver tarea:/,
@@ -770,6 +769,9 @@ test('la regla de prioridad responde al cursor y permanece sobre las tareas', as
     )
 
   expect(dialogIsOnTop).toBe(true)
+
+  await guideBar.hover({ position: { x: 100, y: 22 } })
+  await expect(dialog).toBeHidden()
 
   await page
     .getByRole('heading', {
