@@ -103,9 +103,10 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Radix oculta la barra al abrir los Select; el gutter del root ya reserva ese espacio. */
-html body[data-scroll-locked] {
+/* Select conserva la scrollbar; ReactRemoveScroll ya impide desplazar el fondo. */
+html body[data-scroll-locked]:has([data-slot="select-content"][data-state="open"]) {
   margin-right: 0 !important;
+  overflow: visible !important;
 }
 
 body {

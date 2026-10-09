@@ -623,6 +623,7 @@ test('los selectores de evento mantienen estable el scroll al abrir opciones', a
     pageHeight: document.documentElement.scrollHeight,
     viewportWidth: document.documentElement.clientWidth,
     contentWidth: document.documentElement.scrollWidth,
+    bodyOverflowY: getComputedStyle(document.body).overflowY,
   }))
   const createType = page.locator('#event-type')
   const createBefore = await measure(createType)
@@ -630,6 +631,7 @@ test('los selectores de evento mantienen estable el scroll al abrir opciones', a
   await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeVisible()
   const createAfter = await measure(createType)
   expect(createAfter).toEqual(createBefore)
+  expect(createAfter.bodyOverflowY).not.toBe('hidden')
 
   await page.goto('/evento/21')
   // La navegación descarta el getter; vuelve a simular la scrollbar clásica.
@@ -646,6 +648,11 @@ test('los selectores de evento mantienen estable el scroll al abrir opciones', a
   await expect(page.getByRole('option', { name: 'Completada', exact: true })).toBeVisible()
   const editAfter = await measure(taskState)
   expect(editAfter).toEqual(editBefore)
+  expect(editAfter.bodyOverflowY).not.toBe('hidden')
+  const scrollBeforeOutsideWheel = await page.evaluate(() => window.scrollY)
+  await page.mouse.move(1450, 820)
+  await page.mouse.wheel(0, 500)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeOutsideWheel)
 })
 
 test('la regla de prioridad responde al cursor y permanece sobre las tareas', async ({
