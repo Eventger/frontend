@@ -3,8 +3,13 @@ export function getAuthDestination(state: unknown): string {
     ? state.from
     : undefined
 
+  const isPublicAuthRoute =
+    from === '/' ||
+    from === '/crear-cuenta' ||
+    (typeof from === 'string' && from.startsWith('/crear-cuenta'))
+
   return typeof from === 'string' && from.startsWith('/') &&
-    !from.startsWith('//') && !/[\\\r\n]/.test(from)
+    !from.startsWith('//') && !/[\\\r\n]/.test(from) && !isPublicAuthRoute
     ? from
     : '/hoy'
 }
