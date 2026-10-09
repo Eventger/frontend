@@ -603,6 +603,39 @@ test('Hoy y Eventos mantienen alineados el encabezado y su acción', async ({
   expect(today.action.y).toBe(events.action.y)
 })
 
+test('los selectores de evento mantienen estable el scroll al abrir opciones', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const event = { id: 21, type: 1, name: 'Boda Backend', date: '2099-12-31T23:59:59-05:00', location: 'Cali', contact: 'Laura 3001234567' }
+  const task = { ...subtaskApiFixture, id: 31, event: 21, event_name: event.name, state: 'pending', target_date: '2099-12-21T04:59:59.000Z' }
+  await page.route('**/events/21/', route => route.fulfill({ json: { success: true, data: event } }))
+  await page.route('**/events/21/subtasks/', route => route.fulfill({ json: { success: true, data: [task] } }))
+  await page.goto('/crear')
+
+  const measure = async (trigger: import('@playwright/test').Locator) => trigger.evaluate(element => ({
+    top: element.getBoundingClientRect().top,
+    scrollY: window.scrollY,
+    pageHeight: document.documentElement.scrollHeight,
+    viewportWidth: document.documentElement.clientWidth,
+    contentWidth: document.documentElement.scrollWidth,
+  }))
+  const createType = page.locator('#event-type')
+  const createBefore = await measure(createType)
+  await createType.click()
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeVisible()
+  const createAfter = await measure(createType)
+  expect(createAfter).toEqual(createBefore)
+
+  await page.goto('/evento/21')
+  await page.getByRole('button', { name: 'Editar evento', exact: true }).click()
+  await page.getByRole('button', { name: `Editar ${task.name}`, exact: true }).click()
+  const taskState = page.locator('#edit-event-task-state')
+  const editBefore = await measure(taskState)
+  await taskState.click()
+  await expect(page.getByRole('option', { name: 'Completada', exact: true })).toBeVisible()
+  const editAfter = await measure(taskState)
+  expect(editAfter).toEqual(editBefore)
+})
+
 test('la regla de prioridad responde al cursor y permanece sobre las tareas', async ({
   page,
 }) => {

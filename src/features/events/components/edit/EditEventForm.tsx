@@ -527,7 +527,7 @@ export function EditEventForm({
                     <SelectValue placeholder="Selecciona un tipo de evento" />
                   </SelectTrigger>
 
-                  <SelectContent>
+                  <SelectContent position="popper">
                     {eventTypes.map(
                       (eventType) => (
                         <SelectItem
@@ -822,7 +822,7 @@ export function EditEventForm({
                   if (value === 'pending' || value === 'in_progress' || value === 'completed') updateSubtaskField('state', value)
                 }}>
                   <SelectTrigger id="edit-event-task-state" className="h-11 w-full rounded-[8px] border-[#d9dee7] bg-white sm:max-w-[260px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper">
                     <SelectItem value="pending">Pendiente</SelectItem>
                     <SelectItem value="in_progress">En progreso</SelectItem>
                     <SelectItem value="completed">Completada</SelectItem>

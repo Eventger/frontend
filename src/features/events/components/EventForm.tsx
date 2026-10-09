@@ -634,7 +634,7 @@ export function EventForm({
                   />
                 </SelectTrigger>
 
-                <SelectContent>
+                <SelectContent position="popper">
                   {eventTypes.map(
                     (eventType) => (
                       <SelectItem
