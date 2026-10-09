@@ -166,6 +166,8 @@ describe('rutas de autenticación', () => {
 
   it.each([
     ['/eventos?estado=pendiente#tareas', '/eventos'],
+    ['/', '/hoy'],
+    ['/crear-cuenta', '/hoy'],
     ['//otro.example', '/hoy'],
     ['/\\otro.example', '/hoy'],
   ])('una sesión activada respeta un destino local seguro: %s', async (from, destination) => {

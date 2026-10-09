@@ -148,8 +148,10 @@ export function LoginPage() {
       null,
     )
 
+  const [busy, setBusy] = useState(false)
+
   const isLoading =
-    fetchStatus === 'fetching' || isCompleting
+    busy || fetchStatus === 'fetching' || isCompleting
 
   useEffect(() => {
     if (isLoading) return
@@ -263,6 +265,7 @@ export function LoginPage() {
       setGeneralError('')
       setFeedback(null)
 
+      setBusy(true)
       let error:
         | Error
         | null
@@ -282,6 +285,8 @@ export function LoginPage() {
         )
 
         return
+      } finally {
+        setBusy(false)
       }
 
       if (error) {
@@ -296,7 +301,7 @@ export function LoginPage() {
       }
 
       if (
-        signIn.status ===
+        (signIn.status as string) ===
         'complete'
       ) {
         await finalizeSuccessfulLogin()
@@ -335,9 +340,11 @@ export function LoginPage() {
 
   const handleGoogleSignIn =
     async () => {
+      if (isLoading) return
       setLastAttempt('google')
       setGeneralError('')
       setFeedback(null)
+      setBusy(true)
 
       try {
         const { error } =
@@ -361,6 +368,8 @@ export function LoginPage() {
         setFeedback(
           'network-error',
         )
+      } finally {
+        setBusy(false)
       }
     }
 
@@ -415,6 +424,7 @@ export function LoginPage() {
         return
       }
 
+      setBusy(true)
       try {
         const createResult =
           await signIn.create({
@@ -454,6 +464,8 @@ export function LoginPage() {
         setGeneralError(
           'No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.',
         )
+      } finally {
+        setBusy(false)
       }
     }
 
@@ -483,6 +495,7 @@ export function LoginPage() {
           return
         }
 
+        setBusy(true)
         try {
           const result =
             await signIn
@@ -507,6 +520,8 @@ export function LoginPage() {
           setGeneralError(
             'No pudimos verificar el código. Inténtalo de nuevo.',
           )
+        } finally {
+          setBusy(false)
         }
 
         return
@@ -523,6 +538,7 @@ export function LoginPage() {
         return
       }
 
+      setBusy(true)
       try {
         const result =
           await signIn
@@ -553,6 +569,8 @@ export function LoginPage() {
         setGeneralError(
           'No pudimos actualizar la contraseña. Inténtalo de nuevo.',
         )
+      } finally {
+        setBusy(false)
       }
     }
 
@@ -702,7 +720,11 @@ export function LoginPage() {
                     isLoading
                   }
                   autoFocus
-                  className="mt-2 h-11 rounded-lg px-3 text-[13px]"
+                  className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
+                    recoveryError
+                      ? 'border-[#d92d20]'
+                      : ''
+                  }`}
                 />
 
                 {recoveryStep === 'password' && <p id="login-recovery-hint" className="mt-2 text-[12px] text-[#667085]">{PASSWORD_MIN_LENGTH_HINT}</p>}
@@ -733,6 +755,7 @@ export function LoginPage() {
                   type="button"
                   disabled={isLoading}
                   onClick={() => {
+                    void signIn.reset()
                     setRecoveryError('')
                     setRecoveryStep(
                       null,
@@ -746,6 +769,8 @@ export function LoginPage() {
                     setGeneralError(
                       '',
                     )
+                    emailInputRef.current
+                      ?.focus()
                   }}
                   className="mt-5 w-full rounded-sm text-[12px] font-semibold text-[#4f46e5] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
                 >
@@ -814,7 +839,7 @@ export function LoginPage() {
                       )
                     }}
                     className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
-                      emailError
+                      emailError || credentialsError
                         ? 'border-[#d92d20]'
                         : ''
                     }`}
@@ -894,7 +919,7 @@ export function LoginPage() {
                         )
                       }}
                       className={`app-password-input h-11 rounded-lg pl-10 pr-11 text-[13px] ${
-                        passwordError
+                        passwordError || credentialsError
                           ? 'border-[#d92d20]'
                           : ''
                       }`}

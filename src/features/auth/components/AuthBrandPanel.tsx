@@ -109,7 +109,7 @@ export function AuthBrandPanel() {
               <p className="mt-1 text-[19px] font-semibold tabular-nums">3 / 5</p>
             </div>
 
-            <div className="absolute bottom-[10%] right-0 w-[130px] rounded-xl border border-white/20 bg-[#4a43aa] px-4 py-2.5">
+            <div className="absolute right-0 top-[423px] w-[130px] rounded-xl border border-white/20 bg-[#4a43aa] px-4 py-2.5">
               <p className="text-[13px] font-medium text-white/70">Progreso</p>
               <p className="mt-1 text-[19px] font-semibold tabular-nums">80%</p>
             </div>
