@@ -604,14 +604,20 @@ test('Hoy y Eventos mantienen alineados el encabezado y su acción', async ({
 })
 
 test('los selectores de evento mantienen estable el scroll al abrir opciones', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
+  await page.setViewportSize({ width: 1536, height: 864 })
   const event = { id: 21, type: 1, name: 'Boda Backend', date: '2099-12-31T23:59:59-05:00', location: 'Cali', contact: 'Laura 3001234567' }
   const task = { ...subtaskApiFixture, id: 31, event: 21, event_name: event.name, state: 'pending', target_date: '2099-12-21T04:59:59.000Z' }
   await page.route('**/events/21/', route => route.fulfill({ json: { success: true, data: event } }))
   await page.route('**/events/21/subtasks/', route => route.fulfill({ json: { success: true, data: [task] } }))
   await page.goto('/crear')
+  // El Chromium de CI usa scrollbars superpuestas; emula los 15 px de una scrollbar clásica.
+  await page.evaluate(() => Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    get: () => window.innerWidth - 15,
+  }))
 
   const measure = async (trigger: import('@playwright/test').Locator) => trigger.evaluate(element => ({
+    left: element.getBoundingClientRect().left,
     top: element.getBoundingClientRect().top,
     scrollY: window.scrollY,
     pageHeight: document.documentElement.scrollHeight,
@@ -626,9 +632,15 @@ test('los selectores de evento mantienen estable el scroll al abrir opciones', a
   expect(createAfter).toEqual(createBefore)
 
   await page.goto('/evento/21')
+  // La navegación descarta el getter; vuelve a simular la scrollbar clásica.
+  await page.evaluate(() => Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    get: () => window.innerWidth - 15,
+  }))
   await page.getByRole('button', { name: 'Editar evento', exact: true }).click()
   await page.getByRole('button', { name: `Editar ${task.name}`, exact: true }).click()
   const taskState = page.locator('#edit-event-task-state')
+  await taskState.scrollIntoViewIfNeeded()
   const editBefore = await measure(taskState)
   await taskState.click()
   await expect(page.getByRole('option', { name: 'Completada', exact: true })).toBeVisible()
