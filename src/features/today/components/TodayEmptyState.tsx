@@ -8,7 +8,7 @@ export function TodayEmptyState({
   onCreateEvent,
 }: TodayEmptyStateProps) {
   return (
-    <section className="mx-auto flex min-h-[400px] w-full max-w-[780px] flex-col items-center rounded-[12px] border border-[#dde2ea] bg-white px-6 pb-8 pt-[53px] text-center">
+    <section className="mx-auto flex min-h-[400px] w-full max-w-[780px] flex-col items-center rounded-xl border border-border-subtle bg-white px-6 pb-8 pt-[53px] text-center">
       <div className="flex h-[56px] items-center justify-center text-[52px] font-bold leading-none text-[#027a48]">
         ✓
       </div>
@@ -25,7 +25,7 @@ export function TodayEmptyState({
         <button
           type="button"
           onClick={onViewUpcoming}
-          className="h-11 w-full rounded-[10px] bg-[#eef2ff] px-4 text-[14px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#e0e7ff] sm:w-[190px]"
+          className="h-11 w-full rounded-lg bg-[#eef2ff] px-4 text-[14px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#e0e7ff] sm:w-[190px]"
         >
           Ver próximos días
         </button>
@@ -33,7 +33,7 @@ export function TodayEmptyState({
         <button
           type="button"
           onClick={onCreateEvent}
-          className="h-11 w-full rounded-[10px] bg-[#4f46e5] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338ca] sm:w-[170px]"
+          className="h-11 w-full rounded-lg bg-[#4f46e5] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338ca] sm:w-[170px]"
         >
           + Crear evento
         </button>

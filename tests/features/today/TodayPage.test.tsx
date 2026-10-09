@@ -7,12 +7,12 @@ import {
   Routes,
   useLocation,
 } from 'react-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToday } from '@/features/today/hooks/useToday'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import type { TodayData } from '@/features/today/types/today.types'
-import { todayDataFixture } from './today.fixtures'
+import { todayDataFixture, todayEvents } from './today.fixtures'
 
 vi.mock('@/features/today/hooks/useToday', () => ({
   useToday: vi.fn(),
@@ -61,6 +61,7 @@ function expectBefore(first: HTMLElement, second: HTMLElement) {
 }
 
 describe('TodayPage', () => {
+  afterEach(() => { vi.useRealTimers() })
   beforeEach(() => {
     vi.mocked(usePlanningPreferences).mockReturnValue({ dailyLimitHours: 6, isLoading: false, error: '', save: vi.fn(), refresh: vi.fn() })
     retry.mockClear()
@@ -78,6 +79,49 @@ describe('TodayPage', () => {
     renderPage()
     expect(screen.getByText('3.75 h / 2 h')).toBeTruthy()
     expect(screen.getByText('Tu planificación de hoy supera el límite diario de 2 horas. Revisa tus tareas para reducir la sobrecarga.')).toBeTruthy()
+  })
+
+  it('muestra la fecha de Bogotá y una región de tareas sin un main anidado', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-25T02:00:00Z'))
+    renderPage()
+    expect(screen.getByText('Jueves, 24 de septiembre')).toBeTruthy()
+    expect(screen.queryByRole('main')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Tareas priorizadas' })).toBeTruthy()
+  })
+
+  it('reconcilia un evento que desaparece del filtro y usa el singular para una tarea', async () => {
+    const { rerender } = render(<MemoryRouter><TodayPage /></MemoryRouter>)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', { name: 'Evento' }))
+    await user.click(await screen.findByRole('option', { name: 'Conferencia Frontend' }))
+    expect(screen.getByText(/1 subtarea coincide con los filtros aplicados/)).toBeTruthy()
+    await user.click(screen.getByRole('combobox', { name: 'Estado' }))
+    await user.click(await screen.findByRole('option', { name: 'Para hoy' }))
+    vi.mocked(useToday).mockReturnValue({ data: { ...todayDataFixture, today: [todayDataFixture.today[0]] }, isLoading: false, error: null, retry })
+    rerender(<MemoryRouter><TodayPage /></MemoryRouter>)
+    expect(screen.getByRole('combobox', { name: 'Evento' }).textContent).toBe('Todos los eventos')
+    expect(screen.getByRole('combobox', { name: 'Estado' }).textContent).toBe('Para hoy')
+    expect(screen.getAllByRole('button', { name: 'Ver tarea: Confirmar invitados hoy' }).length).toBeGreaterThan(0)
+    expect(screen.getByText(/1 subtarea coincide con los filtros aplicados/)).toBeTruthy()
+  })
+
+  it('permite reintentar la carga del límite diario desde la advertencia', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(usePlanningPreferences).mockReturnValue({
+      dailyLimitHours: 6,
+      isLoading: false,
+      error: 'No pudimos cargar tu límite diario. Inténtalo de nuevo.',
+      save: vi.fn(),
+      refresh,
+    })
+
+    renderPage()
+
+    const warning = screen.getByText('No pudimos cargar tu límite diario. Inténtalo de nuevo.').closest<HTMLElement>('[role="status"]')!
+    expect(within(warning).getByText('No pudimos cargar tu límite diario. Inténtalo de nuevo.')).toBeTruthy()
+    await userEvent.setup().click(within(warning).getByRole('button', { name: 'Reintentar' }))
+    expect(refresh).toHaveBeenCalledOnce()
   })
 
   it('filtra por evento y estado con los selectores compartidos y permite limpiar ambos', async () => {
@@ -276,5 +320,46 @@ describe('TodayPage', () => {
     expect(screen.getByTestId('location').textContent).toBe(
       `/evento/${task.eventId}`,
     )
+  })
+
+  it('muestra la fecha del evento al reprogramar desde Hoy antes de elegir una fecha nueva', async () => {
+    const event = todayEvents[0]
+    let releaseEvent!: () => void
+    const eventReady = new Promise<void>(resolve => { releaseEvent = resolve })
+    const request = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toContain('/events/21/')
+      await eventReady
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          id: event.id, user: 1, name: event.name, type: event.typeId,
+          date: '2026-10-24T23:59:59-05:00', location: event.location, contact: event.contact,
+          created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+        },
+      }), { headers: { 'Content-Type': 'application/json' } })
+    })
+    vi.stubGlobal('fetch', request)
+
+    renderPage()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' }).getAttribute('aria-busy')).toBe('true')
+    releaseEvent()
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
+    expect(screen.getByText('Fecha del evento: 24 de octubre de 2026')).toBeTruthy()
+    expect(request).toHaveBeenCalledOnce()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Cerrar' }))
+  })
+
+  it('permite reintentar si no se puede cargar la fecha del evento', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('Sin conexión')))
+    renderPage()
+    const action = screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' })
+    await userEvent.setup().click(action)
+    expect(await screen.findByText('No pudimos cargar la fecha del evento. Inténtalo de nuevo.')).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect((action as HTMLButtonElement).disabled).toBe(false)
   })
 })

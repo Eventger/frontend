@@ -98,7 +98,7 @@ export function EventLocationInput({ value, onChange, className, disabled, ...in
           <Popover.Content ref={menu} role="presentation" align="start" sideOffset={4} collisionPadding={8}
             onOpenAutoFocus={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()}
             onInteractOutside={event => { if (event.target instanceof Node && anchor.current?.contains(event.target)) event.preventDefault() }}
-            className="z-50 w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-[10px] border border-[#dde2ea] bg-white shadow-lg">
+            className="z-50 w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-lg border border-border-subtle bg-white shadow-lg">
             <ul id={listId} role="listbox" aria-label="Direcciones sugeridas" aria-busy={loading} className="max-h-[min(280px,40svh,calc(var(--radix-popover-content-available-height)-44px))] overflow-y-auto overscroll-contain py-1">
               {suggestions.map((place, index) => (
                 <li key={place.id} role="presentation">
@@ -117,7 +117,7 @@ export function EventLocationInput({ value, onChange, className, disabled, ...in
             {loading && <p role="status" className="px-3 pb-3 text-xs text-[#667085]">Buscando direcciones…</p>}
             {failed && <p role="status" className="px-3 pb-3 text-xs text-[#667085]">No pudimos buscar direcciones. Puedes escribir el lugar completo.</p>}
             {!loading && !failed && !suggestions.length && <p role="status" className="px-3 pb-3 text-xs text-[#667085]">No encontramos resultados. Prueba con la ciudad o la dirección completa.</p>}
-            <p className="border-t border-[#dde2ea] px-3 py-2 text-[11px] text-[#667085]">Datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap</a></p>
+            <p className="border-t border-border-subtle px-3 py-2 text-[11px] text-[#667085]">Datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap</a></p>
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>

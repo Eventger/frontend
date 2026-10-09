@@ -14,7 +14,7 @@ export function PageHeaderCreateButton({
       type="button"
       onClick={onClick}
       aria-label="Crear evento"
-      className="size-11 shrink-0 rounded-full bg-[#4f46e5] p-0 font-semibold text-white hover:bg-[#4338ca] focus-visible:border-[#4f46e5] focus-visible:ring-[#4f46e5]/30 md:h-12 md:w-auto md:rounded-[10px] md:px-5"
+      className="size-11 shrink-0 rounded-full bg-[#4f46e5] p-0 font-semibold text-white hover:bg-[#4338ca] focus-visible:border-[#4f46e5] focus-visible:ring-[#4f46e5]/30 md:h-12 md:w-auto md:rounded-lg md:px-5"
     >
       <Plus
         className="size-5"

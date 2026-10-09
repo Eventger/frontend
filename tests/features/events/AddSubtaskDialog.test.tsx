@@ -68,6 +68,25 @@ describe('AddSubtaskDialog', () => {
     expect(screen.getByLabelText('Nota (opcional)')).toBeTruthy()
   })
 
+  it('permite hoy en Bogotá aunque en UTC ya sea el día siguiente', async () => {
+    vi.setSystemTime(new Date('2026-09-25T02:00:00Z'))
+    const onSubmit = vi.fn()
+    render(<AddSubtaskDialog open eventName={eventFixture.name} eventDate="2026-10-25T04:59:59Z" onOpenChange={vi.fn()} onSubmit={onSubmit} initialValues={{ name: 'Preparar logística', targetDate: '2026-09-24', estimatedHours: 1, details: '' }} />)
+    expect(screen.getByLabelText('Fecha límite *').getAttribute('min')).toBe('2026-09-24')
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Agregar tarea' }))
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ targetDate: '2026-09-24' }))
+  })
+
+  it('muestra el día del evento en Bogotá y rechaza el día siguiente recibido en UTC', async () => {
+    const onSubmit = vi.fn()
+    render(<AddSubtaskDialog open eventName={eventFixture.name} eventDate="2026-10-25T04:59:59Z" onOpenChange={vi.fn()} onSubmit={onSubmit} initialValues={{ name: 'Preparar logística', targetDate: '2026-10-25', estimatedHours: 1, details: '' }} />)
+    expect(screen.getByLabelText('Fecha límite *').getAttribute('max')).toBe('2026-10-24')
+    expect(screen.getByText('Debe completarse antes del 24 de octubre de 2026.')).toBeTruthy()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Agregar tarea' }))
+    expect(screen.getByText('La tarea debe completarse antes del evento.')).toBeTruthy()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
   it('muestra los errores obligatorios y no envía el formulario vacío', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()

@@ -1,5 +1,6 @@
 import { getApiFieldError } from '@/lib/api'
 import {
+  useRef,
   useState,
   type FormEvent,
 } from 'react'
@@ -164,6 +165,7 @@ export function EditEventForm({
     useState('')
   const [rescheduling, setRescheduling] = useState<{ task: Subtask; input?: UpdateSubtaskInput; conflict?: DayPlan } | null>(null)
   const [rescheduleSaved, setRescheduleSaved] = useState(false)
+  const taskListHeading = useRef<HTMLHeadingElement>(null)
 
   const [pendingTaskError, setPendingTaskError] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -443,7 +445,7 @@ export function EditEventForm({
         onSubmit={handleSubmit}
         noValidate
       >
-        <section className="rounded-[16px] border border-[#d9dee7] bg-white p-5">
+        <section className="rounded-2xl border border-border-subtle bg-white p-5">
           <h2 className="text-[20px] font-semibold leading-6 text-[#17212b]">
             Datos del evento
           </h2>
@@ -480,7 +482,7 @@ export function EditEventForm({
                       inputEvent.target.value,
                     )
                   }
-                  className="h-[42px] rounded-[8px] border-[#d9dee7]"
+                  className="min-h-[44px] rounded-[8px] border-border-subtle"
                 />
 
                 {errors.name && (
@@ -514,7 +516,7 @@ export function EditEventForm({
                 >
                   <SelectTrigger
                     id="event-type"
-                    className="h-[42px]! w-full rounded-[8px] border-[#d9dee7]"
+                    className="min-h-[44px]! w-full rounded-[8px] border-border-subtle"
                     aria-invalid={Boolean(
                       errors.typeId,
                     )}
@@ -527,7 +529,7 @@ export function EditEventForm({
                     <SelectValue placeholder="Selecciona un tipo de evento" />
                   </SelectTrigger>
 
-                  <SelectContent>
+                  <SelectContent position="popper">
                     {eventTypes.map(
                       (eventType) => (
                         <SelectItem
@@ -585,7 +587,7 @@ export function EditEventForm({
                       inputEvent.target.value,
                     )
                   }
-                  className="h-[42px] rounded-[8px] border-[#d9dee7]"
+                  className="min-h-[44px] rounded-[8px] border-border-subtle"
                 />
 
                 {errors.eventDate && (
@@ -621,7 +623,7 @@ export function EditEventForm({
                       address,
                     )
                   }
-                  className="h-[42px] rounded-[8px] border-[#d9dee7]"
+                  className="min-h-[44px] rounded-[8px] border-border-subtle"
                 />
 
                 {errors.location && (
@@ -664,7 +666,7 @@ export function EditEventForm({
                     inputEvent.target.value,
                   )
                 }
-                className="h-[42px] w-full rounded-[8px] border-[#d9dee7]"
+                className="min-h-[44px] w-full rounded-[8px] border-border-subtle"
               />
 
               {errors.contact && (
@@ -678,7 +680,7 @@ export function EditEventForm({
           </div>
         </section>
 
-        <section className="mt-2 rounded-[16px] border border-[#d9dee7] bg-white p-5">
+        <section className="mt-2 rounded-2xl border border-border-subtle bg-white p-5">
           <p className="text-[13px] text-[#667085]">
             Las tareas se guardan por separado. Cancelar el formulario solo descarta los cambios del evento.
           </p>
@@ -687,7 +689,7 @@ export function EditEventForm({
 
           <div
             id="edit-task-form"
-            className="mt-5 rounded-[10px] border border-[#d9dee7] bg-[#f7f8fc] p-4"
+            className="mt-5 rounded-lg border border-border-subtle bg-[#f7f8fc] p-4"
           >
             <h3 className="text-[13px] font-semibold text-[#17212b]">
               {editingSubtask
@@ -720,7 +722,7 @@ export function EditEventForm({
                       inputEvent.target.value,
                     )
                   }
-                  className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+                  className="min-h-[44px] rounded-[8px] border-border-subtle bg-white"
                 />
 
                 {subtaskErrors.name && (
@@ -763,7 +765,7 @@ export function EditEventForm({
                       inputEvent.target.value,
                     )
                   }
-                  className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+                  className="min-h-[44px] rounded-[8px] border-border-subtle bg-white"
                 />
 
                 {subtaskErrors.targetDate && (
@@ -804,7 +806,7 @@ export function EditEventForm({
                       inputEvent.target.value,
                     )
                   }
-                  className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+                  className="min-h-[44px] rounded-[8px] border-border-subtle bg-white"
                 />
 
                 {subtaskErrors.estimatedHours && (
@@ -821,8 +823,8 @@ export function EditEventForm({
                 <Select value={subtaskValues.state} disabled={isTaskBusy} onValueChange={value => {
                   if (value === 'pending' || value === 'in_progress' || value === 'completed') updateSubtaskField('state', value)
                 }}>
-                  <SelectTrigger id="edit-event-task-state" className="h-11 w-full rounded-[8px] border-[#d9dee7] bg-white sm:max-w-[260px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger id="edit-event-task-state" className="h-11 w-full rounded-[8px] border-border-subtle bg-white sm:max-w-[260px]"><SelectValue /></SelectTrigger>
+                  <SelectContent position="popper">
                     <SelectItem value="pending">Pendiente</SelectItem>
                     <SelectItem value="in_progress">En progreso</SelectItem>
                     <SelectItem value="completed">Completada</SelectItem>
@@ -850,7 +852,7 @@ export function EditEventForm({
                       inputEvent.target.value,
                     )
                   }
-                  className="min-h-[74px] resize-none rounded-[8px] border-[#d9dee7] bg-white"
+                  className="min-h-[74px] resize-none rounded-[8px] border-border-subtle bg-white"
                 />
               </div>
 
@@ -865,7 +867,7 @@ export function EditEventForm({
                       ? 'Cancelar edición de tarea'
                       : 'Limpiar tarea'
                   }
-                  className="h-11 rounded-[8px] border-[#d9dee7] px-8"
+                  className="h-11 rounded-[8px] border-border-subtle px-8"
                 >
                   {editingSubtask
                     ? 'Cancelar'
@@ -896,7 +898,7 @@ export function EditEventForm({
             )}
           </div>
 
-          <h2 className="mt-2 text-[20px] font-semibold leading-6 text-[#17212b]">
+          <h2 ref={taskListHeading} tabIndex={-1} className="mt-2 text-[20px] font-semibold leading-6 text-[#17212b]">
             Tareas agregadas ({subtasks.length})
           </h2>
 
@@ -927,7 +929,7 @@ export function EditEventForm({
               {subtasks.map((subtask) => (
                 <li
                   key={subtask.id}
-                  className="grid min-h-12 grid-cols-[15px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-[8px] border border-[#d9dee7] bg-white px-3 py-2 md:grid-cols-[15px_minmax(0,1fr)_120px_72px_44px_44px_44px] lg:grid-cols-[15px_minmax(0,1fr)_130px_90px_132px_44px_44px]"
+                  className="grid min-h-12 grid-cols-[15px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-[8px] border border-border-subtle bg-white px-3 py-2 md:grid-cols-[15px_minmax(0,1fr)_120px_72px_44px_44px_44px] lg:grid-cols-[15px_minmax(0,1fr)_130px_90px_132px_44px_44px]"
                 >
                   <GripVertical
                     size={15}
@@ -1017,7 +1019,7 @@ export function EditEventForm({
               ))}
             </ul>
           ) : (
-            <p className="mt-2 rounded-[8px] border border-dashed border-[#d9dee7] px-4 py-3 text-[12px] text-[#667085]">
+            <p className="mt-2 rounded-[8px] border border-dashed border-border-subtle px-4 py-3 text-[12px] text-[#667085]">
               Aún no hay tareas. Completa el formulario superior para agregar la primera.
             </p>
           )}
@@ -1029,7 +1031,7 @@ export function EditEventForm({
             variant="outline"
             disabled={isTaskBusy}
             onClick={onCancel}
-            className="h-11 rounded-[10px] border-[#d9dee7] sm:w-[124px]"
+            className="h-11 rounded-lg border-border-subtle sm:w-[124px]"
           >
             Cancelar
           </Button>
@@ -1037,7 +1039,7 @@ export function EditEventForm({
           <Button
             type="submit"
             disabled={isTaskBusy}
-            className="h-11 rounded-[10px] bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[178px]"
+            className="h-11 rounded-lg bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[178px]"
           >
             {isSubmitting
               ? 'Guardando…'
@@ -1065,6 +1067,8 @@ export function EditEventForm({
           eventDate={event.eventDate}
           initialInput={rescheduling.input}
           initialConflict={rescheduling.conflict}
+          getFocusFallback={() => taskListHeading.current}
+          preferFocusFallback={rescheduleSaved && editingSubtask?.id === rescheduling.task.id}
           onSaved={async (task) => {
             setRescheduleSaved(true)
             await onSubtasksChanged?.(task)

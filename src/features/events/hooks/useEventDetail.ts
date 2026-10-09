@@ -70,9 +70,7 @@ export function useEventDetail(
             setError(null)
           } else {
             setError(
-              error instanceof Error
-                ? error.message
-                : 'No se pudo cargar el evento',
+              'No se pudo cargar el evento',
             )
           }
         }

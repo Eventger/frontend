@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { focusFirstError } from '@/lib/formFocus'
+import { formatCalendarDate, getCalendarDate } from '@/lib/calendar'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/feedback/FieldError'
 import { Input } from '@/components/ui/input'
@@ -50,25 +51,11 @@ const emptyValues: FormValues = {
 }
 
 function formatEventDate(date: string) {
-  return new Intl.DateTimeFormat('es-CO', {
+  return formatCalendarDate(date, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(date))
-}
-
-function getLocalDateInputValue() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(
-    today.getMonth() + 1,
-  ).padStart(2, '0')
-  const day = String(
-    today.getDate(),
-  ).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
+  })
 }
 
 export function AddSubtaskDialog({
@@ -86,6 +73,7 @@ export function AddSubtaskDialog({
   const [errors, setErrors] =
     useState<FormErrors>({})
 
+  // eslint-disable-next-line react/set-state-in-effect
   useEffect(() => {
   if (!open) {
     return
@@ -108,9 +96,9 @@ export function AddSubtaskDialog({
 }, [open, initialValues])
 
   const eventDateOnly =
-    eventDate.slice(0, 10)
+    getCalendarDate(eventDate)
   const minimumTargetDate =
-    getLocalDateInputValue()
+    getCalendarDate(new Date())
 
   const updateField = <
     K extends keyof FormValues,
@@ -142,7 +130,7 @@ export function AddSubtaskDialog({
         'Selecciona la fecha límite.'
     } else if (
       values.targetDate <
-      getLocalDateInputValue()
+      getCalendarDate(new Date())
     ) {
       nextErrors.targetDate =
         'La fecha límite no puede estar en el pasado.'
@@ -215,7 +203,7 @@ export function AddSubtaskDialog({
       onOpenChange={handleOpenChange}
     >
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto rounded-[18px] border-[#d9dee7] p-0 sm:max-w-[620px]"
+        className="max-h-[calc(100svh-2rem)] overflow-y-auto rounded-2xl border-border-subtle p-0 sm:max-w-[620px] xl:left-[calc(50%+120px)]"
         showCloseButton={false}
       >
         <form
@@ -425,7 +413,7 @@ export function AddSubtaskDialog({
               onClick={() =>
                 handleOpenChange(false)
               }
-              className="h-11 rounded-[10px] sm:w-[140px]"
+              className="h-11 rounded-lg sm:w-[140px]"
             >
               Cancelar
             </Button>
@@ -433,7 +421,7 @@ export function AddSubtaskDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-11 rounded-[10px] bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[170px]"
+              className="h-11 rounded-lg bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[170px]"
             >
               {isSubmitting
                 ? 'Guardando…'

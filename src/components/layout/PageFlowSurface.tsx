@@ -15,7 +15,7 @@ export function PageFlowSurface({
     <section
       className={cn(
         '-mx-4 rounded-none bg-white px-4 py-6 shadow-[0_1px_2px_rgba(16,24,40,0.04)]',
-        'sm:-mx-6 sm:rounded-[18px] sm:px-6',
+        'sm:-mx-6 sm:rounded-2xl sm:px-6',
         'md:-mx-7 md:px-7',
         className,
       )}

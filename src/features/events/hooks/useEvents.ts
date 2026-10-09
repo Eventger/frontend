@@ -47,12 +47,10 @@ export function useEvents(page = 1, typeId: number | null = null) {
         if (version === requestVersion.current) {
           setData(data)
         }
-      } catch (error) {
+      } catch {
         if (version === requestVersion.current) {
           setError(
-            error instanceof Error
-              ? error.message
-              : 'No pudimos cargar los eventos',
+            'No pudimos cargar los eventos',
           )
         }
       } finally {

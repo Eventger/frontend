@@ -24,7 +24,7 @@ export function EventsPagination({ pagination, onPageChange }: EventsPaginationP
   return (
     <nav
       aria-label="Paginación de eventos"
-      className="mt-6 flex flex-col gap-3 border-t border-[#dde2ea] pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      className="mt-6 flex flex-col gap-3 border-t border-border-subtle pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
     >
       <p className="text-[13px] leading-5 text-[#667085]" role="status" aria-live="polite" aria-atomic="true">
         {first}–{last} de {total} eventos
@@ -32,7 +32,7 @@ export function EventsPagination({ pagination, onPageChange }: EventsPaginationP
       <div className="flex items-center justify-between gap-2 sm:justify-end">
         <Button
           variant="outline"
-          className="h-11 w-11 border-[#dde2ea] bg-white p-0 text-[#667085] hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#3730a3] sm:w-auto sm:px-3"
+          className="h-11 w-11 border-border-subtle bg-white p-0 text-[#667085] hover:border-[#c7d2fe] hover:bg-[#eef2ff] hover:text-[#3730a3] sm:w-auto sm:px-3"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
         >
@@ -44,7 +44,7 @@ export function EventsPagination({ pagination, onPageChange }: EventsPaginationP
         </p>
         <Button
           variant="outline"
-          className="h-11 w-11 border-[#dde2ea] bg-white p-0 text-[#3730a3] hover:border-[#c7d2fe] hover:bg-[#eef2ff] sm:w-auto sm:px-3"
+          className="h-11 w-11 border-border-subtle bg-white p-0 text-[#3730a3] hover:border-[#c7d2fe] hover:bg-[#eef2ff] sm:w-auto sm:px-3"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
         >

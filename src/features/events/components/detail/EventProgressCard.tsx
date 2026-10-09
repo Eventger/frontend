@@ -112,11 +112,11 @@ export function EventProgressCard({
       </div>
 
       <div
-        className="hidden w-px bg-[#dde2ea] md:block"
+        className="hidden w-px bg-border-subtle md:block"
         aria-hidden="true"
       />
 
-      <div className="flex items-center gap-5 border-t border-[#dde2ea] pt-6 md:border-0 md:pt-0">
+      <div className="flex items-center gap-5 border-t border-border-subtle pt-6 md:border-0 md:pt-0">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
           <CalendarDays
             className="size-[18px]"

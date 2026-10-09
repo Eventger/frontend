@@ -9,40 +9,29 @@ export function TodayLoadingState() {
       aria-label="Cargando prioridades de hoy"
       aria-live="polite"
       aria-busy="true"
-      className="space-y-8"
     >
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({
-          length: 4,
-        }).map((_, index) => (
-          <Skeleton
-            key={index}
-            className="h-[112px] rounded-[14px]"
-          />
+      <div className="mt-6 hidden grid-cols-4 gap-5 md:grid">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-[112px] rounded-xl" />
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,790px)_228px]">
-        <div className="space-y-8">
-          {Array.from({
-            length: 3,
-          }).map((_, section) => (
-            <div
-              key={section}
-              className="space-y-3"
-            >
-              <Skeleton className="h-6 w-52" />
+      <div className="mt-6 md:hidden">
+        <Skeleton className="h-[100px] w-full rounded-xl" />
+      </div>
 
-              <Skeleton className="h-[84px] rounded-[12px]" />
+      <div className="mt-4">
+        <Skeleton className="h-[44px] w-full max-w-[500px] rounded-[8px]" />
+      </div>
 
-              {section === 1 && (
-                <Skeleton className="h-[84px] rounded-[12px]" />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <Skeleton className="hidden h-[370px] rounded-[14px] lg:block" />
+      <div className="mt-6 space-y-8">
+        {Array.from({ length: 3 }).map((_, section) => (
+          <div key={section} className="space-y-4">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-[60px] w-full rounded-xl" />
+            {section === 1 && <Skeleton className="h-[60px] w-full rounded-xl" />}
+          </div>
+        ))}
       </div>
     </div>
   )

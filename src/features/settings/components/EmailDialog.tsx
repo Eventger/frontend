@@ -111,7 +111,7 @@ export function EmailDialog({ user, onClose, onSaved }: EmailDialogProps) {
     <AccountDialog title="Administrar correo" description="Verifica un correo antes de usarlo como principal para iniciar sesión y recibir avisos." busy={busy} onClose={onClose}>
       <ul className="space-y-3">
         {user.emailAddresses.map((address) => (
-          <li key={address.id} className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[#dde2ea] p-3">
+          <li key={address.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-subtle p-3">
             <span className="min-w-0 break-all text-sm">{address.emailAddress}</span>
             {address.id === user.primaryEmailAddressId
               ? <span className="rounded-lg bg-[#eef2ff] px-2 py-1 text-xs text-[#4f46e5]">Principal</span>
@@ -119,7 +119,7 @@ export function EmailDialog({ user, onClose, onSaved }: EmailDialogProps) {
           </li>
         ))}
       </ul>
-      <form onSubmit={handleSubmit} noValidate className="space-y-4 border-t border-[#dde2ea] pt-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4 border-t border-border-subtle pt-4">
         <div className="space-y-2">
           <label htmlFor="account-email-input" className="text-sm font-medium">{pendingEmail ? 'Código de verificación' : 'Nuevo correo electrónico'}</label>
           {pendingEmail && <p className="break-all text-xs text-[#667085]">{sent ? 'Enviamos un código a' : 'Verifica'} {pendingEmail.emailAddress}.</p>}

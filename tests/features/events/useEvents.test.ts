@@ -5,6 +5,7 @@ import { useEvents } from '@/features/events/hooks/useEvents'
 import { getEvents } from '@/features/events/services/event.service'
 import type { Event, EventsPageData } from '@/features/events/types/event.types'
 import { deferred } from '../../deferred'
+import { ApiError } from '@/lib/api'
 
 vi.mock('@/features/events/services/event.service', () => ({
   getEvents: vi.fn(),
@@ -42,9 +43,9 @@ describe('useEvents', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('expone el error del servicio', async () => {
+  it.each([new TypeError('Failed to fetch'), new ApiError(500, null)])('normaliza el error del servicio: %s', async (error) => {
     vi.mocked(getEvents).mockRejectedValue(
-      new Error('No pudimos cargar los eventos'),
+      error,
     )
 
     const { result } = renderHook(() => useEvents())
@@ -111,7 +112,7 @@ describe('useEvents', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     rerender({ page: 2 })
     expect(result.current.isLoading).toBe(true)
-    await waitFor(() => expect(result.current.error).toBe('Fallo de página 2'))
+    await waitFor(() => expect(result.current.error).toBe('No pudimos cargar los eventos'))
     await act(async () => { await result.current.retry() })
     expect(getEvents).toHaveBeenLastCalledWith(2, expect.any(Function), null)
     expect(result.current.pagination?.page).toBe(2)

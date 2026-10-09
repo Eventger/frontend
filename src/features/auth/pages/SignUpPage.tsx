@@ -794,7 +794,7 @@ export function SignUpPage() {
         <AuthBrandPanel />
 
         <section className="auth-form-shell flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:px-[clamp(24px,2.4vw,50px)] min-[1360px]:py-12">
-          <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] md:w-[516px] md:flex-none">
+          <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-border-subtle bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] md:w-[516px] md:flex-none">
 
             <div className="flex items-center gap-3">
               <AuthLogoMark
@@ -882,7 +882,7 @@ export function SignUpPage() {
                         null,
                       )
                     }}
-                    className={`h-11 rounded-[10px] px-3 text-[13px] tracking-[0.14em] sm:h-10 ${
+                    className={`h-11 rounded-lg px-3 text-[13px] tracking-[0.14em] sm:h-10 ${
                       codeError
                         ? 'border-[#d92d20]'
                         : ''
@@ -909,7 +909,7 @@ export function SignUpPage() {
                   disabled={
                     isLoading
                   }
-                  className="h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30 sm:h-10"
+                  className="h-11 w-full rounded-lg bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30 sm:h-10"
                 >
                   {isLoading
                     ? 'Verificando…'
@@ -924,7 +924,7 @@ export function SignUpPage() {
                   onClick={
                     handleResendCode
                   }
-                  className="min-h-11 w-full rounded-[10px] text-center text-[12px] font-semibold text-[#4f46e5] hover:bg-[#eef2ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:opacity-50 sm:min-h-10"
+                  className="min-h-11 w-full rounded-lg text-center text-[12px] font-semibold text-[#4f46e5] hover:bg-[#eef2ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:opacity-50 sm:min-h-10"
                 >
                   Reenviar código
                 </button>
@@ -943,7 +943,7 @@ export function SignUpPage() {
       <AuthBrandPanel />
 
       <section className="auth-form-shell flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:px-[clamp(24px,2.4vw,50px)] min-[1360px]:py-12">
-        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] md:w-[516px] md:flex-none">
+        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-border-subtle bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] md:w-[516px] md:flex-none">
 
           <div className="flex items-center gap-3">
             <AuthLogoMark
@@ -1030,7 +1030,7 @@ export function SignUpPage() {
                         null,
                       )
                     }}
-                    className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
+                    className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
                       firstNameError
                         ? 'border-[#d92d20]'
                         : ''
@@ -1094,7 +1094,7 @@ export function SignUpPage() {
                         null,
                       )
                     }}
-                    className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
+                    className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
                       lastNameError
                         ? 'border-[#d92d20]'
                         : ''
@@ -1161,7 +1161,7 @@ export function SignUpPage() {
                       null,
                     )
                   }}
-                  className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
+                  className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
                     emailError
                       ? 'border-[#d92d20]'
                       : ''
@@ -1241,7 +1241,7 @@ export function SignUpPage() {
                         null,
                       )
                     }}
-                    className={`app-password-input h-11 rounded-[10px] pl-10 pr-11 text-[13px] ${
+                    className={`app-password-input h-11 rounded-lg pl-10 pr-11 text-[13px] ${
                       passwordError
                         ? 'border-[#d92d20]'
                         : ''
@@ -1347,7 +1347,7 @@ export function SignUpPage() {
                   />
 
                   <span
-                    className="mt-px flex size-5 shrink-0 items-center justify-center rounded-[5px] border border-[#d9dee7] bg-white text-white transition-colors peer-checked:border-[#4f46e5] peer-checked:bg-[#4f46e5] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#4f46e5]"
+                    className="mt-px flex size-5 shrink-0 items-center justify-center rounded-[5px] border border-border-subtle bg-white text-white transition-colors peer-checked:border-[#4f46e5] peer-checked:bg-[#4f46e5] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#4f46e5]"
                     aria-hidden="true"
                   >
                     <Check
@@ -1393,7 +1393,7 @@ export function SignUpPage() {
                 disabled={
                   isLoading
                 }
-                className="mt-8 h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30"
+                className="mt-8 h-11 w-full rounded-lg bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30"
               >
                 {isLoading
                   ? 'Creando cuenta…'
@@ -1401,13 +1401,13 @@ export function SignUpPage() {
               </Button>
 
               <div className="mt-[26px] flex items-center gap-4">
-                <div className="h-px flex-1 bg-[#dde2ea]" />
+                <div className="h-px flex-1 bg-border-subtle" />
 
                 <span className="text-[11px] text-[#667085]">
                   o continúa con
                 </span>
 
-                <div className="h-px flex-1 bg-[#dde2ea]" />
+                <div className="h-px flex-1 bg-border-subtle" />
               </div>
 
               <Button
@@ -1419,7 +1419,7 @@ export function SignUpPage() {
                 onClick={
                   handleGoogleSignUp
                 }
-                className="mt-5 h-11 w-full rounded-[10px] border-[#dde2ea] text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc]"
+                className="mt-5 h-11 w-full rounded-lg border-border-subtle text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc]"
               >
                 <img
                   src={

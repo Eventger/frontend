@@ -19,7 +19,7 @@ export function AuthLogoMark({
     <span
       className={`relative block shrink-0 overflow-hidden ${
         isSmall
-          ? 'size-11 rounded-[11px]'
+          ? 'size-11 rounded-lg'
           : 'size-12 rounded-xl'
       } ${inverse ? 'bg-white' : 'bg-[#4f46e5]'}`}
       aria-hidden="true"

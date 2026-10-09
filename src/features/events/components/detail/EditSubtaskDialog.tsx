@@ -4,6 +4,7 @@ import {
 } from 'react'
 
 import { focusFirstError } from '@/lib/formFocus'
+import { formatCalendarDate, getCalendarDate } from '@/lib/calendar'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/feedback/FieldError'
 import {
@@ -42,15 +43,11 @@ type FormErrors = Partial<
 >
 
 function formatEventDate(date: string) {
-  return new Intl.DateTimeFormat(
-    'es-CO',
-    {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'UTC',
-    },
-  ).format(new Date(date))
+  return formatCalendarDate(date, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 }
 
 export function EditSubtaskDialog({
@@ -64,10 +61,7 @@ export function EditSubtaskDialog({
     useState<FormValues>({
       name: subtask.name,
       targetDate:
-        subtask.targetDate.slice(
-          0,
-          10,
-        ),
+        getCalendarDate(subtask.targetDate),
       estimatedHours:
         String(
           subtask.estimatedHours,
@@ -79,7 +73,7 @@ export function EditSubtaskDialog({
     useState<FormErrors>({})
 
   const eventDateOnly =
-    eventDate.slice(0, 10)
+    getCalendarDate(eventDate)
 
   const updateField = <
     K extends keyof FormValues,
@@ -174,7 +168,7 @@ export function EditSubtaskDialog({
       }}
     >
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto rounded-[18px] border-[#d9dee7] p-0 sm:max-w-[620px]"
+        className="max-h-[calc(100svh-2rem)] overflow-y-auto rounded-2xl border-border-subtle p-0 sm:max-w-[620px] xl:left-[calc(50%+120px)]"
         showCloseButton={false}
       >
         <form
@@ -396,7 +390,7 @@ export function EditSubtaskDialog({
                 isSubmitting
               }
               onClick={onClose}
-              className="h-11 rounded-[10px] sm:w-[140px]"
+              className="h-11 rounded-lg sm:w-[140px]"
             >
               Cancelar
             </Button>
@@ -406,7 +400,7 @@ export function EditSubtaskDialog({
               disabled={
                 isSubmitting
               }
-              className="h-11 rounded-[10px] bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[170px]"
+              className="h-11 rounded-lg bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[170px]"
             >
               {isSubmitting
                 ? 'Guardando…'

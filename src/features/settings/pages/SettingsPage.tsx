@@ -16,7 +16,7 @@ import { settingsSecondaryButton } from '../settings.styles'
 
 function AccountRow({ title, description, children, action }: { title: string; description: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="grid min-h-[84px] items-center gap-4 border-t border-[#dde2ea] py-5 sm:grid-cols-[138px_minmax(0,1fr)] md:grid-cols-[138px_minmax(0,1fr)_auto]">
+    <div className="grid min-h-[84px] items-center gap-4 border-t border-border-subtle py-5 sm:grid-cols-[138px_minmax(0,1fr)] md:grid-cols-[138px_minmax(0,1fr)_auto]">
       <div>
         <h3 className="text-[13px] font-semibold text-[#17212b]">{title}</h3>
         <p className="mt-1 text-[11px] leading-4 text-[#667085]">{description}</p>

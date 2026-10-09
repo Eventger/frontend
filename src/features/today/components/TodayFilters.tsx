@@ -37,7 +37,7 @@ export function TodayFilters({
     selectedState !== 'all'
 
   return (
-    <div className="flex min-h-[56px] flex-col gap-3 rounded-[10px] md:flex-row md:items-center md:gap-7">
+    <div className="flex min-h-[56px] flex-col gap-3 rounded-lg md:flex-row md:items-center md:gap-7">
       <div className="flex min-w-0 flex-col gap-3 md:flex-1 md:flex-row md:items-center md:gap-3">
         <label
           htmlFor="today-event-filter"

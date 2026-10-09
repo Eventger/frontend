@@ -119,3 +119,13 @@ pruebas** (49 archivos), cobertura y build. Las **3 pruebas de navegador** de
 Sprint 3 también aprobaron. Una ejecución simultánea de cobertura y Chromium
 agotó el timeout de dos casos; la validación completa repetida sin Chromium en
 paralelo aprobó sin cambiar los límites de tiempo ni la configuración.
+
+## Calendario compartido (8 de octubre de 2026)
+
+Crear evento, Agregar tarea, Editar tarea y el encabezado de Hoy usan el calendario
+de Bogotá mediante `src/lib/calendar.ts`. Los valores `YYYY-MM-DD` conservan su día;
+los timestamps del backend se convierten a Bogotá antes de mostrar o validar fechas.
+Por ejemplo, `2026-10-25T04:59:59Z` pertenece al 24 de octubre. Guardar una tarea
+sin modificar su fecha mantiene ese día, aunque la API lo haya serializado en UTC.
+Las regresiones fijan el reloj cerca de medianoche UTC y comprueban el día mostrado,
+los límites de los calendarios y el guardado.

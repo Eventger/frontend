@@ -561,7 +561,7 @@ export function LoginPage() {
       <AuthBrandPanel />
 
       <section className="auth-form-shell flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:px-[clamp(24px,2.4vw,50px)] min-[1360px]:py-12">
-        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-[#dde2ea] bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] md:w-[516px] md:flex-none">
+        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-border-subtle bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] md:w-[516px] md:flex-none">
 
           <div className="flex items-center gap-3">
             <AuthLogoMark
@@ -702,7 +702,7 @@ export function LoginPage() {
                     isLoading
                   }
                   autoFocus
-                  className="mt-2 h-11 rounded-[10px] px-3 text-[13px]"
+                  className="mt-2 h-11 rounded-lg px-3 text-[13px]"
                 />
 
                 {recoveryStep === 'password' && <p id="login-recovery-hint" className="mt-2 text-[12px] text-[#667085]">{PASSWORD_MIN_LENGTH_HINT}</p>}
@@ -721,7 +721,7 @@ export function LoginPage() {
                   disabled={
                     isLoading
                   }
-                  className="mt-6 h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca]"
+                  className="mt-6 h-11 w-full rounded-lg bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca]"
                 >
                   {recoveryStep ===
                   'code'
@@ -813,7 +813,7 @@ export function LoginPage() {
                         null,
                       )
                     }}
-                    className={`mt-2 h-11 rounded-[10px] px-3 text-[13px] ${
+                    className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
                       emailError
                         ? 'border-[#d92d20]'
                         : ''
@@ -893,7 +893,7 @@ export function LoginPage() {
                           null,
                         )
                       }}
-                      className={`app-password-input h-11 rounded-[10px] pl-10 pr-11 text-[13px] ${
+                      className={`app-password-input h-11 rounded-lg pl-10 pr-11 text-[13px] ${
                         passwordError
                           ? 'border-[#d92d20]'
                           : ''
@@ -974,7 +974,7 @@ export function LoginPage() {
                   disabled={
                     isLoading
                   }
-                  className="mt-[29px] h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30"
+                  className="mt-[29px] h-11 w-full rounded-lg bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30"
                 >
                   {isLoading
                     ? 'Iniciando sesión…'
@@ -982,13 +982,13 @@ export function LoginPage() {
                 </Button>
 
                 <div className="mt-[29px] flex items-center gap-4">
-                  <div className="h-px flex-1 bg-[#dde2ea]" />
+                  <div className="h-px flex-1 bg-border-subtle" />
 
                   <span className="text-[11px] text-[#667085]">
                     o continúa con
                   </span>
 
-                  <div className="h-px flex-1 bg-[#dde2ea]" />
+                  <div className="h-px flex-1 bg-border-subtle" />
                 </div>
 
                 <Button
@@ -1000,7 +1000,7 @@ export function LoginPage() {
                   onClick={
                     handleGoogleSignIn
                   }
-                  className="mt-5 h-11 w-full rounded-[10px] border-[#dde2ea] text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc]"
+                  className="mt-5 h-11 w-full rounded-lg border-border-subtle text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc]"
                 >
                   <img
                     src={

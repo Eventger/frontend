@@ -19,7 +19,7 @@ export function ConfigurationError({
         aria-labelledby="configuration-title"
       >
         <div className="flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-[10px] bg-[#4f46e5]">
+          <span className="flex size-11 items-center justify-center rounded-lg bg-[#4f46e5]">
             <CalendarDays
               className="size-6 text-white"
               aria-hidden="true"

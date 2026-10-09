@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
 import { dayPlan, schedulingTask } from './planning.fixtures'
-import { subtaskApiFixture } from './subtask.fixtures'
+import { eventFixture, subtaskApiFixture } from './subtask.fixtures'
 
 const saved = vi.fn()
 const closed = vi.fn()
@@ -33,7 +33,9 @@ describe('RescheduleTaskDialog', () => {
     expect(screen.getByText('Elige una fecha')).toBeTruthy()
     expect(screen.getByText('Aquí verás la carga del día antes de reprogramar.')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
-    expect(vi.mocked(fetch)).not.toHaveBeenCalled()
+    expect(await screen.findByText(/Fecha del evento: 24 de octubre de 2026/)).toBeTruthy()
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(1)
+    expect(vi.mocked(fetch).mock.calls[0][0]).toContain('/events/21/')
     expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.change(date, { target: { value: '2026-10-06' } })
     expect(screen.getByText('No puedes reprogramar una tarea para una fecha anterior a hoy.')).toBeTruthy()
@@ -50,9 +52,30 @@ describe('RescheduleTaskDialog', () => {
     show()
     expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
     expect(screen.getByText(/Actualmente: sábado, 10 de octubre/)).toBeTruthy()
-    expect(vi.mocked(fetch)).not.toHaveBeenCalled()
+    expect(await screen.findByText(/Fecha del evento: 24 de octubre de 2026/)).toBeTruthy()
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(1)
     fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-11' } })
     await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+  })
+
+  it('impide reprogramar después del evento aunque se escriba la fecha manualmente', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T12:00:00Z'))
+    show()
+    const date = screen.getByLabelText('Nueva fecha') as HTMLInputElement
+    await screen.findByText(/Fecha del evento: 24 de octubre de 2026/)
+    expect(date.max).toBe('2026-10-24')
+
+    const requestCount = vi.mocked(fetch).mock.calls.length
+    fireEvent.change(date, { target: { value: '2026-10-25' } })
+    expect(screen.getByRole('alert').textContent).toBe('La fecha límite no puede ser posterior a la fecha del evento.')
+    expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(requestCount)
+    expect(writes).toHaveLength(0)
+
+    fireEvent.change(date, { target: { value: '2026-10-24' } })
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false)
   })
   it('pide confirmación antes de guardar y conserva la duración al volver', async () => {
     const user = userEvent.setup(); show(true)
@@ -97,8 +120,13 @@ describe('RescheduleTaskDialog', () => {
   beforeEach(() => {
     writes = []; patchStatus = 200; saved.mockReset(); closed.mockReset()
     vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
-      const body = JSON.parse(String(options.body))
+      const body = options.body ? JSON.parse(String(options.body)) : undefined
       expect(new Headers(options.headers).get('Authorization')).toBe('Bearer test-token')
+      if (url.endsWith('/events/21/')) return json({ success: true, data: {
+        id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+        date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+        created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+      } })
       if (url.endsWith('/reschedule-preview/')) return json({ success: true, data: dayPlan(body.target_date, Number(body.estimated_hours)) })
       if (options.method === 'PATCH') {
         writes.push(body)
@@ -130,12 +158,21 @@ describe('RescheduleTaskDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     expect(await screen.findByText('7 h / 6 h')).toBeTruthy()
     expect(writes).toHaveLength(0)
-    await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
-    await waitFor(() => expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(false))
-    await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
-    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
+    expect(screen.getByRole('button', { name: /^Volver$/ })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: /^Volver$/ }))
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-12')
+    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-13' } })
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     expect(await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeTruthy()
     expect(writes[0].target_date).toBe('2026-10-14T04:59:59.000Z')
+  })
+
+  it('conserva cancelar reprogramación al abrir directamente un conflicto', async () => {
+    const user = userEvent.setup(); show(true)
+    await user.click(screen.getByRole('button', { name: 'Cancelar reprogramación' }))
+    expect(closed).toHaveBeenCalledOnce()
+    expect(writes).toHaveLength(0)
   })
 
   it('vuelve al estado vacío si se borra una fecha con sobrecarga', async () => {
@@ -220,15 +257,16 @@ describe('RescheduleTaskDialog', () => {
     expect(writes[0].estimated_hours).toBe('0.75')
   })
 
-  it('recupera un conflicto recibido al guardar y permite cancelar', async () => {
+  it('recupera un conflicto recibido al guardar y permite volver a la fecha', async () => {
     const user = userEvent.setup(); patchStatus = 409; show()
     fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-11' } })
     await waitFor(() => expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false))
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     expect(await screen.findByText('7 h / 6 h')).toBeTruthy()
     expect(saved).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Cancelar reprogramación' }))
-    expect(closed).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: /^Volver$/ }))
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('2026-10-11')
+    expect(closed).not.toHaveBeenCalled()
   })
 
   it('no guarda cuando falla la vista previa y permite reintentar', async () => {

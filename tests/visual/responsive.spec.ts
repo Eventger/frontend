@@ -3,7 +3,7 @@ import {
   test,
 } from '@playwright/test'
 import { dayPlan } from '../features/events/planning.fixtures'
-import { subtaskApiFixture } from '../features/events/subtask.fixtures'
+import { eventFixture, subtaskApiFixture } from '../features/events/subtask.fixtures'
 import { addressApiFixture, addressFixture } from '../features/events/address.fixtures'
 
 test.beforeEach(async ({ page }) => {
@@ -12,6 +12,11 @@ test.beforeEach(async ({ page }) => {
     { id: 3, name: 'Corporativo', description: '' }, { id: 4, name: 'Cumpleaños', description: '' },
     { id: 5, name: 'Otro', description: '' },
   ] } }))
+  await page.route('**/events/21/', route => route.fulfill({ json: { success: true, data: {
+    id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+    date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+    created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+  } } }))
   await page.route('**/api/auth/preferences/', route => route.fulfill({ json: { success: true, data: { daily_limit_hours: '6.00', daily_limit_configured: true } } }))
   await page.route('**/subtasks/70/reschedule-preview/', route => {
     const input = route.request().postDataJSON()
@@ -362,11 +367,44 @@ test('Sprint 3 conserva el tamaño del diálogo al resolver la sobrecarga', asyn
   await page.goto('/tests/visual/index.html?view=conflict')
   const dialog = page.getByRole('dialog')
   const conflictWidth = (await dialog.boundingBox())?.width
+  const conflictHeadingBounds = await dialog.getByRole('heading', { name: /Sobrecarga para el/ }).boundingBox()
+  const conflictDescriptionBounds = await dialog.getByText('Revisa la sobrecarga y elige cómo ajustar la fecha.').boundingBox()
+  const conflictCardBounds = await dialog.getByRole('alert').boundingBox()
   await dialog.getByRole('button', { name: 'Resolver conflicto' }).click()
-  await expect(dialog.getByRole('heading', { name: 'Resolver sobrecarga' })).toBeInViewport()
+  await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeInViewport()
   await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeInViewport()
   expect((await dialog.boundingBox())?.width).toBe(conflictWidth)
   expect(await dialog.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+  const resolutionHeadingBounds = await dialog.getByRole('heading', { name: /Sobrecarga para el/ }).boundingBox()
+  const resolutionDescriptionBounds = await dialog.getByText('Revisa la sobrecarga y elige cómo ajustar la fecha.').boundingBox()
+  const resolutionCardBounds = await dialog.getByRole('group', { name: 'Alternativa de resolución' }).boundingBox()
+  expect(resolutionHeadingBounds!.x).toBeCloseTo(conflictHeadingBounds!.x, 1)
+  expect(resolutionHeadingBounds!.y).toBeCloseTo(conflictHeadingBounds!.y, 1)
+  expect(resolutionDescriptionBounds!.x).toBeCloseTo(conflictDescriptionBounds!.x, 1)
+  expect(resolutionDescriptionBounds!.y).toBeCloseTo(conflictDescriptionBounds!.y, 1)
+  expect(resolutionCardBounds!.x).toBeCloseTo(conflictCardBounds!.x, 1)
+  expect(resolutionCardBounds!.y).toBeCloseTo(conflictCardBounds!.y, 1)
+  const reduceOption = dialog.getByRole('radio', { name: /Reducir el tiempo estimado/ })
+  await reduceOption.check()
+  await expect(dialog.getByText('Vista previa de carga', { exact: true })).toBeVisible()
+  const previewCard = dialog.getByText('Vista previa de carga', { exact: true }).locator('xpath=..')
+  const scrollRegion = dialog.locator('.reschedule-dialog-scroll-region')
+  const firstPreviewBounds = await previewCard.boundingBox()
+  const firstRegionBounds = await scrollRegion.boundingBox()
+  expect(await scrollRegion.evaluate(element => getComputedStyle(element).scrollbarGutter)).toBe('stable')
+  await dialog.getByRole('button', { name: 'Volver', exact: true }).click()
+  await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Resolver conflicto' }).click()
+  await expect(reduceOption).toBeChecked()
+  await expect(previewCard).toBeVisible()
+  const secondPreviewBounds = await previewCard.boundingBox()
+  const secondRegionBounds = await scrollRegion.boundingBox()
+  expect(secondPreviewBounds!.x).toBeCloseTo(firstPreviewBounds!.x, 1)
+  expect(secondPreviewBounds!.width).toBeCloseTo(firstPreviewBounds!.width, 1)
+  expect(secondPreviewBounds!.y).toBeCloseTo(firstPreviewBounds!.y, 1)
+  expect(secondRegionBounds!.x).toBeCloseTo(firstRegionBounds!.x, 1)
+  expect(secondRegionBounds!.width).toBeCloseTo(firstRegionBounds!.width, 1)
+  expect(await scrollRegion.evaluate(element => element.scrollTop)).toBe(0)
   await page.screenshot({ path: testInfo.outputPath('sprint3-resolver-sobrecarga.png'), fullPage: true })
 })
 
@@ -397,8 +435,11 @@ test('Sprint 3 muestra la resolución sin sugerencia completa sin scroll en escr
   await dialog.getByRole('radio', { name: /Reducir el tiempo/ }).check()
   await expect(dialog.getByLabel('Minutos', { exact: true })).toBeVisible()
   await dialog.getByRole('combobox', { name: 'Minutos' }).click()
+  await expect(page.locator('body')).toHaveAttribute('data-scroll-locked')
+  expect(await page.locator('body').evaluate(element => getComputedStyle(element).overflowY)).toBe('hidden')
   await page.getByRole('option', { name: '45', exact: true }).click()
   await expect(dialog.getByRole('combobox', { name: 'Minutos' })).toHaveText('45')
+  expect(await page.locator('body').evaluate(element => getComputedStyle(element).overflowY)).toBe('hidden')
   await dialog.evaluate(async element => { await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => undefined))) })
   await expect(dialog.getByText('Vista previa de carga', { exact: true })).toBeVisible()
   const hoursBounds = await dialog.getByLabel('Horas', { exact: true }).boundingBox()
@@ -409,10 +450,38 @@ test('Sprint 3 muestra la resolución sin sugerencia completa sin scroll en escr
 })
 
 for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 }]) {
+  test(`la fecha del evento aparece sin desplazar el formulario en ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    let releaseEvent!: () => void
+    const eventReady = new Promise<void>(resolve => { releaseEvent = resolve })
+    await page.route('**/events/21/', async route => {
+      await eventReady
+      await route.fulfill({ json: { success: true, data: {
+        id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+        date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+        created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+      } } })
+    })
+    await page.goto('/tests/visual/index.html?view=reschedule')
+    const dialog = page.getByRole('dialog')
+    const field = dialog.getByLabel('Nueva fecha')
+    await expect(field).toBeVisible()
+    await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toHaveCount(0)
+    const before = await field.boundingBox()
+    releaseEvent()
+    await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toBeVisible()
+    const after = await field.boundingBox()
+    expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1)
+  })
+
   test(`Sprint 3 mantiene la posición y dimensiones durante todo el flujo en ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await page.goto('/tests/visual/index.html?view=reschedule')
     const dialog = page.getByRole('dialog')
+    await expect(dialog.getByLabel('Nueva fecha')).toHaveValue('')
+    await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toBeVisible()
+    await expect(dialog.getByLabel('Nueva fecha')).toHaveAttribute('max', '2026-10-24')
     await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeDisabled()
     const initialBounds = await dialog.boundingBox()
     async function checkBounds() {
@@ -424,6 +493,22 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
     }
     await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
     await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeEnabled()
+    await dialog.getByRole('button', { name: 'Reprogramar', exact: true }).click()
+    await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeVisible()
+    await checkBounds()
+    await expect(dialog.getByRole('button', { name: 'Volver', exact: true })).toBeVisible()
+    const conflictAction = dialog.getByRole('button', { name: 'Resolver conflicto', exact: true })
+    const conflictActionBounds = await conflictAction.boundingBox()
+    await page.mouse.move(conflictActionBounds!.x + conflictActionBounds!.width / 2, conflictActionBounds!.y + conflictActionBounds!.height / 2)
+    const backToPreview = dialog.getByRole('button', { name: 'Volver', exact: true })
+    await backToPreview.focus()
+    await page.keyboard.press('Enter')
+    await expect(dialog.getByLabel('Nueva fecha')).toHaveValue('2026-10-12')
+    const reprogram = dialog.getByRole('button', { name: 'Reprogramar', exact: true })
+    await expect(reprogram).toBeEnabled()
+    expect(await reprogram.evaluate(element => element.matches(':hover'))).toBe(true)
+    expect(await reprogram.evaluate(element => getComputedStyle(element).transitionProperty)).toBe('none')
+    expect(await reprogram.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(79, 70, 229)')
     await dialog.getByRole('button', { name: 'Reprogramar', exact: true }).click()
     await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeVisible()
     await checkBounds()
@@ -444,6 +529,152 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
     await checkBounds()
   })
 }
+
+test('Hoy abre la reprogramación con la fecha del evento desde el primer render', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: {
+    overdue: [{ id: 70, event: 21, event_name: 'Boda Backend', name: 'Confirmar sonido', target_date: '2026-10-09T23:59:59-05:00', estimated_hours: '1.00', state: 'pending', details: '' }],
+    today: [], upcoming: [], completed: [],
+  } } }))
+  let releaseEvent!: () => void
+  const eventReady = new Promise<void>(resolve => { releaseEvent = resolve })
+  await page.route('**/events/21/', async route => {
+    await eventReady
+    await route.fulfill({ json: { success: true, data: {
+      id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+      date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+      created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+    } } })
+  })
+  await page.goto('/tests/visual/index.html?view=today-navigation')
+  const action = page.getByRole('button', { name: 'Reprogramar tarea: Confirmar sonido' })
+  await action.click()
+  await expect(action).toHaveAttribute('aria-busy', 'true')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  releaseEvent()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toBeVisible()
+})
+
+for (const width of [390, 1182]) {
+  test(`el aviso del límite diario es compacto en ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.route('**/api/auth/preferences/', route => route.fulfill({ status: 503, json: { success: false } }))
+    await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: {
+      overdue: [],
+      today: [{ id: 70, event: 21, event_name: 'Boda Backend', name: 'Confirmar sonido', target_date: '2026-10-09T23:59:59-05:00', estimated_hours: '1.00', state: 'pending', details: '' }],
+      upcoming: [], completed: [],
+    } } }))
+    await page.goto('/tests/visual/index.html?view=today-navigation')
+    const warning = page.getByRole('status', { name: 'No pudimos cargar tu límite diario. Inténtalo de nuevo.' })
+    await expect(warning).toBeVisible()
+    await expect(warning.getByRole('button', { name: 'Reintentar' })).toBeVisible()
+    const bounds = await warning.boundingBox()
+    expect(bounds!.height).toBeLessThanOrEqual(width < 640 ? 165 : 80)
+    const containerWidth = await warning.evaluate(element => element.parentElement!.getBoundingClientRect().width)
+    expect(Math.abs(bounds!.width - containerWidth)).toBeLessThanOrEqual(1)
+    const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+    expect(horizontalOverflow).toBeLessThanOrEqual(1)
+    await page.screenshot({ path: testInfo.outputPath('aviso-limite-diario.png') })
+  })
+}
+
+test('volver con ratón no ilumina las acciones de reprogramación', async ({ page }) => {
+  await page.setViewportSize({ width: 1182, height: 842 })
+  await page.goto('/tests/visual/index.html?view=reschedule')
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+  const initialAction = dialog.getByRole('button', { name: 'Reprogramar', exact: true })
+  await initialAction.hover()
+  await page.mouse.down()
+  expect(await initialAction.evaluate(element => getComputedStyle(element).transform)).toBe('none')
+  await page.mouse.up()
+  await dialog.getByRole('button', { name: 'Resolver conflicto' }).click()
+  await dialog.getByRole('button', { name: 'Volver', exact: true }).click()
+  const backToPreview = dialog.getByRole('button', { name: 'Volver', exact: true })
+  await backToPreview.hover()
+  await page.mouse.down()
+  expect(await backToPreview.evaluate(element => getComputedStyle(element).transform)).toBe('none')
+  await page.mouse.up()
+  const primaryState = await dialog.getByRole('button', { name: 'Reprogramar', exact: true }).evaluate(element => {
+    const styles = getComputedStyle(element)
+    return { background: styles.backgroundColor, shadow: styles.boxShadow, transition: styles.transitionProperty }
+  })
+  const secondaryState = await dialog.getByRole('button', { name: 'Cancelar', exact: true }).evaluate(element => {
+    const styles = getComputedStyle(element)
+    return { hover: element.matches(':hover'), background: styles.backgroundColor, surface: getComputedStyle(element.closest('[role="dialog"]')!).backgroundColor, transition: styles.transitionProperty }
+  })
+  expect(primaryState).toEqual({ background: 'rgb(79, 70, 229)', shadow: 'none', transition: 'none' })
+  expect(secondaryState.hover).toBe(true)
+  expect(secondaryState.background).toBe(secondaryState.surface)
+  expect(secondaryState.transition).toBe('none')
+})
+
+test('volver de la sobrecarga conserva Reprogramar activo sin repetir la consulta', async ({ page }) => {
+  await page.setViewportSize({ width: 1182, height: 842 })
+  let previewRequests = 0
+  await page.route('**/subtasks/70/reschedule-preview/', route => {
+    previewRequests++
+    const input = route.request().postDataJSON()
+    return route.fulfill({ json: { success: true, data: dayPlan(input.target_date, Number(input.estimated_hours)) } })
+  })
+  await page.goto('/tests/visual/index.html?view=reschedule')
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+  const reprogram = dialog.getByRole('button', { name: 'Reprogramar', exact: true })
+  await expect(reprogram).toBeEnabled()
+  expect(previewRequests).toBe(1)
+  await reprogram.click()
+  await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Volver', exact: true }).click()
+  await expect(reprogram).toBeEnabled()
+  expect(previewRequests).toBe(1)
+  expect(await reprogram.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+})
+
+for (const width of [320, 640, 1182]) {
+  test(`las acciones de reprogramación mantienen su posición al navegar en ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 842 })
+    await page.goto('/tests/visual/index.html?view=reschedule')
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+    const actions = async (secondaryLabel: string, primaryLabel: string) => {
+      const secondary = await dialog.getByRole('button', { name: secondaryLabel, exact: true }).boundingBox()
+      const primary = await dialog.getByRole('button', { name: primaryLabel, exact: true }).boundingBox()
+      return { secondary, primary }
+    }
+    const initial = await actions('Cancelar', 'Reprogramar')
+    const checkActions = async (secondaryLabel: string, primaryLabel: string) => {
+      const current = await actions(secondaryLabel, primaryLabel)
+      for (const action of ['secondary', 'primary'] as const) {
+        for (const key of ['x', 'y', 'width', 'height'] as const) {
+          expect(Math.abs(current[action]![key] - initial[action]![key])).toBeLessThanOrEqual(1)
+        }
+      }
+    }
+    await dialog.getByRole('button', { name: 'Reprogramar', exact: true }).click()
+    await checkActions('Volver', 'Resolver conflicto')
+    await dialog.getByRole('button', { name: 'Resolver conflicto' }).click()
+    await checkActions('Volver', 'Aplicar opción')
+    await dialog.getByRole('button', { name: 'Volver', exact: true }).click()
+    await checkActions('Volver', 'Resolver conflicto')
+    await dialog.getByRole('button', { name: 'Volver', exact: true }).click()
+    await checkActions('Cancelar', 'Reprogramar')
+  })
+}
+
+test('las etiquetas largas de las acciones caben en el diálogo de conflicto', async ({ page }) => {
+  await page.setViewportSize({ width: 640, height: 842 })
+  await page.goto('/tests/visual/index.html?view=conflict')
+  const dialog = page.getByRole('dialog')
+  for (const name of ['Cancelar reprogramación', 'Resolver conflicto']) {
+    const button = dialog.getByRole('button', { name, exact: true })
+    await expect(button).toBeVisible()
+    expect(await button.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1)
+  }
+})
 
 for (const viewport of [
   { name: 'móvil pequeño', width: 320, height: 568 },
@@ -603,6 +834,86 @@ test('Hoy y Eventos mantienen alineados el encabezado y su acción', async ({
   expect(today.action.y).toBe(events.action.y)
 })
 
+test('los selectores de evento mantienen estable el scroll al abrir opciones', async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 864 })
+  const event = { id: 21, type: 1, name: 'Boda Backend', date: '2099-12-31T23:59:59-05:00', location: 'Cali', contact: 'Laura 3001234567' }
+  const task = { ...subtaskApiFixture, id: 31, event: 21, event_name: event.name, state: 'pending', target_date: '2099-12-21T04:59:59.000Z' }
+  await page.route('**/events/21/', route => route.fulfill({ json: { success: true, data: event } }))
+  await page.route('**/events/21/subtasks/', route => route.fulfill({ json: { success: true, data: [task] } }))
+  await page.goto('/crear')
+  // El Chromium de CI usa scrollbars superpuestas; emula los 15 px de una scrollbar clásica.
+  await page.evaluate(() => Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    get: () => window.innerWidth - 15,
+  }))
+
+  const measure = async (trigger: import('@playwright/test').Locator) => trigger.evaluate(element => ({
+    left: element.getBoundingClientRect().left,
+    width: element.getBoundingClientRect().width,
+    top: element.getBoundingClientRect().top,
+    scrollY: window.scrollY,
+    pageHeight: document.documentElement.scrollHeight,
+    viewportWidth: document.documentElement.clientWidth,
+    contentWidth: document.documentElement.scrollWidth,
+    routeLeft: document.querySelector('main')!.getBoundingClientRect().left,
+    routeWidth: document.querySelector('main')!.getBoundingClientRect().width,
+    sectionLeft: element.closest('section')?.getBoundingClientRect().left,
+    sectionWidth: element.closest('section')?.getBoundingClientRect().width,
+    bodyMarginRight: getComputedStyle(document.body).marginRight,
+    bodyOverflowY: getComputedStyle(document.body).overflowY,
+  }))
+  const createType = page.locator('#event-type')
+  const createBefore = await measure(createType)
+  await createType.click()
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeVisible()
+  const createAfter = await measure(createType)
+  expect(createAfter).toEqual(createBefore)
+  expect(createAfter.bodyOverflowY).not.toBe('hidden')
+  await page.mouse.click(1450, 820)
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeHidden()
+  await expect(page.locator('body')).not.toHaveAttribute('data-scroll-locked')
+  expect(await measure(createType)).toEqual(createBefore)
+
+  await page.goto('/evento/21')
+  // La navegación descarta el getter; vuelve a simular la scrollbar clásica.
+  await page.evaluate(() => Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    get: () => window.innerWidth - 15,
+  }))
+  await page.getByRole('button', { name: 'Editar evento', exact: true }).click()
+  const editType = page.locator('#event-type')
+  await editType.scrollIntoViewIfNeeded()
+  const editTypeBefore = await measure(editType)
+  await editType.click()
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeVisible()
+  expect(await measure(editType)).toEqual(editTypeBefore)
+  await page.mouse.click(1450, 820)
+  await expect(page.getByRole('option', { name: 'Boda', exact: true })).toBeHidden()
+  await expect(page.locator('body')).not.toHaveAttribute('data-scroll-locked')
+  expect(await measure(editType)).toEqual(editTypeBefore)
+
+  await page.getByRole('button', { name: `Editar ${task.name}`, exact: true }).click()
+  const taskState = page.locator('#edit-event-task-state')
+  await taskState.scrollIntoViewIfNeeded()
+  const editBefore = await measure(taskState)
+  await taskState.click()
+  await expect(page.getByRole('option', { name: 'Completada', exact: true })).toBeVisible()
+  const editAfter = await measure(taskState)
+  expect(editAfter).toEqual(editBefore)
+  expect(editAfter.bodyOverflowY).not.toBe('hidden')
+  const scrollBeforeOutsideWheel = await page.evaluate(() => window.scrollY)
+  await page.mouse.move(1450, 820)
+  await page.mouse.wheel(0, 500)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeOutsideWheel)
+
+  await page.mouse.click(1450, 820)
+  const closingMetrics = await measure(taskState)
+  expect(closingMetrics).toEqual(editBefore)
+  await expect(page.getByRole('option', { name: 'Completada', exact: true })).toBeHidden()
+  await expect(page.locator('body')).not.toHaveAttribute('data-scroll-locked')
+  expect(await measure(taskState)).toEqual(editBefore)
+})
+
 test('la regla de prioridad responde al cursor y permanece sobre las tareas', async ({
   page,
 }) => {
@@ -614,18 +925,17 @@ test('la regla de prioridad responde al cursor y permanece sobre las tareas', as
     '/tests/visual/index.html?view=today',
   )
 
-  await page
-    .getByRole('button', {
-      name: '¿Cómo funciona?',
-    })
-    .hover()
+  const guideButton = page.getByRole('button', { name: '¿Cómo funciona?' })
+  const guideBar = guideButton.locator('xpath=ancestor::aside')
+  const dialog = page.getByRole('dialog', { name: 'Regla de prioridad' })
+  await guideBar.hover({ position: { x: 100, y: 22 } })
+  await expect(dialog).toBeHidden()
 
-  const dialog = page.getByRole(
-    'dialog',
-    {
-      name: 'Regla de prioridad',
-    },
-  )
+  await guideButton.hover()
+  await expect(dialog).toBeVisible()
+  await dialog.hover()
+  await expect(dialog).toBeVisible()
+
   const taskAction = page
     .getByRole('button', {
       name: /Ver tarea:/,
@@ -711,6 +1021,9 @@ test('la regla de prioridad responde al cursor y permanece sobre las tareas', as
     )
 
   expect(dialogIsOnTop).toBe(true)
+
+  await guideBar.hover({ position: { x: 100, y: 22 } })
+  await expect(dialog).toBeHidden()
 
   await page
     .getByRole('heading', {

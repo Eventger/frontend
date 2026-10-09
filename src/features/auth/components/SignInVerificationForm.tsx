@@ -154,7 +154,7 @@ export function SignInVerificationForm({ onVerified, onBack }: SignInVerificatio
                   setCodeError('')
                   setGeneralError('')
                 }}
-                className="mt-2 h-11 w-full rounded-[10px] border border-[#dde2ea] bg-white px-3 text-[13px] focus-visible:outline-2 focus-visible:outline-[#4f46e5]">
+                className="mt-2 h-11 w-full rounded-lg border border-border-subtle bg-white px-3 text-[13px] focus-visible:outline-2 focus-visible:outline-[#4f46e5]">
                 {methods.map(value => <option key={value} value={value}>{METHOD_LABELS[value]}</option>)}
               </select>
             </div>
@@ -176,23 +176,23 @@ export function SignInVerificationForm({ onVerified, onBack }: SignInVerificatio
               setCode(method === 'backup_code' ? event.target.value : event.target.value.replace(/\D/g, ''))
               setCodeError('')
               setGeneralError('')
-            }} className="mt-2 h-11 rounded-[10px] px-3 text-[13px]" />
+            }} className="mt-2 h-11 rounded-lg px-3 text-[13px]" />
           {codeError && <FieldError id="login-verification-code-error">{codeError}</FieldError>}
           {requiresSending && (
             <Button type="button" variant="outline" disabled={isLoading} onClick={() => void sendCode()}
-              className="mt-5 h-11 w-full rounded-[10px] border-[#dde2ea] text-[13px] font-semibold text-[#4f46e5]">
+              className="mt-5 h-11 w-full rounded-lg border-border-subtle text-[13px] font-semibold text-[#4f46e5]">
               {codeSent ? 'Reenviar código' : 'Enviar código'}
             </Button>
           )}
           <Button type="submit" disabled={isLoading || (requiresSending && !codeSent)}
-            className="mt-5 h-11 w-full rounded-[10px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca]">
+            className="mt-5 h-11 w-full rounded-lg bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca]">
             {isLoading ? 'Verificando…' : 'Verificar y continuar'}
           </Button>
         </>
       )}
       {generalError && <InlineFeedback className="mt-4">{generalError}</InlineFeedback>}
       <Button type="button" variant="ghost" disabled={isLoading} onClick={() => void goBack()}
-        className="mt-5 h-11 w-full rounded-[10px] text-[12px] font-semibold text-[#4f46e5]">
+        className="mt-5 h-11 w-full rounded-lg text-[12px] font-semibold text-[#4f46e5]">
         Volver al inicio de sesión
       </Button>
     </form>

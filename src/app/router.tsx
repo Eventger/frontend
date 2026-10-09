@@ -1,4 +1,5 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, type RouteObject } from 'react-router'
+import { RouteErrorPage } from '@/components/RouteErrorPage'
 
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { SignUpPage } from '@/features/auth/pages/SignUpPage'
@@ -14,8 +15,9 @@ import { TodayPage } from '@/features/today/pages/TodayPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { SecurityPage } from '@/features/settings/pages/SecurityPage'
 
-export const router =
-  createBrowserRouter([
+export const appRoutes: RouteObject[] = [{
+  errorElement: <RouteErrorPage />,
+  children: [
     {
       path: '/',
       element: (
@@ -67,4 +69,11 @@ export const router =
         },
       ],
     },
-  ])
+    {
+      path: '*',
+      element: <RouteErrorPage notFound />,
+    },
+  ],
+}]
+
+export const router = createBrowserRouter(appRoutes)

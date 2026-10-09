@@ -57,7 +57,7 @@ export function AuthFeedbackModal({
             ? 'dialog'
             : 'alertdialog'
         }
-        className="z-[101] flex min-h-[430px] w-full max-w-[calc(100%-2rem)] flex-col rounded-[16px] border border-[#dde2ea] bg-white px-6 pb-[66px] pt-[47px] sm:block sm:max-w-[760px] sm:p-0"
+        className="z-[101] flex min-h-[430px] w-full max-w-[calc(100%-2rem)] flex-col rounded-2xl border border-border-subtle bg-white px-6 pb-[66px] pt-[47px] sm:block sm:max-w-[760px] sm:p-0"
         overlayClassName="z-[100] bg-[#101828]/45 backdrop-blur-none"
         showCloseButton={false}
       >
@@ -89,7 +89,7 @@ export function AuthFeedbackModal({
               <Button
                 type="button"
                 onClick={onPrimary}
-                className="h-11 w-full rounded-[10px] bg-[#4f46e5] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338ca] sm:w-[190px]"
+                className="h-11 w-full rounded-lg bg-[#4f46e5] px-5 text-[14px] font-semibold text-white transition-colors hover:bg-[#4338ca] sm:w-[190px]"
               >
                 {primaryLabel}
               </Button>
@@ -100,7 +100,7 @@ export function AuthFeedbackModal({
                 type="button"
                 variant="outline"
                 onClick={onSecondary}
-                className="h-11 w-full rounded-[10px] border-[#dde2ea] bg-white px-5 text-[14px] font-semibold text-[#17212b] hover:bg-[#f9fafb] sm:w-[180px]"
+                className="h-11 w-full rounded-lg border-border-subtle bg-white px-5 text-[14px] font-semibold text-[#17212b] hover:bg-[#f9fafb] sm:w-[180px]"
               >
                 {secondaryLabel}
               </Button>

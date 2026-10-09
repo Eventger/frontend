@@ -57,12 +57,10 @@ export function useEventSubtasks(
         if (version === requestVersion.current) {
           setSubtasks(data)
         }
-      } catch (error) {
+      } catch {
         if (version === requestVersion.current) {
           setError(
-            error instanceof Error
-              ? error.message
-              : 'No se pudieron cargar las subtareas',
+            'No se pudieron cargar las subtareas',
           )
         }
       } finally {

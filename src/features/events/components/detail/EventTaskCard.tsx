@@ -119,7 +119,7 @@ export function EventTaskCard({
   const noteId = `task-note-${subtask.id}`
 
   return (
-    <article className="event-task-card relative overflow-hidden rounded-[11px] border border-[#d9dee7] bg-white transition-colors hover:border-[#c7d2fe]">
+    <article className="event-task-card relative overflow-hidden rounded-lg border border-border-subtle bg-white transition-colors hover:border-[#c7d2fe]">
       <div className="flex min-h-[61px] flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           <h3 className="break-words text-[15px] font-semibold leading-5 text-[#17212b]">
@@ -141,7 +141,7 @@ export function EventTaskCard({
         <div className="flex w-full flex-wrap items-center gap-2.5 sm:ml-4 sm:w-auto sm:shrink-0 sm:flex-nowrap">
           <span
             className={cn(
-              'inline-flex h-[30px] min-w-[116px] items-center justify-center rounded-full px-4 text-[12px] font-medium',
+              'inline-flex min-w-[88px] items-center justify-center rounded-full px-3 py-[6px] text-[12px] font-medium leading-[15px]',
               STATUS_STYLES[
                 visualStatus
               ],

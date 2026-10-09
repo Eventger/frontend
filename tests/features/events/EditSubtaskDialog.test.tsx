@@ -36,6 +36,25 @@ function renderDialog({
 }
 
 describe('EditSubtaskDialog', () => {
+  it('conserva la fecha de Bogotá al guardar una tarea recibida en UTC sin cambios', async () => {
+    const onSubmit = vi.fn()
+    render(<EditSubtaskDialog subtask={{ ...subtaskFixture, targetDate: '2026-10-03T04:59:59Z' }} eventDate="2026-10-25T04:59:59Z" onClose={vi.fn()} onSubmit={onSubmit} />)
+    const date = screen.getByLabelText('Fecha límite *') as HTMLInputElement
+    expect(date.value).toBe('2026-10-02')
+    expect(date.max).toBe('2026-10-24')
+    expect(screen.getByText('Debe completarse antes del 24 de octubre de 2026.')).toBeTruthy()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ targetDate: '2026-10-02' }))
+  })
+
+  it('rechaza una tarea posterior al día del evento en Bogotá', async () => {
+    const onSubmit = vi.fn()
+    render(<EditSubtaskDialog subtask={{ ...subtaskFixture, targetDate: '2026-10-26T04:59:59Z' }} eventDate="2026-10-25T04:59:59Z" onClose={vi.fn()} onSubmit={onSubmit} />)
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(screen.getByText('La fecha límite debe ser anterior a la fecha del evento.')).toBeTruthy()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
   it('muestra los datos actuales de la subtarea', () => {
     renderDialog()
 

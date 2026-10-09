@@ -53,7 +53,7 @@ export function EventInfoCard({
   description,
 }: EventInfoCardProps) {
   return (
-    <section className="w-full rounded-[14px] border border-[#d9dee7] bg-white px-5 py-[18px] sm:px-6">
+    <section className="w-full rounded-xl border border-border-subtle bg-white px-5 py-[18px] sm:px-6">
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-[20px] font-semibold leading-6 text-[#17212b]">
           Información del evento
@@ -97,7 +97,7 @@ export function EventInfoCard({
         </div>
       )}
 
-      <div className="mt-6 border-t border-[#dde2ea] pt-5">
+      <div className="mt-6 border-t border-border-subtle pt-5">
         <EventProgressCard
           subtasks={subtasks}
           eventDate={eventDate}
