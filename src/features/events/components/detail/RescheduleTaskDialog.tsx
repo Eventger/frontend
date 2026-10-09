@@ -171,7 +171,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
           </div>
         </div>
 
-        {stage !== 'success' && stage !== 'confirm' && <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-4">
+        {stage !== 'success' && stage !== 'confirm' && <div className="reschedule-dialog-scroll-region min-h-0 flex-1 overflow-y-auto overscroll-contain pt-4">
         {stage === 'preview' && <>
           <div className="space-y-2"><label htmlFor="reschedule-date" className="text-[13px] font-semibold text-[#17212b]">Nueva fecha</label><Input id="reschedule-date" type="date" min={today} max={plan?.event_date ?? (eventDate ? getCalendarDate(eventDate) : undefined)} value={date} disabled={busy} onChange={event => { setDate(event.target.value); setError('') }} className="h-11 rounded-[9px]" /></div>
         </>}

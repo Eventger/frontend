@@ -191,6 +191,10 @@ body {
   scrollbar-width: thin;
 }
 
+.reschedule-dialog-scroll-region {
+  scrollbar-gutter: stable;
+}
+
 .event-task-list::-webkit-scrollbar {
   width: 6px;
 }
