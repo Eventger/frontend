@@ -33,7 +33,18 @@ incluidos los factores que admita la cuenta.
 
 El límite diario se guarda por organizador en la API y se aplica al resumen de
 Hoy y a la reprogramación. Su valor predeterminado es 6 horas y admite de 1 a 16
-horas, con hasta dos decimales. Una preferencia anterior válida de Clerk se importa
+horas, con hasta dos decimales.
+
+Al reducirlo desde Configuración, se consulta la carga actual de las tareas propias
+y se suman las pendientes y en progreso por fecha, entre todos los eventos
+(incluidas las vencidas). Si algún día supera el nuevo límite, el cambio no se
+guarda y el campo muestra la fecha de mayor carga y el mínimo necesario; las
+completadas no cuentan. Los aumentos y guardar el mismo valor se permiten. Si la
+consulta falla, se conserva el límite guardado y se puede reintentar. Esta
+comprobación se realiza en el frontend antes del PUT; no garantiza cambios
+concurrentes en otras sesiones ni sustituye una validación en el backend.
+
+Una preferencia anterior válida de Clerk se importa
 una sola vez, sin modificar sus demás metadatos. Consulta el flujo, decisiones UX
 y evidencia reproducible en [docs/sprint-3.md](docs/sprint-3.md).
 La [API de usuario de Clerk](https://clerk.com/docs/react/reference/objects/user)

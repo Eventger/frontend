@@ -7,8 +7,11 @@ import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { settingsUserFixture } from './settings.fixtures'
 import { deferred } from '../../deferred'
 import { getPlanningPreferences, savePlanningPreferences } from '@/features/settings/services/planningPreferences.service'
+import { getToday } from '@/features/today/services/today.service'
+import { buildTodayTask } from '../today/today.fixtures'
 
 vi.mock('@/features/settings/services/planningPreferences.service', () => ({ getPlanningPreferences: vi.fn(), savePlanningPreferences: vi.fn() }))
+vi.mock('@/features/today/services/today.service', () => ({ getToday: vi.fn() }))
 
 let fixture: ReturnType<typeof settingsUserFixture>
 
@@ -30,6 +33,7 @@ describe('SettingsPage', () => {
     vi.mocked(useUser).mockReturnValue({ isLoaded: true, isSignedIn: true, user: fixture.resource })
     vi.mocked(getPlanningPreferences).mockReset().mockResolvedValue({ dailyLimitHours: 6, configured: true })
     vi.mocked(savePlanningPreferences).mockReset().mockImplementation(async hours => ({ dailyLimitHours: hours, configured: true }))
+    vi.mocked(getToday).mockReset().mockResolvedValue({ overdue: [], today: [], upcoming: [], completed: [] })
   })
 
   it('muestra el perfil real, correo y Google y navega a seguridad', async () => {
@@ -81,6 +85,40 @@ describe('SettingsPage', () => {
     expect(document.activeElement).toBe(input)
   })
 
+  it('bloquea una reducción que sobrecarga un día entre varios eventos y permite corregirla', async () => {
+    vi.mocked(getToday).mockResolvedValue({
+      overdue: [], today: [], completed: [],
+      upcoming: [
+        buildTodayTask({ id: 1, estimatedHours: 1, targetDate: '2026-10-11T04:59:59Z' }),
+        buildTodayTask({ id: 2, eventId: 22, estimatedHours: 1, targetDate: '2026-10-10T23:59:59-05:00' }),
+      ],
+    })
+    const user = userEvent.setup()
+    const view = renderPage()
+    await readyPreferences()
+    const input = screen.getByLabelText('Límite diario de trabajo')
+    await user.clear(input)
+    await user.type(input, '1')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByRole('alert')).toHaveProperty('textContent', expect.stringContaining('2 h'))
+    expect(screen.getByRole('alert').textContent).toContain('10 de octubre de 2026')
+    expect(savePlanningPreferences).not.toHaveBeenCalled()
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(input)
+    expect(screen.queryByText('Tus preferencias se guardaron correctamente.')).toBeNull()
+
+    // El rechazo conserva el valor guardado, aunque se vuelva a abrir el formulario.
+    view.unmount()
+    renderPage()
+    await readyPreferences()
+    expect((screen.getByLabelText('Límite diario de trabajo') as HTMLInputElement).value).toBe('6')
+    await user.clear(screen.getByLabelText('Límite diario de trabajo'))
+    await user.type(screen.getByLabelText('Límite diario de trabajo'), '2')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText('Tus preferencias se guardaron correctamente.')).toBeTruthy()
+    expect(savePlanningPreferences).toHaveBeenCalledWith(2, expect.any(Function))
+  })
+
   it('conserva el borrador tras un fallo y bloquea envíos simultáneos', async () => {
     const pending = deferred<never>()
     vi.mocked(savePlanningPreferences).mockReturnValueOnce(pending.promise)
@@ -95,6 +133,37 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('No pudimos guardar tus preferencias. Inténtalo de nuevo.')).toBeTruthy()
     expect((screen.getByLabelText('Límite diario de trabajo') as HTMLInputElement).value).toBe('8')
     expect(screen.queryByText('Tus preferencias se guardaron correctamente.')).toBeNull()
+  })
+
+  it('no guarda una reducción si falla la consulta de carga y permite reintentar con datos nuevos', async () => {
+    vi.mocked(getToday).mockRejectedValueOnce(new Error('network'))
+    const user = userEvent.setup()
+    renderPage()
+    await readyPreferences()
+    const input = screen.getByLabelText('Límite diario de trabajo')
+    await user.clear(input)
+    await user.type(input, '1')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText('No pudimos guardar tus preferencias. Inténtalo de nuevo.')).toBeTruthy()
+    expect(savePlanningPreferences).not.toHaveBeenCalled()
+    expect((input as HTMLInputElement).value).toBe('1')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText('Tus preferencias se guardaron correctamente.')).toBeTruthy()
+    expect(getToday).toHaveBeenCalledTimes(2)
+    expect(savePlanningPreferences).toHaveBeenCalledWith(1, expect.any(Function))
+  })
+
+  it.each([6, 8])('permite mantener o aumentar el límite a %s h aunque haya una sobrecarga previa', async (hours) => {
+    vi.mocked(getToday).mockRejectedValue(new Error('No debe consultar tareas'))
+    const user = userEvent.setup()
+    renderPage()
+    await readyPreferences()
+    await user.clear(screen.getByLabelText('Límite diario de trabajo'))
+    await user.type(screen.getByLabelText('Límite diario de trabajo'), String(hours))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText('Tus preferencias se guardaron correctamente.')).toBeTruthy()
+    expect(getToday).not.toHaveBeenCalled()
+    expect(savePlanningPreferences).toHaveBeenCalledWith(hours, expect.any(Function))
   })
 
   it('reinicia el borrador al cambiar de usuario', async () => {

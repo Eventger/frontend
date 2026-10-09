@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FieldError } from '@/components/feedback/FieldError'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 import { SettingsCard } from './SettingsCard'
-import { isValidDailyLimit } from '../utils/preferences'
+import { DailyLimitConflictError, isValidDailyLimit } from '../utils/preferences'
 import { usePlanningPreferences } from '../hooks/usePlanningPreferences'
 import { settingsInput, settingsPrimaryButton } from '../settings.styles'
 
@@ -15,7 +15,12 @@ export function PreferencesForm() {
   const [fieldError, setFieldError] = useState('')
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const value = draft ?? String(preferences.dailyLimitHours)
+
+  useEffect(() => {
+    if (fieldError && !busy) inputRef.current?.focus()
+  }, [fieldError, busy])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -24,7 +29,7 @@ export function PreferencesForm() {
     setError('')
     if (!value.trim() || !isValidDailyLimit(Number(value))) {
       setFieldError('Ingresa entre 1 y 16 horas al día, con un máximo de dos decimales.')
-      event.currentTarget.querySelector<HTMLInputElement>('input')?.focus()
+      inputRef.current?.focus()
       return
     }
     setFieldError('')
@@ -33,8 +38,12 @@ export function PreferencesForm() {
       await preferences.save(Number(value))
       setDraft(null)
       setSaved(true)
-    } catch {
-      setError('No pudimos guardar tus preferencias. Inténtalo de nuevo.')
+    } catch (cause) {
+      if (cause instanceof DailyLimitConflictError) {
+        setFieldError(cause.message)
+      } else {
+        setError('No pudimos guardar tus preferencias. Inténtalo de nuevo.')
+      }
     } finally {
       setBusy(false)
     }
@@ -45,7 +54,7 @@ export function PreferencesForm() {
       <form onSubmit={handleSubmit} noValidate className="mt-6">
         <label htmlFor="daily-limit" className="text-[13px] font-medium text-[#17212b]">Límite diario de trabajo</label>
         <div className="relative mt-2 max-w-[325px]">
-          <Input id="daily-limit" type="number" inputMode="decimal" min={1} max={16} step={0.01} value={value} disabled={busy || preferences.isLoading || Boolean(preferences.error)} onChange={(event) => { setDraft(event.target.value); setSaved(false); setFieldError(''); setError('') }} className={`${settingsInput} pr-28`} aria-invalid={Boolean(fieldError)} aria-describedby={`daily-limit-hint${fieldError ? ' daily-limit-error' : ''}`} />
+          <Input ref={inputRef} id="daily-limit" type="number" inputMode="decimal" min={1} max={16} step={0.01} value={value} disabled={busy || preferences.isLoading || Boolean(preferences.error)} onChange={(event) => { setDraft(event.target.value); setSaved(false); setFieldError(''); setError('') }} className={`${settingsInput} pr-28`} aria-invalid={Boolean(fieldError)} aria-describedby={`daily-limit-hint${fieldError ? ' daily-limit-error' : ''}`} />
           <span aria-hidden="true" className="pointer-events-none absolute right-4 top-3 text-sm text-[#667085]">horas / día</span>
         </div>
         {fieldError && <FieldError id="daily-limit-error" className="mt-2">{fieldError}</FieldError>}
