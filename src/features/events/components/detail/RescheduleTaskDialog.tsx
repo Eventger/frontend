@@ -20,6 +20,8 @@ type Props = {
   eventDate?: string
   initialInput?: UpdateSubtaskInput
   initialConflict?: DayPlan
+  getFocusFallback?: () => HTMLElement | null
+  preferFocusFallback?: boolean
   onClose: () => void
   onSaved: (task: Subtask) => Promise<void> | void
 }
@@ -36,7 +38,7 @@ function previewError(error: unknown) {
   return 'No pudimos consultar la carga de ese día. Inténtalo de nuevo.'
 }
 
-export function RescheduleTaskDialog({ task, eventDate, initialInput, initialConflict, onClose, onSaved }: Props) {
+export function RescheduleTaskDialog({ task, eventDate, initialInput, initialConflict, getFocusFallback, preferFocusFallback = false, onClose, onSaved }: Props) {
   const { authenticatedRequest } = useAuthenticatedApi()
   const [taskEventDate, setTaskEventDate] = useState<string>()
   const [stage, setStage] = useState<'preview' | 'conflict' | 'resolve' | 'confirm' | 'success'>(initialConflict ? 'conflict' : 'preview')
@@ -165,7 +167,20 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const errorFeedback = error && <InlineFeedback>{error}{!busy && <Button type="button" variant="link" onClick={() => { setError(''); if (stage === 'confirm') setStage('resolve'); setReload(value => value + 1) }}>Volver a consultar</Button>}</InlineFeedback>
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose() }}>
-      <DialogContent showCloseButton={false} className="flex h-[min(640px,90svh)] flex-col gap-0 overflow-hidden rounded-[18px] border-[#dde2ea] p-5 sm:max-w-[640px] sm:p-7" onCloseAutoFocus={event => { event.preventDefault(); returnFocus.current?.focus() }} onEscapeKeyDown={(event) => { if (busy) event.preventDefault() }} onInteractOutside={(event) => { if (busy) event.preventDefault() }}>
+      <DialogContent
+        showCloseButton={false}
+        className="flex h-[min(640px,90svh)] flex-col gap-0 overflow-hidden rounded-[18px] border-[#dde2ea] p-5 sm:max-w-[640px] sm:p-7"
+        onCloseAutoFocus={event => {
+          event.preventDefault()
+          const fallback = getFocusFallback?.()
+          const target = preferFocusFallback
+            ? fallback
+            : returnFocus.current?.isConnected ? returnFocus.current : fallback
+          target?.focus({ preventScroll: true })
+        }}
+        onEscapeKeyDown={event => { if (busy) event.preventDefault() }}
+        onInteractOutside={event => { if (busy) event.preventDefault() }}
+      >
         <div className={stage === 'success' || stage === 'confirm' ? 'min-h-0 flex-1 overflow-y-auto text-center' : 'shrink-0'}>
           <div className={stage === 'success' || stage === 'confirm' ? 'flex min-h-full flex-col items-center justify-center py-4' : ''}>
           {stage === 'success' && <FeedbackIcon variant="success" />}

@@ -1,5 +1,6 @@
 import { getApiFieldError } from '@/lib/api'
 import {
+  useRef,
   useState,
   type FormEvent,
 } from 'react'
@@ -164,6 +165,7 @@ export function EditEventForm({
     useState('')
   const [rescheduling, setRescheduling] = useState<{ task: Subtask; input?: UpdateSubtaskInput; conflict?: DayPlan } | null>(null)
   const [rescheduleSaved, setRescheduleSaved] = useState(false)
+  const taskListHeading = useRef<HTMLHeadingElement>(null)
 
   const [pendingTaskError, setPendingTaskError] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -896,7 +898,7 @@ export function EditEventForm({
             )}
           </div>
 
-          <h2 className="mt-2 text-[20px] font-semibold leading-6 text-[#17212b]">
+          <h2 ref={taskListHeading} tabIndex={-1} className="mt-2 text-[20px] font-semibold leading-6 text-[#17212b]">
             Tareas agregadas ({subtasks.length})
           </h2>
 
@@ -1065,6 +1067,8 @@ export function EditEventForm({
           eventDate={event.eventDate}
           initialInput={rescheduling.input}
           initialConflict={rescheduling.conflict}
+          getFocusFallback={() => taskListHeading.current}
+          preferFocusFallback={rescheduleSaved && editingSubtask?.id === rescheduling.task.id}
           onSaved={async (task) => {
             setRescheduleSaved(true)
             await onSubtasksChanged?.(task)

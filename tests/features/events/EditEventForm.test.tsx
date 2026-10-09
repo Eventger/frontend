@@ -100,6 +100,8 @@ describe('EditEventForm', () => {
     expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
     expect(screen.getByText(/Actualmente: martes, 20 de octubre/)).toBeTruthy()
     expect(await screen.findByText(/Fecha del evento: 24 de octubre de 2026/)).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: `Reprogramar ${subtaskFixture.name}` }))
   })
 
   it.each([false, true])('conserva el borrador del evento al resolver=%s y el de la tarea al cancelar', async (resolve) => {
@@ -142,6 +144,7 @@ describe('EditEventForm', () => {
       await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
       await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
       await user.click(screen.getByRole('button', { name: 'Volver al plan' }))
+      expect(document.activeElement).toBe(screen.getByRole('heading', { name: /Tareas agregadas/ }))
       expect(writes).toHaveLength(1)
       expect(writes[0]).toMatchObject({ name: 'Transporte actualizado', details: 'Nota sin perder', state: 'pending', estimated_hours: '1.00' })
       expect(onSubtasksChanged).toHaveBeenCalledOnce()
