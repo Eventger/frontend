@@ -26,7 +26,7 @@ type Props = {
   onSaved: (task: Subtask) => Promise<void> | void
 }
 
-const primary = 'h-11 rounded-[10px] bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca] sm:min-w-[160px]'
+const primary = 'h-11 rounded-[10px] bg-[#4f46e5] px-5 text-white transition-none hover:bg-[#4338ca] sm:min-w-[160px]'
 const secondary = 'h-11 rounded-[10px] border-[#dde2ea] px-5'
 function dateLabel(date: string) {
   return formatCalendarDate(date, { weekday: 'long', day: 'numeric', month: 'long' })
