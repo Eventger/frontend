@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
   type FormEvent,
 } from 'react'
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react'
 
 import { focusFirstError } from '@/lib/formFocus'
+import { formatCalendarDate, getCalendarDate } from '@/lib/calendar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EventLocationInput } from './EventLocationInput'
@@ -96,35 +98,12 @@ const emptySubtaskValues: SubtaskFormValues = {
 }
 
 
-function getLocalDateInputValue() {
-  const today = new Date()
-
-  const year = today.getFullYear()
-
-  const month = String(
-    today.getMonth() + 1,
-  ).padStart(2, '0')
-
-  const day = String(
-    today.getDate(),
-  ).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
-
 function formatTaskDate(date: string) {
-  return new Intl.DateTimeFormat(
-    'es-CO',
-    {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'UTC',
-    },
-  ).format(
-    new Date(`${date}T00:00:00Z`),
-  )
+  return formatCalendarDate(date, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
 
@@ -137,7 +116,7 @@ export function EventForm({
   isSubmitting = false,
 }: EventFormProps) {
   const minimumEventDate =
-    getLocalDateInputValue()
+    getCalendarDate(new Date())
 
   const {
     eventTypes,
@@ -165,10 +144,10 @@ export function EventForm({
    * TAREAS TEMPORALES
    */
 
-  const [subtasks, setSubtasks] =
-  useState<CreateSubtaskInput[]>(
-    initialSubtasks,
+  const [subtaskDrafts, setSubtaskDrafts] = useState(() =>
+    initialSubtasks.map(data => ({ id: crypto.randomUUID(), data })),
   )
+  const subtasks = useMemo(() => subtaskDrafts.map(draft => draft.data), [subtaskDrafts])
 
   const [
     editingSubtaskIndex,
@@ -261,7 +240,7 @@ export function EventForm({
         'Selecciona una fecha válida.'
     } else if (
       values.eventDate <
-      getLocalDateInputValue()
+      getCalendarDate(new Date())
     ) {
       nextErrors.eventDate =
         'La fecha del evento no puede estar en el pasado.'
@@ -311,7 +290,7 @@ export function EventForm({
         'Selecciona una fecha límite.'
     } else if (
       subtaskValues.targetDate <
-      getLocalDateInputValue()
+      getCalendarDate(new Date())
     ) {
       nextErrors.targetDate =
         'La fecha límite no puede estar en el pasado.'
@@ -381,7 +360,7 @@ export function EventForm({
     if (
       editingSubtaskIndex !== null
     ) {
-      setSubtasks((current) =>
+      setSubtaskDrafts((current) =>
         current.map(
           (
             currentSubtask,
@@ -389,14 +368,15 @@ export function EventForm({
           ) =>
             index ===
             editingSubtaskIndex
-              ? subtask
+              ? { ...currentSubtask, data: subtask }
               : currentSubtask,
         ),
       )
     } else {
-      setSubtasks((current) => [
+      const draft = { id: crypto.randomUUID(), data: subtask }
+      setSubtaskDrafts((current) => [
         ...current,
-        subtask,
+        draft,
       ])
     }
 
@@ -453,7 +433,7 @@ export function EventForm({
   const handleDeleteSubtask = (
     indexToDelete: number,
   ) => {
-    setSubtasks((current) =>
+    setSubtaskDrafts((current) =>
       current.filter(
         (_, index) =>
           index !== indexToDelete,
@@ -1050,7 +1030,7 @@ export function EventForm({
               {subtasks.map(
                 (subtask, index) => (
                   <div
-                    key={`${subtask.name}-${index}`}
+                    key={subtaskDrafts[index].id}
                     className="grid min-h-12 grid-cols-[minmax(0,1fr)_44px_44px] items-center gap-x-3 gap-y-2 rounded-[8px] border border-[#d9dee7] bg-white px-3 py-2 md:grid-cols-[15px_minmax(0,1fr)_130px_90px_44px_44px]"
                   >
                     <GripVertical

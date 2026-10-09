@@ -49,9 +49,9 @@ describe('useEventDetail', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('expone el mensaje de un Error y termina la carga', async () => {
+  it.each([new TypeError('Failed to fetch'), new ApiError(500, null)])('normaliza el error y termina la carga: %s', async (error) => {
     vi.mocked(getEventById).mockRejectedValue(
-      new Error('Evento no disponible'),
+      error,
     )
 
     const { result } = renderHook(() =>
@@ -63,7 +63,7 @@ describe('useEventDetail', () => {
     })
 
     expect(result.current.event).toBeNull()
-    expect(result.current.error).toBe('Evento no disponible')
+    expect(result.current.error).toBe('No se pudo cargar el evento')
   })
 
   it('usa un mensaje predeterminado para errores desconocidos', async () => {
@@ -90,7 +90,7 @@ describe('useEventDetail', () => {
     )
 
     await waitFor(() => {
-      expect(result.current.error).toBe('Error temporal')
+      expect(result.current.error).toBe('No se pudo cargar el evento')
     })
 
     await act(async () => {

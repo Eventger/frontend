@@ -6,6 +6,7 @@ import { getEventSubtasks } from '@/features/events/services/subtasks.service'
 import { eventFixture, subtaskFixture } from './subtask.fixtures'
 import { deferred } from '../../deferred'
 import type { Subtask } from '@/features/events/types/subtask.types'
+import { ApiError } from '@/lib/api'
 
 vi.mock('@/features/events/services/subtasks.service', () => ({
   getEventSubtasks: vi.fn(),
@@ -37,9 +38,9 @@ describe('useEventSubtasks', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('expone el error del servicio y termina la carga', async () => {
+  it.each([new TypeError('Failed to fetch'), new ApiError(500, null)])('normaliza el error del servicio y termina la carga: %s', async (error) => {
     vi.mocked(getEventSubtasks).mockRejectedValue(
-      new Error('No se pudieron cargar las subtareas'),
+      error,
     )
 
     const { result } = renderHook(() =>

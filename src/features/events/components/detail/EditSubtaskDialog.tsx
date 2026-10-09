@@ -4,6 +4,7 @@ import {
 } from 'react'
 
 import { focusFirstError } from '@/lib/formFocus'
+import { formatCalendarDate, getCalendarDate } from '@/lib/calendar'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/feedback/FieldError'
 import {
@@ -42,15 +43,11 @@ type FormErrors = Partial<
 >
 
 function formatEventDate(date: string) {
-  return new Intl.DateTimeFormat(
-    'es-CO',
-    {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: 'UTC',
-    },
-  ).format(new Date(date))
+  return formatCalendarDate(date, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 }
 
 export function EditSubtaskDialog({
@@ -64,10 +61,7 @@ export function EditSubtaskDialog({
     useState<FormValues>({
       name: subtask.name,
       targetDate:
-        subtask.targetDate.slice(
-          0,
-          10,
-        ),
+        getCalendarDate(subtask.targetDate),
       estimatedHours:
         String(
           subtask.estimatedHours,
@@ -79,7 +73,7 @@ export function EditSubtaskDialog({
     useState<FormErrors>({})
 
   const eventDateOnly =
-    eventDate.slice(0, 10)
+    getCalendarDate(eventDate)
 
   const updateField = <
     K extends keyof FormValues,

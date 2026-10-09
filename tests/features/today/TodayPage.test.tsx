@@ -7,7 +7,7 @@ import {
   Routes,
   useLocation,
 } from 'react-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToday } from '@/features/today/hooks/useToday'
 import { TodayPage } from '@/features/today/pages/TodayPage'
@@ -61,6 +61,7 @@ function expectBefore(first: HTMLElement, second: HTMLElement) {
 }
 
 describe('TodayPage', () => {
+  afterEach(() => { vi.useRealTimers() })
   beforeEach(() => {
     vi.mocked(usePlanningPreferences).mockReturnValue({ dailyLimitHours: 6, isLoading: false, error: '', save: vi.fn(), refresh: vi.fn() })
     retry.mockClear()
@@ -78,6 +79,49 @@ describe('TodayPage', () => {
     renderPage()
     expect(screen.getByText('3.75 h / 2 h')).toBeTruthy()
     expect(screen.getByText('Tu planificación de hoy supera el límite diario de 2 horas. Revisa tus tareas para reducir la sobrecarga.')).toBeTruthy()
+  })
+
+  it('muestra la fecha de Bogotá y una región de tareas sin un main anidado', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-25T02:00:00Z'))
+    renderPage()
+    expect(screen.getByText('Jueves, 24 de septiembre')).toBeTruthy()
+    expect(screen.queryByRole('main')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Tareas priorizadas' })).toBeTruthy()
+  })
+
+  it('reconcilia un evento que desaparece del filtro y usa el singular para una tarea', async () => {
+    const { rerender } = render(<MemoryRouter><TodayPage /></MemoryRouter>)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', { name: 'Evento' }))
+    await user.click(await screen.findByRole('option', { name: 'Conferencia Frontend' }))
+    expect(screen.getByText(/1 subtarea coincide con los filtros aplicados/)).toBeTruthy()
+    await user.click(screen.getByRole('combobox', { name: 'Estado' }))
+    await user.click(await screen.findByRole('option', { name: 'Para hoy' }))
+    vi.mocked(useToday).mockReturnValue({ data: { ...todayDataFixture, today: [todayDataFixture.today[0]] }, isLoading: false, error: null, retry })
+    rerender(<MemoryRouter><TodayPage /></MemoryRouter>)
+    expect(screen.getByRole('combobox', { name: 'Evento' }).textContent).toBe('Todos los eventos')
+    expect(screen.getByRole('combobox', { name: 'Estado' }).textContent).toBe('Para hoy')
+    expect(screen.getAllByRole('button', { name: 'Ver tarea: Confirmar invitados hoy' }).length).toBeGreaterThan(0)
+    expect(screen.getByText(/1 subtarea coincide con los filtros aplicados/)).toBeTruthy()
+  })
+
+  it('permite reintentar la carga del límite diario desde la advertencia', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(usePlanningPreferences).mockReturnValue({
+      dailyLimitHours: 6,
+      isLoading: false,
+      error: 'No pudimos cargar tu límite diario. Inténtalo de nuevo.',
+      save: vi.fn(),
+      refresh,
+    })
+
+    renderPage()
+
+    const warning = screen.getByText('No pudimos cargar tu límite diario. Inténtalo de nuevo.').closest<HTMLElement>('[role="status"]')!
+    expect(within(warning).getByText('No pudimos cargar tu límite diario. Inténtalo de nuevo.')).toBeTruthy()
+    await userEvent.setup().click(within(warning).getByRole('button', { name: 'Reintentar' }))
+    expect(refresh).toHaveBeenCalledOnce()
   })
 
   it('filtra por evento y estado con los selectores compartidos y permite limpiar ambos', async () => {

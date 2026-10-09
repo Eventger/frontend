@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { focusFirstError } from '@/lib/formFocus'
+import { formatCalendarDate, getCalendarDate } from '@/lib/calendar'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/feedback/FieldError'
 import { Input } from '@/components/ui/input'
@@ -50,25 +51,11 @@ const emptyValues: FormValues = {
 }
 
 function formatEventDate(date: string) {
-  return new Intl.DateTimeFormat('es-CO', {
+  return formatCalendarDate(date, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(date))
-}
-
-function getLocalDateInputValue() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(
-    today.getMonth() + 1,
-  ).padStart(2, '0')
-  const day = String(
-    today.getDate(),
-  ).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
+  })
 }
 
 export function AddSubtaskDialog({
@@ -108,9 +95,9 @@ export function AddSubtaskDialog({
 }, [open, initialValues])
 
   const eventDateOnly =
-    eventDate.slice(0, 10)
+    getCalendarDate(eventDate)
   const minimumTargetDate =
-    getLocalDateInputValue()
+    getCalendarDate(new Date())
 
   const updateField = <
     K extends keyof FormValues,
@@ -142,7 +129,7 @@ export function AddSubtaskDialog({
         'Selecciona la fecha límite.'
     } else if (
       values.targetDate <
-      getLocalDateInputValue()
+      getCalendarDate(new Date())
     ) {
       nextErrors.targetDate =
         'La fecha límite no puede estar en el pasado.'

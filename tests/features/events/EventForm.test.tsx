@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EventForm } from '@/features/events/components/EventForm'
 import { useEventTypes } from '@/features/events/hooks/useEventTypes'
@@ -41,6 +41,7 @@ const initialSubtasks: CreateSubtaskInput[] = [
 ]
 
 describe('EventForm', () => {
+  afterEach(() => { vi.useRealTimers() })
   beforeEach(() => {
     vi.mocked(useEventTypes).mockReturnValue({
       eventTypes: [eventType],
@@ -74,6 +75,23 @@ describe('EventForm', () => {
     ).toBeTruthy()
     expect(onSubmit).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(screen.getByLabelText('Nombre del evento *'))
+  })
+
+  it('permite un evento y una tarea para hoy en Bogotá después de medianoche UTC', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-25T02:00:00Z'))
+    const onSubmit = vi.fn()
+    const input = { ...validInput, eventDate: '2026-09-24' }
+    render(<EventForm initialValues={input} onSubmit={onSubmit} onCancel={vi.fn()} />)
+    expect(screen.getByLabelText('Fecha del evento *').getAttribute('min')).toBe('2026-09-24')
+    expect(screen.getByLabelText('Fecha límite *').getAttribute('min')).toBe('2026-09-24')
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Preparar logística')
+    await user.type(screen.getByLabelText('Fecha límite *'), '2026-09-24')
+    await user.type(screen.getByLabelText('Tiempo estimado *'), '1')
+    await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
+    await user.click(screen.getByRole('button', { name: 'Crear evento' }))
+    expect(onSubmit).toHaveBeenCalledWith(input, [{ name: 'Preparar logística', targetDate: '2026-09-24', estimatedHours: 1, details: '' }])
   })
 
   it('envía una sola vez los datos válidos, incluido typeId 0', async () => {
@@ -333,11 +351,14 @@ describe('EventForm', () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()
     render(<EventForm initialValues={validInput} initialSubtasks={initialSubtasks} onSubmit={onSubmit} onCancel={vi.fn()} />)
+    const retainedEditButton = screen.getByRole('button', { name: 'Editar Contratar música' })
     await user.click(screen.getByRole('button', { name: 'Editar Contratar música' }))
     await user.click(screen.getByRole('button', { name: 'Eliminar Reservar salón' }))
+    expect(screen.getByRole('button', { name: 'Editar Contratar música' })).toBe(retainedEditButton)
     await user.clear(screen.getByLabelText('Nombre de la tarea *'))
     await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Música actualizada')
     await user.click(screen.getByRole('button', { name: 'Guardar tarea' }))
+    expect(screen.getByRole('button', { name: 'Editar Música actualizada' })).toBe(retainedEditButton)
     await user.click(screen.getByRole('button', { name: 'Crear evento' }))
     expect(onSubmit).toHaveBeenCalledWith(validInput, [{ ...initialSubtasks[1], name: 'Música actualizada' }])
   })

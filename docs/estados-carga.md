@@ -11,10 +11,17 @@ con una respuesta exitosa del backend; no se deduce de una petición fallida.
 | El evento existe y sus subtareas están vacías | «Aún no tienes tareas para este evento» |
 | `GET /events/:id/` devuelve HTTP 404 | «Evento no encontrado» |
 | HTTP de error, fallo de red, `success: false` o respuesta inválida | Error de carga correspondiente y acción de reintento |
+| URL sin ruta en el frontend | «Página no encontrada» y acción para volver al inicio |
+| Excepción durante el render de una ruta | «Algo salió mal» y acción para recargar la página |
 
 Un HTTP 404 en una consulta de **lista** conserva el error de carga: el contrato
 del backend devuelve HTTP 200 con una lista vacía cuando no hay registros.
 Los fallos de autenticación tampoco confirman que una cuenta no tenga datos.
+Los hooks de eventos, detalle y subtareas devuelven mensajes de carga en español,
+sin propagar mensajes técnicos de `fetch` o del servidor. `ApiError` conserva
+`status` y `body` para distinguir respuestas y validaciones, y el detalle mantiene
+su tratamiento específico del HTTP 404. La barrera de errores del router reutiliza
+la tarjeta de mensajes existente y no presenta excepciones ni trazas al usuario.
 
 ## Correcciones y regresiones
 

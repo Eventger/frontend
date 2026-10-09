@@ -12,6 +12,9 @@ import { PageContent } from '@/components/layout/PageContent'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageHeaderCreateButton } from '@/components/layout/PageHeaderCreateButton'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
+import { FeedbackIcon } from '@/components/feedback/FeedbackIcon'
+import { Button } from '@/components/ui/button'
+import { CALENDAR_TIME_ZONE } from '@/lib/calendar'
 
 import { TodayEmptyState } from '@/features/today/components/TodayEmptyState'
 import { TodayErrorState } from '@/features/today/components/TodayErrorState'
@@ -40,6 +43,7 @@ function formatTodayDate(
         weekday: 'long',
         day: 'numeric',
         month,
+        timeZone: CALENDAR_TIME_ZONE,
       },
     ).format(new Date())
 
@@ -159,11 +163,15 @@ export function TodayPage() {
         )
     }, [data])
 
+  const effectiveEventId = eventOptions.some(event => String(event.id) === selectedEventId)
+    ? selectedEventId
+    : 'all'
+
   const filterByEvent = (
     tasks: TodayTaskItem[],
   ) => {
     if (
-      selectedEventId === 'all'
+      effectiveEventId === 'all'
     ) {
       return tasks
     }
@@ -171,7 +179,7 @@ export function TodayPage() {
     return tasks.filter(
       (task) =>
         task.eventId ===
-        Number(selectedEventId),
+        Number(effectiveEventId),
     )
   }
 
@@ -205,7 +213,7 @@ export function TodayPage() {
     filteredUpcoming.length
 
   const hasActiveFilters =
-    selectedEventId !== 'all' ||
+    effectiveEventId !== 'all' ||
     selectedState !== 'all'
 
   const hasFilteredResults =
@@ -220,7 +228,7 @@ export function TodayPage() {
     eventOptions.find(
       (event) =>
         String(event.id) ===
-        selectedEventId,
+        effectiveEventId,
     )?.name
 
   const stateLabels: Record<
@@ -235,7 +243,7 @@ export function TodayPage() {
 
   const subtitle =
     hasActiveFilters
-      ? `${filteredTaskCount} subtareas coinciden con los filtros aplicados`
+      ? `${filteredTaskCount} ${filteredTaskCount === 1 ? 'subtarea coincide' : 'subtareas coinciden'} con los filtros aplicados`
       : !isLoading &&
           !error &&
           data &&
@@ -343,7 +351,30 @@ export function TodayPage() {
                   Tu planificación de hoy supera el límite diario de {dailyLimitHours} horas. Revisa tus tareas para reducir la sobrecarga.
                 </InlineFeedback>
               )}
-              {preferences.error && <InlineFeedback variant="warning">{preferences.error} <button type="button" onClick={() => { void preferences.refresh() }} className="ml-2 min-h-11 underline">Reintentar</button></InlineFeedback>}
+              {preferences.error && (
+                <section
+                  role="status"
+                  aria-live="polite"
+                  aria-labelledby="today-limit-warning-title"
+                  className="mt-8 flex w-full flex-col items-center rounded-[12px] border border-[#fedf89] bg-[#fffaeb] px-5 py-4 text-center"
+                >
+                  <FeedbackIcon variant="warning" size="small" />
+                  <h2 id="today-limit-warning-title" className="mt-2 text-[15px] font-semibold leading-5 text-[#17212b]">
+                    {preferences.error}
+                  </h2>
+                  <p className="mt-1 max-w-[520px] text-[13px] leading-5 text-[#667085]">
+                    La capacidad de hoy se actualizará cuando recuperemos tu límite.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => { void preferences.refresh() }}
+                    className="mt-1 min-h-11 px-3 text-[#b54708] hover:text-[#93370d]"
+                  >
+                    Reintentar
+                  </Button>
+                </section>
+              )}
 
               <div className="mt-4">
                 <TodayFilters
@@ -351,7 +382,7 @@ export function TodayPage() {
                     eventOptions
                   }
                   selectedEventId={
-                    selectedEventId
+                    effectiveEventId
                   }
                   selectedState={
                     selectedState
@@ -393,7 +424,7 @@ export function TodayPage() {
                   />
                 </div>
               ) : (
-                <main className="mt-6 space-y-4">
+                <section aria-label="Tareas priorizadas" className="mt-6 space-y-4">
                   <TodayTaskSection
                     title="Vencidas"
                     description=""
@@ -426,7 +457,7 @@ export function TodayPage() {
                     onOpenTask={handleOpenTask}
                     onRescheduleTask={setReschedulingTask}
                   />
-                </main>
+                </section>
               )}
             </>
           )}

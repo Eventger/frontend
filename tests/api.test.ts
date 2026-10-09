@@ -86,7 +86,7 @@ describe('apiRequest', () => {
 
     await expect(request).rejects.toMatchObject({
       name: 'ApiError',
-      message: 'API request failed with status 404',
+      message: 'No pudimos completar la solicitud. Inténtalo de nuevo.',
       status: 404,
       body,
     })

@@ -7,7 +7,7 @@ function getApiUrl() {
 
   if (!apiUrl) {
     throw new Error(
-      'VITE_API_URL is not configured',
+      'No pudimos conectar con Eventger. Revisa la configuración del entorno.',
     )
   }
 
@@ -19,7 +19,7 @@ export class ApiError extends Error {
   body: unknown
 
   constructor(status: number, body: unknown) {
-    super(`API request failed with status ${status}`)
+    super('No pudimos completar la solicitud. Inténtalo de nuevo.')
     this.name = 'ApiError'
     this.status = status
     this.body = body
