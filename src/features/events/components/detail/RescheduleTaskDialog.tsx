@@ -139,7 +139,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const originalWholeHours = Math.ceil(Number(conflict?.added_hours ?? task.estimatedHours))
   const hourOptions = Array.from({ length: Math.min(24, originalWholeHours) + 1 }, (_, index) => index)
   if (originalWholeHours > 24) hourOptions.push(originalWholeHours)
-  const title = stage === 'preview' ? 'Reprogramar tarea' : stage === 'conflict' ? `Sobrecarga para el ${dateLabel(conflict?.date ?? date)}` : stage === 'resolve' ? 'Resolver sobrecarga' : stage === 'confirm' ? '¿Estás seguro?' : 'Tarea reprogramada correctamente'
+  const title = stage === 'preview' ? 'Reprogramar tarea' : stage === 'conflict' || stage === 'resolve' ? `Sobrecarga para el ${dateLabel(conflict?.date ?? date)}` : stage === 'confirm' ? '¿Estás seguro?' : 'Tarea reprogramada correctamente'
   const limit = plan ? hoursLabel(plan.daily_limit_hours) : ''
   const associatedEventDate = plan?.event_date ?? eventDate
   const loadPreview = <div aria-live="polite" aria-busy={loading} className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-[12px] border p-3 sm:p-4 ${hasMatchingPlan && plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}>
@@ -158,8 +158,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
         <div className={stage === 'success' || stage === 'confirm' ? 'min-h-0 flex-1 overflow-y-auto text-center' : 'shrink-0'}>
           <div className={stage === 'success' || stage === 'confirm' ? 'flex min-h-full flex-col items-center justify-center py-4' : ''}>
           {stage === 'success' && <FeedbackIcon variant="success" />}
-          <div className={stage === 'conflict' ? 'flex min-w-0 items-start gap-3 pr-10 sm:gap-4' : stage === 'confirm' ? 'flex items-center gap-3' : stage !== 'success' ? 'pr-10' : ''}>
-            {stage === 'conflict' && <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#fffaeb] text-[24px] font-bold text-[#b54708] sm:size-[52px] sm:text-[28px]">!</span>}
+          <div className={stage === 'confirm' ? 'flex items-center gap-3' : stage !== 'success' ? 'pr-10' : ''}>
             {stage === 'confirm' && <FeedbackIcon variant="warning" size="small" />}
             <DialogTitle className={`min-w-0 text-[22px] font-bold leading-7 text-[#17212b] sm:text-[24px] sm:leading-8 ${stage === 'success' ? 'mt-7' : ''}`}>{title}</DialogTitle>
           </div>
@@ -169,7 +168,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
             <span className="shrink-0 rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold tabular-nums text-[#3730a3]">{hoursLabel(task.estimatedHours)}</span>
           </div>}
           <DialogDescription className={`${stage === 'preview' ? 'mt-2' : 'mt-4'} text-[14px] leading-5 text-[#667085] ${stage === 'success' || stage === 'confirm' ? 'mx-auto max-w-[500px]' : ''}`}>
-            {stage === 'preview' ? <><span className="block">Actualmente: {dateLabel(task.targetDate)}</span>{associatedEventDate && <span className="mt-1 block">Fecha del evento: {formatCalendarDate(associatedEventDate, { day: 'numeric', month: 'long', year: 'numeric' })}</span>}</> : stage === 'conflict' && conflict ? `Quedarías con ${hoursLabel(conflict.planned_hours)} planificadas (límite ${hoursLabel(conflict.daily_limit_hours)}).` : stage === 'resolve' ? 'Selecciona una alternativa y consulta la carga antes de confirmar.' : stage === 'confirm' ? <><span className="block">¿Seguro que quieres reprogramar la subtarea?</span><span className="mt-2 block">Quedarías con {hoursLabel(plan?.planned_hours ?? 0)} para ese día (tu límite es {limit}).</span><span className="mt-3 block text-xs">{dateLabel(date)} · {hoursLabel(numberHours)}</span></> : `${initialInput?.name ?? task.name} quedó programada para el ${dateLabel(date)}. La carga de ese día es ${hoursLabel(plan?.planned_hours ?? 0)} de ${limit}.`}
+            {stage === 'preview' ? <><span className="block">Actualmente: {dateLabel(task.targetDate)}</span>{associatedEventDate && <span className="mt-1 block">Fecha del evento: {formatCalendarDate(associatedEventDate, { day: 'numeric', month: 'long', year: 'numeric' })}</span>}</> : stage === 'conflict' || stage === 'resolve' ? 'Revisa la sobrecarga y elige cómo ajustar la fecha.' : stage === 'confirm' ? <><span className="block">¿Seguro que quieres reprogramar la subtarea?</span><span className="mt-2 block">Quedarías con {hoursLabel(plan?.planned_hours ?? 0)} para ese día (tu límite es {limit}).</span><span className="mt-3 block text-xs">{dateLabel(date)} · {hoursLabel(numberHours)}</span></> : `${initialInput?.name ?? task.name} quedó programada para el ${dateLabel(date)}. La carga de ese día es ${hoursLabel(plan?.planned_hours ?? 0)} de ${limit}.`}
           </DialogDescription>
           {stage === 'confirm' && errorFeedback}
           </div>
@@ -182,9 +181,8 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
         </>}
 
         {stage === 'conflict' && conflict && <>
-          <div role="alert" className="rounded-[12px] border border-[#fec84b] bg-[#fffaeb] p-3 text-[#b54708] sm:p-4"><p className="text-[26px] font-bold">{hoursLabel(conflict.planned_hours)} / {hoursLabel(conflict.daily_limit_hours)}</p><p className="mt-1 text-[13px] font-semibold">{hoursLabel(conflict.overload_hours)} por encima de tu límite</p></div>
+          <div role="alert" className="rounded-[12px] border border-[#fec84b] bg-[#fffaeb] p-3 text-[#b54708] sm:p-4"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><p className="text-[26px] font-bold">{hoursLabel(conflict.planned_hours)} / {hoursLabel(conflict.daily_limit_hours)}</p><p className="mt-1 text-[13px] font-semibold">{hoursLabel(conflict.overload_hours)} por encima de tu límite</p></div><span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/60 text-[24px] font-bold text-[#b54708]">!</span></div></div>
           <ul aria-label="Tareas que forman la carga del día" className="mt-3 max-h-[min(34svh,280px)] space-y-2 overflow-y-auto overscroll-contain">{[...conflict.tasks, { id: task.id, name: `${initialInput?.name ?? task.name} (reprogramada)`, event_name: '', estimated_hours: conflict.added_hours }].map(item => <li key={item.id} className="flex min-h-16 items-center justify-between gap-4 rounded-[10px] border border-[#dde2ea] bg-[#f9fafb] px-4 py-3"><span className="min-w-0 break-words text-sm font-semibold">{item.name}{item.event_name && <span className="mt-1 block text-xs font-normal text-[#667085]">{item.event_name}</span>}</span><span className="shrink-0 text-[13px] text-[#667085]">{hoursLabel(item.estimated_hours)}</span></li>)}</ul>
-          <p className="mt-4 text-sm font-semibold">Elige una opción para resolverlo antes de confirmar.</p>
         </>}
 
         {stage === 'resolve' && conflict && <>
