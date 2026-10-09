@@ -653,6 +653,13 @@ test('los selectores de evento mantienen estable el scroll al abrir opciones', a
   await page.mouse.move(1450, 820)
   await page.mouse.wheel(0, 500)
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeOutsideWheel)
+
+  await page.mouse.click(1450, 820)
+  const closingMetrics = await measure(taskState)
+  expect(closingMetrics).toEqual(editBefore)
+  await expect(page.getByRole('option', { name: 'Completada', exact: true })).toBeHidden()
+  await expect(page.locator('body')).not.toHaveAttribute('data-scroll-locked')
+  expect(await measure(taskState)).toEqual(editBefore)
 })
 
 test('la regla de prioridad responde al cursor y permanece sobre las tareas', async ({

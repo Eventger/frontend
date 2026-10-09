@@ -103,8 +103,8 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Select conserva la scrollbar; ReactRemoveScroll ya impide desplazar el fondo. */
-html body[data-scroll-locked]:has([data-slot="select-content"][data-state="open"]) {
+/* Conserva gutter y scrollbar mientras Radix mantiene el bloqueo, incluido el cierre del Select. */
+html body[data-scroll-locked]:has([data-slot="select-content"]) {
   margin-right: 0 !important;
   overflow: visible !important;
 }
