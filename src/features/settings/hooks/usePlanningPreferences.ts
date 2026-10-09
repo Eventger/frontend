@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUser } from '@clerk/react'
 import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 import { getPlanningPreferences, savePlanningPreferences } from '../services/planningPreferences.service'
-import { DEFAULT_DAILY_LIMIT_HOURS, getDailyLimitHours } from '../utils/preferences'
+import { DEFAULT_DAILY_LIMIT_HOURS, getDailyLimitHours, validateDailyLimitForTasks } from '../utils/preferences'
+import { getToday } from '@/features/today/services/today.service'
 
 export function usePlanningPreferences() {
   const { user } = useUser()
@@ -44,6 +45,11 @@ export function usePlanningPreferences() {
 
   const save = async (hours: number) => {
     const current = ++version.current
+    if (hours < limit) {
+      const tasks = await getToday(authenticatedRequest)
+      if (current !== version.current) return
+      validateDailyLimitForTasks(hours, tasks)
+    }
     const preferences = await savePlanningPreferences(hours, authenticatedRequest)
     if (current === version.current) setLimit(preferences.dailyLimitHours)
   }

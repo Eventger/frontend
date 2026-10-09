@@ -5,6 +5,7 @@ import {
 import { dayPlan } from '../features/events/planning.fixtures'
 import { eventFixture, subtaskApiFixture } from '../features/events/subtask.fixtures'
 import { addressApiFixture, addressFixture } from '../features/events/address.fixtures'
+import { buildTodayApiTask } from '../features/today/today.fixtures'
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/event-types/', route => route.fulfill({ json: { success: true, data: [
@@ -32,6 +33,51 @@ test.beforeEach(async ({ page }) => {
 type NavigationFrame = {
   phase: 'today' | 'loading' | 'ready' | 'empty' | 'blank'
   mainWidth: number
+}
+
+for (const width of [320, 768, 1440]) {
+  test(`Configuración bloquea una reducción con sobrecarga en ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 844 })
+    let savedLimit = '6.00'
+    let writes = 0
+    await page.route('**/api/auth/preferences/', route => {
+      if (route.request().method() === 'PUT') {
+        writes++
+        savedLimit = route.request().postDataJSON().daily_limit_hours
+      }
+      return route.fulfill({ json: { success: true, data: { daily_limit_hours: savedLimit, daily_limit_configured: true } } })
+    })
+    await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: {
+      overdue: [], today: [],
+      completed: [buildTodayApiTask({ state: 'completed', estimated_hours: '10.00' })],
+      upcoming: [
+        buildTodayApiTask({ target_date: '2099-12-20T23:59:59-05:00', estimated_hours: '0.75' }),
+        buildTodayApiTask({ id: 32, event: 22, state: 'in_progress', target_date: '2099-12-21T04:59:59Z', estimated_hours: '1.25' }),
+      ],
+    } } }))
+    await page.goto('/tests/visual/index.html?view=settings')
+    const input = page.getByLabel('Límite diario de trabajo')
+    await expect(input).toBeEnabled()
+    await input.fill('1')
+    await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
+    await expect(page.getByRole('alert')).toContainText('2 h')
+    await expect(page.getByRole('alert')).toContainText('20 de diciembre de 2099')
+    await expect(input).toHaveAttribute('aria-invalid', 'true')
+    await expect(input).toBeFocused()
+    expect(writes).toBe(0)
+    expect(savedLimit).toBe('6.00')
+    await expect(page.getByText('Tus preferencias se guardaron correctamente.')).toHaveCount(0)
+    const dimensions = await page.evaluate(() => ({ content: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }))
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
+    await page.screenshot({ path: testInfo.outputPath(`limite-diario-${width}.png`) })
+
+    await input.fill('2')
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
+    await expect(page.getByText('Tus preferencias se guardaron correctamente.')).toBeVisible()
+    expect(writes).toBe(1)
+    expect(savedLimit).toBe('2.00')
+  })
 }
 type NavigationWindow = Window & typeof globalThis & {
   taskNavigation: { frames: NavigationFrame[]; transitions: number; animationFrame: number }
