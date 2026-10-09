@@ -505,6 +505,37 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
   })
 }
 
+test('volver con ratón no ilumina las acciones de reprogramación', async ({ page }) => {
+  await page.setViewportSize({ width: 1182, height: 842 })
+  await page.goto('/tests/visual/index.html?view=reschedule')
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+  const initialAction = dialog.getByRole('button', { name: 'Reprogramar', exact: true })
+  await initialAction.hover()
+  await page.mouse.down()
+  expect(await initialAction.evaluate(element => getComputedStyle(element).transform)).toBe('none')
+  await page.mouse.up()
+  await dialog.getByRole('button', { name: 'Resolver conflicto' }).click()
+  await dialog.getByRole('button', { name: 'Volver', exact: true }).click()
+  const backToPreview = dialog.getByRole('button', { name: 'Volver', exact: true })
+  await backToPreview.hover()
+  await page.mouse.down()
+  expect(await backToPreview.evaluate(element => getComputedStyle(element).transform)).toBe('none')
+  await page.mouse.up()
+  const primaryState = await dialog.getByRole('button', { name: 'Reprogramar', exact: true }).evaluate(element => {
+    const styles = getComputedStyle(element)
+    return { background: styles.backgroundColor, shadow: styles.boxShadow, transition: styles.transitionProperty }
+  })
+  const secondaryState = await dialog.getByRole('button', { name: 'Cancelar', exact: true }).evaluate(element => {
+    const styles = getComputedStyle(element)
+    return { hover: element.matches(':hover'), background: styles.backgroundColor, surface: getComputedStyle(element.closest('[role="dialog"]')!).backgroundColor, transition: styles.transitionProperty }
+  })
+  expect(primaryState).toEqual({ background: 'rgb(79, 70, 229)', shadow: 'none', transition: 'none' })
+  expect(secondaryState.hover).toBe(true)
+  expect(secondaryState.background).toBe(secondaryState.surface)
+  expect(secondaryState.transition).toBe('none')
+})
+
 for (const viewport of [
   { name: 'móvil pequeño', width: 320, height: 568 },
   { name: 'escritorio', width: 1440, height: 900 },
