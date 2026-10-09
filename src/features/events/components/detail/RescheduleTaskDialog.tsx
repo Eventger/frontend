@@ -16,7 +16,7 @@ import type { DayPlan } from '../../types/planning.types'
 import type { Subtask, UpdateSubtaskInput } from '../../types/subtask.types'
 
 type Props = {
-  task: Pick<Subtask, 'id' | 'name' | 'targetDate' | 'estimatedHours'> & Partial<Pick<Subtask, 'eventId'>>
+  task: Pick<Subtask, 'id' | 'eventId' | 'name' | 'targetDate' | 'estimatedHours'>
   eventDate?: string
   initialInput?: UpdateSubtaskInput
   initialConflict?: DayPlan
@@ -73,7 +73,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const ready = hasMatchingPlan && !loading && !error
 
   useEffect(() => {
-    if (eventDate || task.eventId === undefined) return
+    if (eventDate) return
     let active = true
     void getEventById(task.eventId, authenticatedRequest)
       .then(event => { if (active) setTaskEventDate(event.eventDate) })

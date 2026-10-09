@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToday } from '@/features/today/hooks/useToday'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import type { TodayData } from '@/features/today/types/today.types'
-import { todayDataFixture } from './today.fixtures'
+import { todayDataFixture, todayEvents } from './today.fixtures'
 
 vi.mock('@/features/today/hooks/useToday', () => ({
   useToday: vi.fn(),
@@ -320,5 +320,29 @@ describe('TodayPage', () => {
     expect(screen.getByTestId('location').textContent).toBe(
       `/evento/${task.eventId}`,
     )
+  })
+
+  it('muestra la fecha del evento al reprogramar desde Hoy antes de elegir una fecha nueva', async () => {
+    const event = todayEvents[0]
+    const request = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toContain('/events/21/')
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          id: event.id, user: 1, name: event.name, type: event.typeId,
+          date: '2026-10-24T23:59:59-05:00', location: event.location, contact: event.contact,
+          created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+        },
+      }), { headers: { 'Content-Type': 'application/json' } })
+    })
+    vi.stubGlobal('fetch', request)
+
+    renderPage()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' }))
+
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
+    expect(await screen.findByText('Fecha del evento: 24 de octubre de 2026')).toBeTruthy()
+    expect(request).toHaveBeenCalledOnce()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Cerrar' }))
   })
 })
