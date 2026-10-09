@@ -57,6 +57,26 @@ describe('RescheduleTaskDialog', () => {
     fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-11' } })
     await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
   })
+
+  it('impide reprogramar después del evento aunque se escriba la fecha manualmente', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T12:00:00Z'))
+    show()
+    const date = screen.getByLabelText('Nueva fecha') as HTMLInputElement
+    await screen.findByText(/Fecha del evento: 24 de octubre de 2026/)
+    expect(date.max).toBe('2026-10-24')
+
+    const requestCount = vi.mocked(fetch).mock.calls.length
+    fireEvent.change(date, { target: { value: '2026-10-25' } })
+    expect(screen.getByRole('alert').textContent).toBe('La fecha límite no puede ser posterior a la fecha del evento.')
+    expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(requestCount)
+    expect(writes).toHaveLength(0)
+
+    fireEvent.change(date, { target: { value: '2026-10-24' } })
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false)
+  })
   it('pide confirmación antes de guardar y conserva la duración al volver', async () => {
     const user = userEvent.setup(); show(true)
     await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))

@@ -456,6 +456,7 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
     const dialog = page.getByRole('dialog')
     await expect(dialog.getByLabel('Nueva fecha')).toHaveValue('')
     await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toBeVisible()
+    await expect(dialog.getByLabel('Nueva fecha')).toHaveAttribute('max', '2026-10-24')
     await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeDisabled()
     const initialBounds = await dialog.boundingBox()
     async function checkBounds() {

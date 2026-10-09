@@ -66,8 +66,12 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   const numberHours = editingDuration
     ? Number((Number(durationInput.hours) + Number(durationInput.minutes) / 60).toFixed(2))
     : Number(hours)
+  const associatedEventDate = plan?.event_date ?? eventDate ?? taskEventDate
+  const eventDateLimit = associatedEventDate ? getCalendarDate(associatedEventDate) : undefined
+  const dateAfterEvent = Boolean(eventDateLimit && /^\d{4}-\d{2}-\d{2}$/.test(date) && date > eventDateLimit)
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(date)
     && date >= today
+    && !dateAfterEvent
     && validDuration && Boolean(hours.trim()) && Number.isFinite(numberHours)
     && numberHours > 0 && numberHours < 100_000_000
     && Math.abs(numberHours * 100 - Math.round(numberHours * 100)) < 1e-7
@@ -154,13 +158,12 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   if (originalWholeHours > 24) hourOptions.push(originalWholeHours)
   const title = stage === 'preview' ? 'Reprogramar tarea' : stage === 'conflict' || stage === 'resolve' ? `Sobrecarga para el ${dateLabel(conflict?.date ?? date)}` : stage === 'confirm' ? '¿Estás seguro?' : 'Tarea reprogramada correctamente'
   const limit = plan ? hoursLabel(plan.daily_limit_hours) : ''
-  const associatedEventDate = plan?.event_date ?? eventDate ?? taskEventDate
   const loadPreview = <div aria-live="polite" aria-busy={loading} className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-[12px] border p-3 sm:p-4 ${hasMatchingPlan && plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}>
     {!date ? <div className="flex min-h-[122px] flex-col items-center justify-center text-center">
       <span className="flex size-10 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]" aria-hidden="true"><CalendarDays size={20} /></span>
       <p className="mt-2 text-sm font-semibold text-[#17212b]">Elige una fecha</p>
       <p className="mt-1 max-w-[280px] text-[13px] leading-5 text-[#667085]">Aquí verás la carga del día antes de reprogramar.</p>
-    </div> : !valid ? <p role="alert">{date < today ? 'No puedes reprogramar una tarea para una fecha anterior a hoy.' : 'Selecciona una fecha e ingresa una duración mayor que cero, con horas enteras y minutos entre 0 y 59.'}</p> : loading && !hasMatchingPlan ? <p role="status">Consultando la carga del día…</p> : hasMatchingPlan && plan ? <><p className="text-sm font-semibold">Vista previa de carga</p><dl className="mt-3 grid grid-cols-3 gap-3">
+    </div> : !valid ? <p role="alert">{date < today ? 'No puedes reprogramar una tarea para una fecha anterior a hoy.' : dateAfterEvent ? 'La fecha límite no puede ser posterior a la fecha del evento.' : 'Selecciona una fecha e ingresa una duración mayor que cero, con horas enteras y minutos entre 0 y 59.'}</p> : loading && !hasMatchingPlan ? <p role="status">Consultando la carga del día…</p> : hasMatchingPlan && plan ? <><p className="text-sm font-semibold">Vista previa de carga</p><dl className="mt-3 grid grid-cols-3 gap-3">
       {[{ label: 'Existentes', value: plan.existing_hours }, { label: 'Esta tarea', value: plan.added_hours }, { label: 'Total previsto', value: plan.planned_hours }].map(item => <div key={item.label} className="min-w-0"><dt className="text-xs text-[#667085]">{item.label}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-[#17212b]">{hoursLabel(item.value)}</dd></div>)}
     </dl><p className={`mt-3 border-t border-[#dde2ea] pt-3 text-[13px] ${plan.has_conflict ? 'text-[#b54708]' : 'text-[#027a48]'}`}>{plan.has_conflict ? `Tu límite diario es ${limit}. La sobrecarga sería de ${hoursLabel(plan.overload_hours)}.` : `La carga está dentro de tu límite diario de ${limit}.`}</p></> : null}
   </div>
@@ -203,7 +206,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
 
         {stage !== 'success' && stage !== 'confirm' && <div className="reschedule-dialog-scroll-region min-h-0 flex-1 overflow-y-auto overscroll-contain pt-4">
         {stage === 'preview' && <>
-          <div className="space-y-2"><label htmlFor="reschedule-date" className="text-[13px] font-semibold text-[#17212b]">Nueva fecha</label><Input id="reschedule-date" type="date" min={today} max={plan?.event_date ?? (eventDate ? getCalendarDate(eventDate) : undefined)} value={date} disabled={busy} onChange={event => { setDate(event.target.value); setError('') }} className="h-11 rounded-[9px]" /></div>
+          <div className="space-y-2"><label htmlFor="reschedule-date" className="text-[13px] font-semibold text-[#17212b]">Nueva fecha</label><Input id="reschedule-date" type="date" min={today} max={eventDateLimit} value={date} disabled={busy} onChange={event => { setDate(event.target.value); setError('') }} className="h-11 rounded-[9px]" /></div>
         </>}
 
         {stage === 'conflict' && conflict && <>
@@ -219,7 +222,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
               { value: 'reduce' as const, title: 'Reducir el tiempo estimado', description: 'Úsalo solo si la estimación cambió.' },
             ]).map(item => <label key={item.value} className={`flex min-h-16 cursor-pointer items-start gap-3 rounded-[12px] border p-3 focus-within:ring-2 focus-within:ring-[#4f46e5] ${item.value === 'recommended' ? 'sm:col-span-2' : ''} ${option === item.value ? 'border-[#4f46e5] bg-[#eef2ff]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}><input type="radio" name="resolution" value={item.value} checked={option === item.value} disabled={busy} onChange={() => choose(item.value)} className="mt-1 accent-[#4f46e5]" /><span className="min-w-0 flex-1"><span className="block text-[14px] font-semibold leading-5">{item.title}</span><span className="mt-1 block text-[13px] text-[#667085]">{item.description}</span></span>{item.value === 'recommended' && <span className="shrink-0 rounded-full bg-[#eff8ff] px-2 py-1 text-[11px] font-semibold text-[#175cd3]">Recomendada</span>}</label>)}
           </fieldset>
-          {option === 'manual' && <div className="mt-4 grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center"><label htmlFor="resolution-date" className="text-sm font-semibold">Otra fecha</label><Input id="resolution-date" type="date" min={today} max={plan?.event_date ?? conflict.event_date} value={date} disabled={busy} onChange={event => { setDate(event.target.value); setError('') }} className="h-11" /></div>}
+          {option === 'manual' && <div className="mt-4 grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center"><label htmlFor="resolution-date" className="text-sm font-semibold">Otra fecha</label><Input id="resolution-date" type="date" min={today} max={eventDateLimit ?? getCalendarDate(conflict.event_date)} value={date} disabled={busy} onChange={event => { setDate(event.target.value); setError('') }} className="h-11" /></div>}
           {option === 'reduce' && <fieldset className="mt-4 grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center"><legend className="sr-only">Tiempo estimado</legend>
             <p aria-hidden="true" className="text-sm font-semibold">Tiempo estimado</p>
             <div className="grid grid-cols-2 gap-3">

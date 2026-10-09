@@ -100,6 +100,7 @@ describe('EditEventForm', () => {
     expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
     expect(screen.getByText(/Actualmente: martes, 20 de octubre/)).toBeTruthy()
     expect(await screen.findByText(/Fecha del evento: 24 de octubre de 2026/)).toBeTruthy()
+    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).max).toBe('2026-10-24')
     await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(document.activeElement).toBe(screen.getByRole('button', { name: `Reprogramar ${subtaskFixture.name}` }))
   })
