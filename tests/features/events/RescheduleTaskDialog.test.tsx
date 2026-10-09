@@ -97,6 +97,21 @@ describe('RescheduleTaskDialog', () => {
     expect(writes).toHaveLength(1)
     expect(writes[0].estimated_hours).toBe('1.00')
   })
+  it('calcula y aplica automáticamente la reducción adecuada al seleccionar reducir horas para que el usuario no tenga que pensar', async () => {
+    const user = userEvent.setup(); show(true)
+    await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
+    await user.click(screen.getByRole('radio', { name: /Reducir el tiempo estimado/ }))
+    expect(screen.getByRole('combobox', { name: 'Horas' }).textContent).toBe('1')
+    expect(screen.getByRole('combobox', { name: 'Minutos' }).textContent).toBe('0')
+    await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
+    expect((screen.getByRole('button', { name: 'Aplicar opción' }) as HTMLButtonElement).disabled).toBe(false)
+    await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
+    await screen.findByRole('heading', { name: '¿Estás seguro?' })
+    await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
+    await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })
+    expect(writes).toHaveLength(1)
+    expect(writes[0].estimated_hours).toBe('1.00')
+  })
   it('confirma Aplicar opción sin esperar a que termine la recarga de tareas', async () => {
     let finishRefresh!: () => void
     saved.mockReturnValueOnce(new Promise<void>(resolve => { finishRefresh = resolve }))
