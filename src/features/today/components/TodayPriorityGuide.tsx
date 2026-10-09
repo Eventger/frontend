@@ -94,7 +94,7 @@ export function TodayPriorityGuide() {
           : 'relative'
       }
     >
-      <aside className="flex h-11 items-center rounded-[8px] border border-[#dde2ea] bg-[#eef2ff] px-3">
+      <aside className="flex h-11 items-center rounded-[8px] border border-border-subtle bg-[#eef2ff] px-3">
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#4f46e5]">
           <Info
             className="size-3.5 text-white"
@@ -143,11 +143,11 @@ export function TodayPriorityGuide() {
                 id={ruleId}
                 role="dialog"
                 aria-labelledby={ruleTitleId}
-                className="absolute right-0 top-[52px] z-10 w-[min(360px,calc(100vw-2rem))] overflow-visible rounded-[10px] border border-[#dde2ea] bg-white px-[13px] pb-[13px] pt-4 shadow-[0_6px_18px_rgba(23,33,43,0.08)]"
+                className="absolute right-0 top-[52px] z-10 w-[min(360px,calc(100vw-2rem))] overflow-visible rounded-lg border border-border-subtle bg-white px-[13px] pb-[13px] pt-4 shadow-[0_6px_18px_rgba(23,33,43,0.08)]"
               >
                 <div className="absolute left-[-1px] right-[-1px] top-[-1px] h-[3px] rounded-t-[10px] bg-[#4f46e5]" />
 
-                <div className="absolute -top-[7px] right-[22px] h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-[#dde2ea]" />
+                <div className="absolute -top-[7px] right-[22px] h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-border-subtle" />
 
                 <div className="absolute -top-[5px] right-[22px] h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-white" />
 

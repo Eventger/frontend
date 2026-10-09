@@ -115,7 +115,7 @@ export function TodaySummary({
       </section>
 
       <section className="md:hidden">
-        <div className="min-h-[100px] rounded-[14px] border border-[#dde2ea] bg-white p-4">
+        <div className="min-h-[100px] rounded-xl border border-border-subtle bg-white p-4">
           <p className="text-base font-semibold text-[#17212b]">
             {dailyLimitHours !==
             undefined

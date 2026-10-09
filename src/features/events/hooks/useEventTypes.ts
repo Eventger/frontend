@@ -37,6 +37,7 @@ export function useEventTypes() {
       }
     }, [])
 
+  // eslint-disable-next-line react/set-state-in-effect
   useEffect(() => {
     void loadEventTypes()
   }, [loadEventTypes])

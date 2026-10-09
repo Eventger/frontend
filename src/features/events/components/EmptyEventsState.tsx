@@ -12,7 +12,7 @@ export function EmptyEventsState({ filtered = false, onClearFilter }: EmptyEvent
 
   return (
     <section className="flex min-h-[460px] w-full items-center justify-center py-5 sm:min-h-[576px]">
-      <div className="flex min-h-[340px] w-full max-w-[780px] flex-col items-center rounded-[12px] border border-[#dde2ea] bg-white px-6 py-10 text-center sm:min-h-[400px] sm:pb-[76px] sm:pt-[54px]">
+      <div className="flex min-h-[340px] w-full max-w-[780px] flex-col items-center rounded-xl border border-border-subtle bg-white px-6 py-10 text-center sm:min-h-[400px] sm:pb-[76px] sm:pt-[54px]">
         <span
           className="text-[52px] leading-[63px] text-[#17212b]"
           aria-hidden="true"
@@ -32,7 +32,7 @@ export function EmptyEventsState({ filtered = false, onClearFilter }: EmptyEvent
 
         <Button
           type="button"
-          className="mt-[30px] h-11 min-w-[167px] rounded-[10px] bg-[#4f46e5] px-5 text-sm font-semibold text-white hover:bg-[#4338ca]"
+          className="mt-[30px] h-11 min-w-[167px] rounded-lg bg-[#4f46e5] px-5 text-sm font-semibold text-white hover:bg-[#4338ca]"
           onClick={() =>
             filtered ? onClearFilter?.() : navigate('/crear', {
               viewTransition: true,

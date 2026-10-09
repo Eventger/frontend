@@ -63,7 +63,7 @@ export function DeleteAccountDialog({ user, onClose }: { user: UserResource; onC
         {error && <InlineFeedback>{error}</InlineFeedback>}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           {!deleted && <Button type="button" className={settingsSecondaryButton} disabled={busy} onClick={onClose}>Conservar mi cuenta</Button>}
-          <Button type="submit" disabled={confirmation !== 'ELIMINAR' || !user.deleteSelfEnabled || busy} className="min-h-11 h-auto whitespace-normal rounded-[10px] bg-[#b42318] px-4 py-3 font-semibold text-white hover:bg-[#912018] focus-visible:ring-[#b42318]">{busy ? (deleted ? 'Cerrando sesión…' : 'Eliminando…') : (deleted ? 'Cerrar sesión' : 'Eliminar definitivamente')}</Button>
+          <Button type="submit" disabled={confirmation !== 'ELIMINAR' || !user.deleteSelfEnabled || busy} className="min-h-11 h-auto whitespace-normal rounded-lg bg-[#b42318] px-4 py-3 font-semibold text-white hover:bg-[#912018] focus-visible:ring-[#b42318]">{busy ? (deleted ? 'Cerrando sesión…' : 'Eliminando…') : (deleted ? 'Cerrar sesión' : 'Eliminar definitivamente')}</Button>
         </div>
       </form>
     </AccountDialog>

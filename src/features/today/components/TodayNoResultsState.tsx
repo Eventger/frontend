@@ -15,7 +15,7 @@ export function TodayNoResultsState({
       : 'No encontramos subtareas que coincidan con los filtros aplicados. Ajusta los filtros o límpialos para volver a ver todas las subtareas.'
 
   return (
-    <section className="flex min-h-[250px] flex-col items-center justify-center rounded-[12px] border border-[#dde2ea] bg-white px-6 text-center">
+    <section className="flex min-h-[250px] flex-col items-center justify-center rounded-xl border border-border-subtle bg-white px-6 text-center">
       <h2 className="text-[24px] font-semibold text-[#17212b]">
         No hay subtareas para estos filtros
       </h2>

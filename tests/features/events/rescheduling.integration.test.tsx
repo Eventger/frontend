@@ -29,6 +29,10 @@ describe('reprogramación con hooks, servicios y respuestas HTTP', () => {
       const path = new URL(input).pathname
       if (path === '/api/auth/preferences/') return json({ success: true, data: { daily_limit_hours: '6.00', daily_limit_configured: true } })
       if (path === '/hoy/') return ++reads === 1 ? todayResponse() : refresh
+      if (path === `/events/${task.event}/`) return json({ success: true, data: {
+        id: task.event, name: eventFixture.name, type: eventFixture.typeId,
+        date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+      } })
       const body = JSON.parse(String(options?.body))
       if (path === `/subtasks/${task.id}/reschedule-preview/`) return json({ success: true, data: dayPlan(body.target_date, Number(body.estimated_hours)) })
       if (path === `/subtasks/${task.id}/` && options?.method === 'PATCH') {
@@ -40,7 +44,7 @@ describe('reprogramación con hooks, servicios y respuestas HTTP', () => {
     }))
     render(<MemoryRouter><TodayPage /></MemoryRouter>)
     await user.click(await screen.findByRole('button', { name: `Reprogramar tarea: ${task.name}` }))
-    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-12' } })
+    fireEvent.change(await screen.findByLabelText('Nueva fecha'), { target: { value: '2026-10-12' } })
     await waitFor(() => expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false))
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
@@ -94,7 +98,7 @@ describe('reprogramación con hooks, servicios y respuestas HTTP', () => {
     await user.clear(screen.getByLabelText('Contacto *'))
     await user.type(screen.getByLabelText('Contacto *'), 'Contacto sin guardar')
     await user.click(screen.getByRole('button', { name: `Reprogramar ${savedTask.name}` }))
-    fireEvent.change(screen.getByLabelText('Nueva fecha'), { target: { value: '2026-10-13' } })
+    fireEvent.change(await screen.findByLabelText('Nueva fecha'), { target: { value: '2026-10-13' } })
     await waitFor(() => expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false))
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
     await screen.findByRole('heading', { name: 'Tarea reprogramada correctamente' })

@@ -324,8 +324,11 @@ describe('TodayPage', () => {
 
   it('muestra la fecha del evento al reprogramar desde Hoy antes de elegir una fecha nueva', async () => {
     const event = todayEvents[0]
+    let releaseEvent!: () => void
+    const eventReady = new Promise<void>(resolve => { releaseEvent = resolve })
     const request = vi.fn(async (input: RequestInfo | URL) => {
       expect(String(input)).toContain('/events/21/')
+      await eventReady
       return new Response(JSON.stringify({
         success: true,
         data: {
@@ -340,9 +343,23 @@ describe('TodayPage', () => {
     renderPage()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' }))
 
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' }).getAttribute('aria-busy')).toBe('true')
+    releaseEvent()
+    expect(await screen.findByRole('dialog')).toBeTruthy()
     expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
-    expect(await screen.findByText('Fecha del evento: 24 de octubre de 2026')).toBeTruthy()
+    expect(screen.getByText('Fecha del evento: 24 de octubre de 2026')).toBeTruthy()
     expect(request).toHaveBeenCalledOnce()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Cerrar' }))
+  })
+
+  it('permite reintentar si no se puede cargar la fecha del evento', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('Sin conexión')))
+    renderPage()
+    const action = screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' })
+    await userEvent.setup().click(action)
+    expect(await screen.findByText('No pudimos cargar la fecha del evento. Inténtalo de nuevo.')).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect((action as HTMLButtonElement).disabled).toBe(false)
   })
 })

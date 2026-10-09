@@ -73,6 +73,7 @@ export function AddSubtaskDialog({
   const [errors, setErrors] =
     useState<FormErrors>({})
 
+  // eslint-disable-next-line react/set-state-in-effect
   useEffect(() => {
   if (!open) {
     return
@@ -202,7 +203,7 @@ export function AddSubtaskDialog({
       onOpenChange={handleOpenChange}
     >
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto rounded-[18px] border-[#d9dee7] p-0 sm:max-w-[620px]"
+        className="max-h-[calc(100svh-2rem)] overflow-y-auto rounded-2xl border-border-subtle p-0 sm:max-w-[620px] xl:left-[calc(50%+120px)]"
         showCloseButton={false}
       >
         <form
@@ -412,7 +413,7 @@ export function AddSubtaskDialog({
               onClick={() =>
                 handleOpenChange(false)
               }
-              className="h-11 rounded-[10px] sm:w-[140px]"
+              className="h-11 rounded-lg sm:w-[140px]"
             >
               Cancelar
             </Button>
@@ -420,7 +421,7 @@ export function AddSubtaskDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-11 rounded-[10px] bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[170px]"
+              className="h-11 rounded-lg bg-[#4f46e5] text-white hover:bg-[#4338ca] sm:w-[170px]"
             >
               {isSubmitting
                 ? 'Guardando…'

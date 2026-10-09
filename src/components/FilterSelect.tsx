@@ -34,7 +34,7 @@ export function FilterSelect({
         id={id}
         title={selectedLabel}
         aria-describedby={describedBy}
-        className={`h-11! w-full min-w-0 rounded-[8px] border-[#dde2ea] bg-white px-[13px] text-[13px] text-[#17212b] hover:border-[#c7d2fe] focus-visible:border-[#4f46e5] focus-visible:ring-[#4f46e5]/20 [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:flex-1 ${className ?? ''}`}
+        className={`h-11! w-full min-w-0 rounded-[8px] border-border-subtle bg-white px-[13px] text-[13px] text-[#17212b] hover:border-[#c7d2fe] focus-visible:border-[#4f46e5] focus-visible:ring-[#4f46e5]/20 [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:flex-1 ${className ?? ''}`}
       >
         <SelectValue>
           <span className="block min-w-0 truncate text-left">
@@ -47,7 +47,7 @@ export function FilterSelect({
         align="start"
         sideOffset={8}
         collisionPadding={16}
-        className="max-h-[min(22rem,var(--radix-select-content-available-height))] w-[var(--radix-select-trigger-width)] min-w-0 translate-y-0! rounded-[8px] border border-[#dde2ea] bg-white text-[#17212b] shadow-md ring-0 motion-reduce:animate-none!"
+        className="max-h-[min(22rem,var(--radix-select-content-available-height))] w-[var(--radix-select-trigger-width)] min-w-0 translate-y-0! rounded-[8px] border border-border-subtle bg-white text-[#17212b] shadow-md ring-0 motion-reduce:animate-none!"
       >
         <SelectGroup>
           {options.map(option => (

@@ -16,9 +16,9 @@ type SettingsCardProps = {
 export function SettingsCard({ title, description, children, className, tone = 'neutral', icon, compact = false, headerIcon, action }: SettingsCardProps) {
   return (
     <section className={cn(
-      'min-w-0 rounded-[14px] border p-5 sm:p-6',
+      'min-w-0 rounded-xl border p-5 sm:p-6',
       {
-        neutral: 'border-[#dde2ea] bg-white',
+        neutral: 'border-border-subtle bg-white',
         brand: 'border-[#4f46e5] bg-[#eef2ff]',
         success: 'border-[#abefc6] bg-[#ecfdf3]',
         danger: 'border-[#fecdca] bg-[#fef3f2]',

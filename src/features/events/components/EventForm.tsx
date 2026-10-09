@@ -518,7 +518,7 @@ export function EventForm({
           DATOS DEL EVENTO
       ========================== */}
 
-      <section className="rounded-[16px] border border-[#d9dee7] bg-white p-5">
+      <section className="rounded-2xl border border-border-subtle bg-white p-5">
 
         <h2 className="text-[20px] font-semibold leading-6 text-[#17212b]">
           Datos del evento
@@ -561,7 +561,7 @@ export function EventForm({
                     ? 'create-event-name-error'
                     : undefined
                 }
-                className={`h-[42px] rounded-[8px] ${
+                className={`min-h-[44px] rounded-[8px] ${
                   errors.name
                     ? 'border-[#d92d20]'
                     : ''
@@ -608,7 +608,7 @@ export function EventForm({
 
                 <SelectTrigger
                   id="event-type"
-                  className={`h-[42px]! w-full rounded-[8px] ${
+                  className={`min-h-[44px]! w-full rounded-[8px] ${
                     errors.typeId
                       ? 'border-[#d92d20]'
                       : ''
@@ -719,7 +719,7 @@ export function EventForm({
                     event.target.value,
                   )
                 }
-                className={`h-[42px] rounded-[8px] ${
+                className={`min-h-[44px] rounded-[8px] ${
                   errors.eventDate
                     ? 'border-[#d92d20]'
                     : ''
@@ -766,7 +766,7 @@ export function EventForm({
                     address,
                   )
                 }
-                className={`h-[42px] rounded-[8px] ${
+                className={`min-h-[44px] rounded-[8px] ${
                   errors.location
                     ? 'border-[#d92d20]'
                     : ''
@@ -820,7 +820,7 @@ export function EventForm({
                   event.target.value,
                 )
               }
-              className={`h-[42px] rounded-[8px] ${
+              className={`min-h-[44px] rounded-[8px] ${
                 errors.contact
                   ? 'border-[#d92d20]'
                   : ''
@@ -839,13 +839,13 @@ export function EventForm({
       </section>
 
 
-      <section className="mt-2 rounded-[16px] border border-[#d9dee7] bg-white p-5">
+      <section className="mt-2 rounded-2xl border border-border-subtle bg-white p-5">
         {pendingTaskError && <InlineFeedback id="pending-task-error" className="mb-3">{pendingTaskError}</InlineFeedback>}
         <p className="text-[13px] text-[#667085]">
           Agrega las tareas principales antes de crear el evento.
         </p>
 
-        <div className="mt-5 rounded-[10px] border border-[#d9dee7] bg-[#f7f8fc] p-4">
+        <div className="mt-5 rounded-lg border border-border-subtle bg-[#f7f8fc] p-4">
           <h2 className="text-[13px] font-semibold text-[#17212b]">
             {editingSubtaskIndex !== null
               ? 'Editar tarea'
@@ -877,7 +877,7 @@ export function EventForm({
                     event.target.value,
                   )
                 }
-                className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+                className="min-h-[44px] rounded-[8px] border-border-subtle bg-white"
               />
 
               {subtaskErrors.name && (
@@ -918,7 +918,7 @@ export function EventForm({
                     event.target.value,
                   )
                 }
-                className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+                className="min-h-[44px] rounded-[8px] border-border-subtle bg-white"
               />
 
               {subtaskErrors.targetDate && (
@@ -959,7 +959,7 @@ export function EventForm({
                     event.target.value,
                   )
                 }
-                className="h-[42px] rounded-[8px] border-[#d9dee7] bg-white"
+                className="min-h-[44px] rounded-[8px] border-border-subtle bg-white"
               />
 
               {subtaskErrors.estimatedHours && (
@@ -989,7 +989,7 @@ export function EventForm({
                     event.target.value,
                   )
                 }
-                className="min-h-[74px] resize-none rounded-[8px] border-[#d9dee7] bg-white"
+                className="min-h-[74px] resize-none rounded-[8px] border-border-subtle bg-white"
               />
             </div>
 
@@ -999,7 +999,7 @@ export function EventForm({
                 variant="outline"
                 disabled={isSubmitting}
                 onClick={handleCancelSubtask}
-                className="h-11 rounded-[8px] border-[#d9dee7] px-8"
+                className="h-11 rounded-[8px] border-border-subtle px-8"
               >
                 {editingSubtaskIndex !== null
                   ? 'Cancelar'
@@ -1031,7 +1031,7 @@ export function EventForm({
                 (subtask, index) => (
                   <div
                     key={subtaskDrafts[index].id}
-                    className="grid min-h-12 grid-cols-[minmax(0,1fr)_44px_44px] items-center gap-x-3 gap-y-2 rounded-[8px] border border-[#d9dee7] bg-white px-3 py-2 md:grid-cols-[15px_minmax(0,1fr)_130px_90px_44px_44px]"
+                    className="grid min-h-12 grid-cols-[minmax(0,1fr)_44px_44px] items-center gap-x-3 gap-y-2 rounded-[8px] border border-border-subtle bg-white px-3 py-2 md:grid-cols-[15px_minmax(0,1fr)_130px_90px_44px_44px]"
                   >
                     <GripVertical
                       size={15}
@@ -1104,7 +1104,7 @@ export function EventForm({
           variant="outline"
           disabled={isSubmitting}
           onClick={onCancel}
-          className="h-11 rounded-[10px] border-[#d9dee7] sm:w-[124px]"
+          className="h-11 rounded-lg border-border-subtle sm:w-[124px]"
         >
           Cancelar
         </Button>
@@ -1112,7 +1112,7 @@ export function EventForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="h-11 rounded-[10px] bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca] sm:min-w-[178px]"
+          className="h-11 rounded-lg bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca] sm:min-w-[178px]"
         >
           {isSubmitting
             ? 'Guardando…'

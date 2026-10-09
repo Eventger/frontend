@@ -44,7 +44,7 @@ export function OperationFeedback({
 
       <div className="mt-8 w-full max-w-[var(--app-content-max-width)] md:mt-[146px]">
         <section
-          className="mx-auto flex min-h-[430px] w-full max-w-[760px] flex-col items-center rounded-[16px] border border-[#dde2ea] bg-white px-6 py-10 sm:px-10 sm:pb-12 sm:pt-12"
+          className="mx-auto flex min-h-[430px] w-full max-w-[760px] flex-col items-center rounded-2xl border border-border-subtle bg-white px-6 py-10 sm:px-10 sm:pb-12 sm:pt-12"
           aria-labelledby={titleId}
           aria-describedby={descriptionId}
           aria-busy={isBusy || undefined}
@@ -91,7 +91,7 @@ export function OperationFeedback({
               type="button"
               onClick={primaryAction.onClick}
               disabled={isBusy}
-              className="h-11 w-full rounded-[10px] bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca] sm:w-auto sm:min-w-[190px]"
+              className="h-11 w-full rounded-lg bg-[#4f46e5] px-5 text-white hover:bg-[#4338ca] sm:w-auto sm:min-w-[190px]"
             >
               {primaryAction.loading && (
                 <LoaderCircle
@@ -112,7 +112,7 @@ export function OperationFeedback({
                   secondaryAction.onClick
                 }
                 disabled={isBusy}
-                className="h-11 w-full rounded-[10px] sm:w-auto sm:min-w-[180px]"
+                className="h-11 w-full rounded-lg sm:w-auto sm:min-w-[180px]"
               >
                 {secondaryAction.label}
               </Button>

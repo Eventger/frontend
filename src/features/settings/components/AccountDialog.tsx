@@ -17,7 +17,7 @@ export function AccountDialog({ title, description, busy, onClose, children }: A
     <Dialog open modal={!busy} onOpenChange={(open) => { if (!open && !busy) onClose() }}>
       <DialogContent
         ref={content}
-        className="max-h-[calc(100svh-2rem)] overflow-y-auto rounded-[14px] bg-white p-6 text-[#17212b] sm:max-w-[480px]"
+        className="max-h-[calc(100svh-2rem)] overflow-y-auto rounded-xl bg-white p-6 text-[#17212b] sm:max-w-[480px]"
         showCloseButton={!busy}
         onOpenAutoFocus={(event) => { if (busy) event.preventDefault() }}
         onCloseAutoFocus={(event) => {

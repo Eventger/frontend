@@ -49,7 +49,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            'cn-toast !rounded-[10px] !border-[#dde2ea] !bg-white !text-[#17212b] !shadow-[0_10px_28px_rgba(23,33,43,0.10)]',
+            'cn-toast !rounded-lg !border-border-subtle !bg-white !text-[#17212b] !shadow-[0_10px_28px_rgba(23,33,43,0.10)]',
           title:
             '!text-[13px] !font-semibold',
           description:
@@ -57,7 +57,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           actionButton:
             '!h-9 !rounded-[8px] !bg-[#4f46e5] !px-3 !text-white',
           cancelButton:
-            '!h-9 !rounded-[8px] !border !border-[#dde2ea] !bg-white !px-3 !text-[#17212b]',
+            '!h-9 !rounded-[8px] !border !border-border-subtle !bg-white !px-3 !text-[#17212b]',
           success:
             '!border-[#abefc6]',
           error:

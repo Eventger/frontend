@@ -63,7 +63,7 @@ export function AuthBrandPanel() {
             className="auth-brand-artwork pointer-events-none relative h-[494px] min-w-0"
             aria-hidden="true"
           >
-            <div className="absolute left-5 top-0 w-[254px] rounded-[13px] border border-white/20 bg-white/[0.1] px-4 py-3">
+            <div className="absolute left-5 top-0 w-[254px] rounded-xl border border-white/20 bg-white/[0.1] px-4 py-3">
               <p className="flex items-center gap-2 text-[12px] font-medium text-white/80">
                 <Star className="size-3.5 fill-current" strokeWidth={1.5} />
                 Evento destacado
@@ -76,7 +76,7 @@ export function AuthBrandPanel() {
               </p>
             </div>
 
-            <div className="absolute left-0 top-[131px] w-[285px] rounded-[13px] border border-white/20 bg-white/[0.09] px-6 py-[23px]">
+            <div className="absolute left-0 top-[131px] w-[285px] rounded-xl border border-white/20 bg-white/[0.09] px-6 py-[23px]">
               <p className="text-center text-[17px] font-semibold">
                 Abril 2026
               </p>
@@ -104,12 +104,12 @@ export function AuthBrandPanel() {
               </div>
             </div>
 
-            <div className="absolute left-0 top-[423px] w-[130px] rounded-[13px] border border-white/20 bg-[#4a43aa] px-4 py-2.5">
+            <div className="absolute left-0 top-[423px] w-[130px] rounded-xl border border-white/20 bg-[#4a43aa] px-4 py-2.5">
               <p className="text-[13px] font-medium text-white/70">Tareas</p>
               <p className="mt-1 text-[19px] font-semibold tabular-nums">3 / 5</p>
             </div>
 
-            <div className="absolute right-0 top-[423px] w-[130px] rounded-[13px] border border-white/20 bg-[#4a43aa] px-4 py-2.5">
+            <div className="absolute bottom-[10%] right-0 w-[130px] rounded-xl border border-white/20 bg-[#4a43aa] px-4 py-2.5">
               <p className="text-[13px] font-medium text-white/70">Progreso</p>
               <p className="mt-1 text-[19px] font-semibold tabular-nums">80%</p>
             </div>
@@ -119,7 +119,7 @@ export function AuthBrandPanel() {
         <div className="auth-brand-benefits absolute bottom-[147px] left-[clamp(64px,5.8vw,84px)] flex flex-col gap-8">
           {benefits.map((benefit) => (
             <div key={benefit.title} className="auth-brand-benefit flex items-center gap-4">
-              <span className="auth-brand-benefit-icon flex size-11 shrink-0 items-center justify-center rounded-[11px] border border-white/20 bg-white/10">
+              <span className="auth-brand-benefit-icon flex size-11 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
                 <img
                   src={benefit.icon}
                   alt=""

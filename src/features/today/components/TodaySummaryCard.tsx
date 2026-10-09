@@ -54,7 +54,7 @@ export function TodaySummaryCard({
     toneStyles[tone]
 
   return (
-    <div className="relative min-h-[104px] overflow-hidden rounded-[10px] border border-[#dde2ea] bg-white px-[18px] py-4">
+    <div className="relative min-h-[104px] overflow-hidden rounded-lg border border-border-subtle bg-white px-[18px] py-4">
       <div
         className={[
           'absolute bottom-0 left-0 top-0 w-1',

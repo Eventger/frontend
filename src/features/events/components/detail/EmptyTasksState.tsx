@@ -12,7 +12,7 @@ export function EmptyTasksState({
   onEditEvent,
 }: EmptyTasksStateProps) {
   return (
-    <section className="relative flex min-h-[300px] w-full max-w-[1022px] flex-col items-center rounded-[12px] border border-[#d9dee7] bg-white px-5 py-10 text-center sm:pb-[54px] sm:pt-[90px]">
+    <section className="relative flex min-h-[300px] w-full max-w-[1022px] flex-col items-center rounded-xl border border-border-subtle bg-white px-5 py-10 text-center sm:pb-[54px] sm:pt-[90px]">
       <h2 className="text-[22px] font-bold leading-7 text-[#17212b] sm:text-[24px] sm:leading-[29px]">
         Aún no tienes tareas para este evento
       </h2>
@@ -24,7 +24,7 @@ export function EmptyTasksState({
       <Button
         type="button"
         aria-label="Gestionar tareas del evento"
-        className="mt-10 h-11 min-w-[180px] rounded-[10px] bg-[#4f46e5] px-5 font-semibold text-white hover:bg-[#4338ca] sm:mt-[38px]"
+        className="mt-10 h-11 min-w-[180px] rounded-lg bg-[#4f46e5] px-5 font-semibold text-white hover:bg-[#4338ca] sm:mt-[38px]"
         onClick={onEditEvent}
       >
         Editar evento

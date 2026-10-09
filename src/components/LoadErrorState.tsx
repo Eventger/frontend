@@ -30,7 +30,7 @@ export function LoadErrorState({
 
   const state = (
     <section
-      className="flex min-h-[280px] w-full flex-col items-center rounded-[12px] border border-[#dde2ea] bg-white px-6 pb-6 pt-[38px] text-center"
+      className="flex min-h-[280px] w-full flex-col items-center rounded-xl border border-border-subtle bg-white px-6 pb-6 pt-[38px] text-center"
       role="alert"
       aria-live="assertive"
       aria-atomic="true"
@@ -59,7 +59,7 @@ export function LoadErrorState({
       <Button
         type="button"
         onClick={onRetry}
-        className="mt-10 h-11 w-full max-w-[170px] rounded-[10px] bg-[#4f46e5] px-5 text-[13px] font-semibold text-white hover:bg-[#4338ca]"
+        className="mt-10 h-11 w-full max-w-[170px] rounded-lg bg-[#4f46e5] px-5 text-[13px] font-semibold text-white hover:bg-[#4338ca]"
       >
         {actionLabel}
       </Button>

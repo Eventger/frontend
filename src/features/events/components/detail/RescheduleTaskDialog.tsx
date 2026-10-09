@@ -26,8 +26,8 @@ type Props = {
   onSaved: (task: Subtask) => Promise<void> | void
 }
 
-const primary = 'h-11 rounded-[10px] bg-[#4f46e5] px-5 text-white transition-none hover:bg-[#4f46e5] active:not-aria-[haspopup]:translate-y-0 sm:min-w-[160px]'
-const secondary = 'h-11 rounded-[10px] border-[#dde2ea] px-5 transition-none hover:bg-background active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-input/30'
+const primary = 'h-11 rounded-lg bg-[#4f46e5] px-5 text-white transition-none hover:bg-[#4f46e5] active:not-aria-[haspopup]:translate-y-0 sm:w-[216px]'
+const secondary = 'h-11 rounded-lg border-border-subtle px-5 transition-none hover:bg-background active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-input/30 sm:w-[216px]'
 function dateLabel(date: string) {
   return formatCalendarDate(date, { weekday: 'long', day: 'numeric', month: 'long' })
 }
@@ -77,6 +77,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
     && Math.abs(numberHours * 100 - Math.round(numberHours * 100)) < 1e-7
   const hasMatchingPlan = valid && plan?.date === date && Number(plan.added_hours) === numberHours
   const ready = hasMatchingPlan && !loading && !error
+  const shouldPreview = stage !== 'success' && stage !== 'confirm'
 
   useEffect(() => {
     if (eventDate) return
@@ -88,7 +89,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   }, [authenticatedRequest, eventDate, task.eventId])
 
   useEffect(() => {
-    if (stage === 'success' || stage === 'confirm') return
+    if (!shouldPreview) return
     const requests = requestVersion
     const version = ++requestVersion.current
     const controller = new AbortController()
@@ -107,7 +108,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
       }
     })
     return () => { controller.abort(); requests.current++ }
-  }, [authenticatedRequest, date, numberHours, task.id, initialInput?.state, valid, reload, stage])
+  }, [authenticatedRequest, date, numberHours, task.id, initialInput?.state, valid, reload, shouldPreview])
 
   function showConflict(result: DayPlan) {
     setConflict(result)
@@ -158,21 +159,21 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
   if (originalWholeHours > 24) hourOptions.push(originalWholeHours)
   const title = stage === 'preview' ? 'Reprogramar tarea' : stage === 'conflict' || stage === 'resolve' ? `Sobrecarga para el ${dateLabel(conflict?.date ?? date)}` : stage === 'confirm' ? '¿Estás seguro?' : 'Tarea reprogramada correctamente'
   const limit = plan ? hoursLabel(plan.daily_limit_hours) : ''
-  const loadPreview = <div aria-live="polite" aria-busy={loading} className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-[12px] border p-3 sm:p-4 ${hasMatchingPlan && plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}>
+  const loadPreview = <div aria-live="polite" aria-busy={loading} className={`${stage === 'preview' ? 'mt-8' : 'mt-4'} min-h-[156px] rounded-xl border p-3 sm:p-4 ${hasMatchingPlan && plan?.has_conflict ? 'border-[#fec84b] bg-[#fffaeb]' : 'border-border-subtle bg-[#f9fafb]'}`}>
     {!date ? <div className="flex min-h-[122px] flex-col items-center justify-center text-center">
       <span className="flex size-10 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]" aria-hidden="true"><CalendarDays size={20} /></span>
       <p className="mt-2 text-sm font-semibold text-[#17212b]">Elige una fecha</p>
       <p className="mt-1 max-w-[280px] text-[13px] leading-5 text-[#667085]">Aquí verás la carga del día antes de reprogramar.</p>
     </div> : !valid ? <p role="alert">{date < today ? 'No puedes reprogramar una tarea para una fecha anterior a hoy.' : dateAfterEvent ? 'La fecha límite no puede ser posterior a la fecha del evento.' : 'Selecciona una fecha e ingresa una duración mayor que cero, con horas enteras y minutos entre 0 y 59.'}</p> : loading && !hasMatchingPlan ? <p role="status">Consultando la carga del día…</p> : hasMatchingPlan && plan ? <><p className="text-sm font-semibold">Vista previa de carga</p><dl className="mt-3 grid grid-cols-3 gap-3">
       {[{ label: 'Existentes', value: plan.existing_hours }, { label: 'Esta tarea', value: plan.added_hours }, { label: 'Total previsto', value: plan.planned_hours }].map(item => <div key={item.label} className="min-w-0"><dt className="text-xs text-[#667085]">{item.label}</dt><dd className="mt-1 text-lg font-semibold tabular-nums text-[#17212b]">{hoursLabel(item.value)}</dd></div>)}
-    </dl><p className={`mt-3 border-t border-[#dde2ea] pt-3 text-[13px] ${plan.has_conflict ? 'text-[#b54708]' : 'text-[#027a48]'}`}>{plan.has_conflict ? `Tu límite diario es ${limit}. La sobrecarga sería de ${hoursLabel(plan.overload_hours)}.` : `La carga está dentro de tu límite diario de ${limit}.`}</p></> : null}
+    </dl><p className={`mt-3 border-t border-border-subtle pt-3 text-[13px] ${plan.has_conflict ? 'text-[#b54708]' : 'text-[#027a48]'}`}>{plan.has_conflict ? `Tu límite diario es ${limit}. La sobrecarga sería de ${hoursLabel(plan.overload_hours)}.` : `La carga está dentro de tu límite diario de ${limit}.`}</p></> : null}
   </div>
   const errorFeedback = error && <InlineFeedback>{error}{!busy && <Button type="button" variant="link" onClick={() => { setError(''); if (stage === 'confirm') setStage('resolve'); setReload(value => value + 1) }}>Volver a consultar</Button>}</InlineFeedback>
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose() }}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[min(640px,90svh)] flex-col gap-0 overflow-hidden rounded-[18px] border-[#dde2ea] p-5 sm:max-w-[640px] sm:p-7"
+        className="flex h-[min(640px,calc(100svh-2rem))] flex-col gap-0 overflow-hidden rounded-2xl border-border-subtle p-5 sm:max-w-[640px] sm:p-7 xl:left-[calc(50%+120px)]"
         onCloseAutoFocus={event => {
           event.preventDefault()
           const fallback = getFocusFallback?.()
@@ -191,13 +192,13 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
             {stage === 'confirm' && <FeedbackIcon variant="warning" size="small" />}
             <DialogTitle className={`min-w-0 text-[22px] font-bold leading-7 text-[#17212b] sm:text-[24px] sm:leading-8 ${stage === 'success' ? 'mt-7' : ''}`}>{title}</DialogTitle>
           </div>
-          <div className={stage === 'preview' ? 'mt-4 rounded-[12px] border border-[#dde2ea] bg-[#f9fafb] p-4' : ''}>
+          <div className={stage === 'preview' ? 'mt-4 rounded-xl border border-border-subtle bg-[#f9fafb] p-4' : ''}>
           {stage === 'preview' && <div className="flex items-start justify-between gap-3">
             <p className="min-w-0 break-words text-sm font-semibold leading-5 text-[#17212b]">{task.name}</p>
             <span className="shrink-0 rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold tabular-nums text-[#3730a3]">{hoursLabel(task.estimatedHours)}</span>
           </div>}
           <DialogDescription className={`${stage === 'preview' ? 'mt-2' : 'mt-4'} text-[14px] leading-5 text-[#667085] ${stage === 'success' || stage === 'confirm' ? 'mx-auto max-w-[500px]' : ''}`}>
-            {stage === 'preview' ? <><span className="block">Actualmente: {dateLabel(task.targetDate)}</span>{associatedEventDate && <span className="mt-1 block">Fecha del evento: {formatCalendarDate(associatedEventDate, { day: 'numeric', month: 'long', year: 'numeric' })}</span>}</> : stage === 'conflict' || stage === 'resolve' ? 'Revisa la sobrecarga y elige cómo ajustar la fecha.' : stage === 'confirm' ? <><span className="block">¿Seguro que quieres reprogramar la subtarea?</span><span className="mt-2 block">Quedarías con {hoursLabel(plan?.planned_hours ?? 0)} para ese día (tu límite es {limit}).</span><span className="mt-3 block text-xs">{dateLabel(date)} · {hoursLabel(numberHours)}</span></> : `${initialInput?.name ?? task.name} quedó programada para el ${dateLabel(date)}. La carga de ese día es ${hoursLabel(plan?.planned_hours ?? 0)} de ${limit}.`}
+            {stage === 'preview' ? <><span className="block">Actualmente: {dateLabel(task.targetDate)}</span><span className="mt-1 block min-h-10 sm:min-h-5">{associatedEventDate && `Fecha del evento: ${formatCalendarDate(associatedEventDate, { day: 'numeric', month: 'long', year: 'numeric' })}`}</span></> : stage === 'conflict' || stage === 'resolve' ? 'Revisa la sobrecarga y elige cómo ajustar la fecha.' : stage === 'confirm' ? <><span className="block">¿Seguro que quieres reprogramar la subtarea?</span><span className="mt-2 block">Quedarías con {hoursLabel(plan?.planned_hours ?? 0)} para ese día (tu límite es {limit}).</span><span className="mt-3 block text-xs">{dateLabel(date)} · {hoursLabel(numberHours)}</span></> : `${initialInput?.name ?? task.name} quedó programada para el ${dateLabel(date)}. La carga de ese día es ${hoursLabel(plan?.planned_hours ?? 0)} de ${limit}.`}
           </DialogDescription>
           {stage === 'confirm' && errorFeedback}
           </div>
@@ -210,8 +211,8 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
         </>}
 
         {stage === 'conflict' && conflict && <>
-          <div role="alert" className="rounded-[12px] border border-[#fec84b] bg-[#fffaeb] p-3 text-[#b54708] sm:p-4"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><p className="text-[26px] font-bold">{hoursLabel(conflict.planned_hours)} / {hoursLabel(conflict.daily_limit_hours)}</p><p className="mt-1 text-[13px] font-semibold">{hoursLabel(conflict.overload_hours)} por encima de tu límite</p></div><span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/60 text-[24px] font-bold text-[#b54708]">!</span></div></div>
-          <ul aria-label="Tareas que forman la carga del día" className="mt-3 max-h-[min(34svh,280px)] space-y-2 overflow-y-auto overscroll-contain">{[...conflict.tasks, { id: task.id, name: `${initialInput?.name ?? task.name} (reprogramada)`, event_name: '', estimated_hours: conflict.added_hours }].map(item => <li key={item.id} className="flex min-h-16 items-center justify-between gap-4 rounded-[10px] border border-[#dde2ea] bg-[#f9fafb] px-4 py-3"><span className="min-w-0 break-words text-sm font-semibold">{item.name}{item.event_name && <span className="mt-1 block text-xs font-normal text-[#667085]">{item.event_name}</span>}</span><span className="shrink-0 text-[13px] text-[#667085]">{hoursLabel(item.estimated_hours)}</span></li>)}</ul>
+          <div role="alert" className="rounded-xl border border-[#fec84b] bg-[#fffaeb] p-3 text-[#b54708] sm:p-4"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><p className="text-[26px] font-bold">{hoursLabel(conflict.planned_hours)} / {hoursLabel(conflict.daily_limit_hours)}</p><p className="mt-1 text-[13px] font-semibold">{hoursLabel(conflict.overload_hours)} por encima de tu límite</p></div><span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/60 text-[24px] font-bold text-[#b54708]">!</span></div></div>
+          <ul aria-label="Tareas que forman la carga del día" className="mt-3 max-h-[min(34svh,280px)] space-y-2 overflow-y-auto overscroll-contain">{[...conflict.tasks, { id: task.id, name: `${initialInput?.name ?? task.name} (reprogramada)`, event_name: '', estimated_hours: conflict.added_hours }].map(item => <li key={item.id} className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-border-subtle bg-[#f9fafb] px-4 py-3"><span className="min-w-0 break-words text-sm font-semibold">{item.name}{item.event_name && <span className="mt-1 block text-xs font-normal text-[#667085]">{item.event_name}</span>}</span><span className="shrink-0 text-[13px] text-[#667085]">{hoursLabel(item.estimated_hours)}</span></li>)}</ul>
         </>}
 
         {stage === 'resolve' && conflict && <>
@@ -220,7 +221,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
               ...(conflict.suggestion ? [{ value: 'recommended' as const, title: `Mover ${task.name} al ${dateLabel(conflict.suggestion.date)}`, description: `Carga resultante: ${hoursLabel(conflict.suggestion.planned_hours)} / ${hoursLabel(conflict.daily_limit_hours)}` }] : []),
               { value: 'manual' as const, title: 'Elegir manualmente otro día', description: 'Consulta la carga antes de confirmar.' },
               { value: 'reduce' as const, title: 'Reducir el tiempo estimado', description: 'Úsalo solo si la estimación cambió.' },
-            ]).map(item => <label key={item.value} className={`flex min-h-16 cursor-pointer items-start gap-3 rounded-[12px] border p-3 focus-within:ring-2 focus-within:ring-[#4f46e5] ${item.value === 'recommended' ? 'sm:col-span-2' : ''} ${option === item.value ? 'border-[#4f46e5] bg-[#eef2ff]' : 'border-[#dde2ea] bg-[#f9fafb]'}`}><input type="radio" name="resolution" value={item.value} checked={option === item.value} disabled={busy} onChange={() => choose(item.value)} className="mt-1 accent-[#4f46e5]" /><span className="min-w-0 flex-1"><span className="block text-[14px] font-semibold leading-5">{item.title}</span><span className="mt-1 block text-[13px] text-[#667085]">{item.description}</span></span>{item.value === 'recommended' && <span className="shrink-0 rounded-full bg-[#eff8ff] px-2 py-1 text-[11px] font-semibold text-[#175cd3]">Recomendada</span>}</label>)}
+            ]).map(item => <label key={item.value} className={`flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border p-3 focus-within:ring-2 focus-within:ring-[#4f46e5] ${item.value === 'recommended' ? 'sm:col-span-2' : ''} ${option === item.value ? 'border-[#4f46e5] bg-[#eef2ff]' : 'border-border-subtle bg-[#f9fafb]'}`}><input type="radio" name="resolution" value={item.value} checked={option === item.value} disabled={busy} onChange={() => choose(item.value)} className="mt-1 accent-[#4f46e5]" /><span className="min-w-0 flex-1"><span className="block text-[14px] font-semibold leading-5">{item.title}</span><span className="mt-1 block text-[13px] text-[#667085]">{item.description}</span></span>{item.value === 'recommended' && <span className="shrink-0 rounded-full bg-[#eff8ff] px-2 py-1 text-[11px] font-semibold text-[#175cd3]">Recomendada</span>}</label>)}
           </fieldset>
           {option === 'manual' && <div className="mt-4 grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center"><label htmlFor="resolution-date" className="text-sm font-semibold">Otra fecha</label><Input id="resolution-date" type="date" min={today} max={eventDateLimit ?? getCalendarDate(conflict.event_date)} value={date} disabled={busy} onChange={event => { setDate(event.target.value); setError('') }} className="h-11" /></div>}
           {option === 'reduce' && <fieldset className="mt-4 grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center"><legend className="sr-only">Tiempo estimado</legend>

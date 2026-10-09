@@ -42,7 +42,7 @@ export function DestructiveConfirmationDialog({
         aria-busy={
           isDeleting || undefined
         }
-        className="flex max-h-[calc(100svh-2rem)] min-h-[430px] flex-col items-center gap-0 overflow-y-auto rounded-[16px] border-[#dde2ea] bg-white px-6 py-10 shadow-none sm:max-w-[760px] sm:px-10 sm:pb-12 sm:pt-12 xl:left-[calc(50%+120px)]"
+        className="flex max-h-[calc(100svh-2rem)] min-h-[430px] flex-col items-center gap-0 overflow-y-auto rounded-2xl border-border-subtle bg-white px-6 py-10 shadow-none sm:max-w-[760px] sm:px-10 sm:pb-12 sm:pt-12 xl:left-[calc(50%+120px)]"
         overlayClassName="bg-[#17212b]/36 backdrop-blur-none xl:left-[var(--app-sidebar-width)]"
         showCloseButton={false}
       >
@@ -64,7 +64,7 @@ export function DestructiveConfirmationDialog({
             variant="outline"
             disabled={isDeleting}
             onClick={() => onOpenChange(false)}
-            className="h-11 w-full rounded-[10px] border-[#d9dee7] bg-white text-[14px] font-semibold text-[#17212b] hover:bg-[#f8fafc] focus-visible:ring-[#667085]/25 sm:w-[180px]"
+            className="h-11 w-full rounded-lg border-border-subtle bg-white text-[14px] font-semibold text-[#17212b] hover:bg-[#f8fafc] focus-visible:ring-[#667085]/25 sm:w-[180px]"
           >
             Cancelar
           </Button>
@@ -73,7 +73,7 @@ export function DestructiveConfirmationDialog({
             type="button"
             disabled={isDeleting}
             onClick={onConfirm}
-            className="h-11 w-full rounded-[10px] bg-[#c1241b] text-[14px] font-semibold text-white hover:bg-[#a81f18] focus-visible:ring-[#c1241b]/30 sm:w-[190px]"
+            className="h-11 w-full rounded-lg bg-[#c1241b] text-[14px] font-semibold text-white hover:bg-[#a81f18] focus-visible:ring-[#c1241b]/30 sm:w-[190px]"
           >
             {isDeleting
               ? 'Eliminando…'

@@ -14,6 +14,7 @@ type TodayTaskCardProps = {
     task: TodayTaskItem,
   ) => void
   onRescheduleTask?: (task: TodayTaskItem) => void
+  loadingRescheduleId?: number | null
 }
 
 const groupStyles: Record<
@@ -90,12 +91,13 @@ export function TodayTaskCard({
   group,
   onOpenTask,
   onRescheduleTask,
+  loadingRescheduleId,
 }: TodayTaskCardProps) {
   const styles =
     groupStyles[group]
 
   return (
-    <article className="relative isolate flex min-h-[112px] w-full items-start overflow-hidden rounded-[14px] border border-[#d9dee7] bg-white sm:min-h-[60px] sm:items-center sm:rounded-[12px]">
+    <article className="relative isolate flex min-h-[112px] w-full items-start overflow-hidden rounded-xl border border-border-subtle bg-white sm:min-h-[60px] sm:items-center sm:rounded-xl">
       <div
         className={[
           'absolute bottom-0 left-0 top-0 hidden w-1 sm:block',
@@ -104,7 +106,7 @@ export function TodayTaskCard({
       />
 
       <div className="min-w-0 flex-1 pb-12 pl-4 pr-4 pt-[15px] sm:py-[9px] sm:pl-[18px]">
-        <p className="truncate text-[15px] font-semibold leading-[19px] text-[#17212b] sm:text-[16px]">
+        <p className="line-clamp-2 text-wrap text-[15px] font-semibold leading-[19px] text-[#17212b] sm:text-[16px]">
           {task.name}
         </p>
 
@@ -132,7 +134,7 @@ export function TodayTaskCard({
         onClick={() =>
           onOpenTask(task)
         }
-        className="absolute inset-0 z-10 rounded-[14px] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#4f46e5] sm:hidden"
+        className="absolute inset-0 z-10 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#4f46e5] sm:hidden"
       />
 
       <div className="pointer-events-none absolute bottom-[13px] right-4 z-20 flex items-center sm:pointer-events-auto sm:static sm:shrink-0 sm:gap-[22px] sm:pr-[18px]">
@@ -146,7 +148,7 @@ export function TodayTaskCard({
           {styles.badgeLabel}
         </span>
 
-        {onRescheduleTask && <button type="button" aria-label={`Reprogramar tarea: ${task.name}`} onClick={() => onRescheduleTask(task)} className="pointer-events-auto ml-3 flex h-11 items-center justify-center rounded-[8px] border border-[#dde2ea] bg-white px-3 text-[12px] font-semibold text-[#3730a3] hover:bg-[#f9fafb] focus-visible:outline-2 focus-visible:outline-[#4f46e5] sm:ml-0">Reprogramar</button>}
+        {onRescheduleTask && <button type="button" aria-label={`Reprogramar tarea: ${task.name}`} aria-busy={loadingRescheduleId === task.id} disabled={loadingRescheduleId !== null && loadingRescheduleId !== undefined} onClick={() => onRescheduleTask(task)} className="pointer-events-auto ml-3 flex h-11 items-center justify-center rounded-[8px] border border-border-subtle bg-white px-3 text-[12px] font-semibold text-[#3730a3] hover:bg-[#f9fafb] focus-visible:outline-2 focus-visible:outline-[#4f46e5] disabled:cursor-wait disabled:opacity-70 sm:ml-0">Reprogramar</button>}
 
         <button
           type="button"
@@ -154,7 +156,7 @@ export function TodayTaskCard({
           onClick={() =>
             onOpenTask(task)
           }
-          className="hidden h-11 w-[120px] items-center justify-center rounded-[8px] border border-[#dde2ea] bg-white text-[12px] font-semibold text-[#3730a3] transition-colors hover:bg-[#f9fafb] sm:flex"
+          className="hidden h-11 w-[120px] items-center justify-center rounded-[8px] border border-border-subtle bg-white text-[12px] font-semibold text-[#3730a3] transition-colors hover:bg-[#f9fafb] sm:flex"
         >
           Ver tarea
         </button>

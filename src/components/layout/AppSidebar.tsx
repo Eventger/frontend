@@ -138,7 +138,7 @@ function SidebarContent({
                   : undefined
               }
               className={cn(
-                'flex h-11 items-center rounded-[10px] px-4',
+                'flex h-11 items-center rounded-lg px-4',
                 'text-sm font-medium text-[#17212b]',
                 'transition-colors hover:bg-[#f7f8fc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]',
                 isCurrent &&
@@ -161,7 +161,7 @@ function SidebarContent({
               ? 'page'
               : undefined
           }
-          className="h-11 w-full justify-start rounded-[10px] bg-[#4f46e5] px-4 text-sm font-semibold text-white hover:cursor-pointer hover:bg-[#4338ca]"
+          className="h-11 w-full justify-start rounded-lg bg-[#4f46e5] px-4 text-sm font-semibold text-white hover:cursor-pointer hover:bg-[#4338ca]"
         >
           + Crear evento
         </Button>
@@ -178,7 +178,7 @@ function SidebarContent({
           aria-label="Abrir configuración de cuenta"
           aria-current={location.pathname.startsWith('/configuracion') ? 'page' : undefined}
           className={cn(
-            'group flex min-h-[68px] w-full items-center rounded-xl border border-[#dde2ea] bg-[#f9fafb] px-3 text-left transition-colors hover:border-[#c7d2fe] hover:bg-[#eef2ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
+            'group flex min-h-[68px] w-full items-center rounded-xl border border-border-subtle bg-[#f9fafb] px-3 text-left transition-colors hover:border-[#c7d2fe] hover:bg-[#eef2ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
             location.pathname.startsWith('/configuracion') && 'border-[#4f46e5] bg-[#eef2ff]',
           )}
         >
@@ -216,7 +216,7 @@ function SidebarContent({
           type="button"
           onClick={handleSignOut}
           disabled={isSigningOut}
-          className="mt-3 flex h-11 w-full items-center gap-3 rounded-[10px] px-3 text-sm font-medium text-[#667085] transition-colors hover:bg-[#fef2f2] hover:text-[#b42318] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-wait disabled:opacity-60"
+          className="mt-3 flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-[#667085] transition-colors hover:bg-[#fef2f2] hover:text-[#b42318] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-wait disabled:opacity-60"
         >
           <LogOut size={18} aria-hidden="true" />
 
@@ -246,7 +246,7 @@ export function AppSidebar() {
   return (
     <>
       {/* Mobile */}
-      <header className="sticky top-0 z-30 flex h-16 items-center border-b border-[#dde2ea] bg-white/95 px-4 backdrop-blur xl:hidden">
+      <header className="sticky top-0 z-30 flex h-16 items-center border-b border-border-subtle bg-white/95 px-4 backdrop-blur xl:hidden">
         <Sheet
           open={open}
           onOpenChange={setOpen}
@@ -284,7 +284,7 @@ export function AppSidebar() {
       </header>
 
       {/* Desktop */}
-      <aside className="hidden h-svh w-[var(--app-sidebar-width)] shrink-0 border-r border-[#dde2ea] bg-white xl:sticky xl:top-0 xl:block">
+      <aside className="hidden h-svh w-[var(--app-sidebar-width)] shrink-0 border-r border-border-subtle bg-white xl:sticky xl:top-0 xl:block">
         <SidebarContent />
       </aside>
     </>

@@ -1,18 +1,21 @@
 import {
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
 import { useNavigate } from 'react-router'
 import { usePlanningPreferences } from '@/features/settings/hooks/usePlanningPreferences'
 import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
+import { getEventById } from '@/features/events/services/event.service'
+import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageContent } from '@/components/layout/PageContent'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageHeaderCreateButton } from '@/components/layout/PageHeaderCreateButton'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
-import { FeedbackIcon } from '@/components/feedback/FeedbackIcon'
 import { Button } from '@/components/ui/button'
 import { CALENDAR_TIME_ZONE } from '@/lib/calendar'
 
@@ -66,9 +69,18 @@ function getPlannedHours(
 
 export function TodayPage() {
   const navigate = useNavigate()
+  const { authenticatedRequest } = useAuthenticatedApi()
   const preferences = usePlanningPreferences()
   const dailyLimitHours = preferences.isLoading || preferences.error ? undefined : preferences.dailyLimitHours
-  const [reschedulingTask, setReschedulingTask] = useState<TodayTaskItem | null>(null)
+  const [reschedulingTask, setReschedulingTask] = useState<{ task: TodayTaskItem; eventDate: string } | null>(null)
+  const [loadingRescheduleId, setLoadingRescheduleId] = useState<number | null>(null)
+  const [rescheduleError, setRescheduleError] = useState('')
+  const rescheduleRequestVersion = useRef(0)
+
+  useEffect(() => {
+    const requests = rescheduleRequestVersion
+    return () => { requests.current++ }
+  }, [])
 
   const {
     data,
@@ -109,6 +121,24 @@ export function TodayPage() {
       `/evento/${task.eventId}`,
       { viewTransition: true },
     )
+  }
+
+  const handleRescheduleTask = async (task: TodayTaskItem) => {
+    const version = ++rescheduleRequestVersion.current
+    setLoadingRescheduleId(task.id)
+    setRescheduleError('')
+    try {
+      const event = await getEventById(task.eventId, authenticatedRequest)
+      if (version === rescheduleRequestVersion.current) {
+        setReschedulingTask({ task, eventDate: event.eventDate })
+      }
+    } catch {
+      if (version === rescheduleRequestVersion.current) {
+        setRescheduleError('No pudimos cargar la fecha del evento. Inténtalo de nuevo.')
+      }
+    } finally {
+      if (version === rescheduleRequestVersion.current) setLoadingRescheduleId(null)
+    }
   }
 
   const handleClearFilters = () => {
@@ -293,7 +323,7 @@ export function TodayPage() {
 
         {!isLoading &&
           error && (
-            <div className="mt-[116px]">
+            <div className="mt-10 md:mt-[116px]">
               <TodayErrorState
                 onRetry={() => {
                   void retry()
@@ -352,28 +382,11 @@ export function TodayPage() {
                 </InlineFeedback>
               )}
               {preferences.error && (
-                <section
-                  role="status"
-                  aria-live="polite"
-                  aria-labelledby="today-limit-warning-title"
-                  className="mt-8 flex w-full flex-col items-center rounded-[12px] border border-[#fedf89] bg-[#fffaeb] px-5 py-4 text-center"
-                >
-                  <FeedbackIcon variant="warning" size="small" />
-                  <h2 id="today-limit-warning-title" className="mt-2 text-[15px] font-semibold leading-5 text-[#17212b]">
-                    {preferences.error}
-                  </h2>
-                  <p className="mt-1 max-w-[520px] text-[13px] leading-5 text-[#667085]">
-                    La capacidad de hoy se actualizará cuando recuperemos tu límite.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="link"
-                    onClick={() => { void preferences.refresh() }}
-                    className="mt-1 min-h-11 px-3 text-[#b54708] hover:text-[#93370d]"
-                  >
-                    Reintentar
-                  </Button>
-                </section>
+                <div role="status" aria-label={preferences.error}>
+                  <InlineFeedback variant="warning" className="mt-4">
+                    {preferences.error} <Button type="button" variant="link" onClick={() => { void preferences.refresh() }}>Reintentar</Button>
+                  </InlineFeedback>
+                </div>
               )}
 
               <div className="mt-4">
@@ -402,6 +415,8 @@ export function TodayPage() {
               <div className="mt-3">
                 <TodayPriorityGuide />
               </div>
+
+              {rescheduleError && <InlineFeedback className="mt-4">{rescheduleError}</InlineFeedback>}
 
               {hasActiveFilters &&
               !hasFilteredResults ? (
@@ -433,7 +448,8 @@ export function TodayPage() {
                     }
                     group="overdue"
                     onOpenTask={handleOpenTask}
-                    onRescheduleTask={setReschedulingTask}
+                    onRescheduleTask={handleRescheduleTask}
+                    loadingRescheduleId={loadingRescheduleId}
                   />
 
                   <TodayTaskSection
@@ -444,7 +460,8 @@ export function TodayPage() {
                     }
                     group="today"
                     onOpenTask={handleOpenTask}
-                    onRescheduleTask={setReschedulingTask}
+                    onRescheduleTask={handleRescheduleTask}
+                    loadingRescheduleId={loadingRescheduleId}
                   />
 
                   <TodayTaskSection
@@ -455,14 +472,15 @@ export function TodayPage() {
                     }
                     group="upcoming"
                     onOpenTask={handleOpenTask}
-                    onRescheduleTask={setReschedulingTask}
+                    onRescheduleTask={handleRescheduleTask}
+                    loadingRescheduleId={loadingRescheduleId}
                   />
                 </section>
               )}
             </>
           )}
       </PageContent>
-      {reschedulingTask && <RescheduleTaskDialog key={reschedulingTask.id} task={reschedulingTask} onClose={() => setReschedulingTask(null)} onSaved={retry} />}
+      {reschedulingTask && <RescheduleTaskDialog key={reschedulingTask.task.id} task={reschedulingTask.task} eventDate={reschedulingTask.eventDate} onClose={() => setReschedulingTask(null)} onSaved={retry} />}
     </PageContainer>
   )
 }

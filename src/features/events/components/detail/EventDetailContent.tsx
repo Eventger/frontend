@@ -84,7 +84,7 @@ export function EventDetailContent({
             type="button"
             variant="outline"
             onClick={onEditEvent}
-            className="h-11 rounded-[10px] border-[#d9dee7] bg-white px-5 font-semibold text-[#17212b] hover:bg-[#f8fafc] sm:w-[138px]"
+            className="h-11 rounded-lg border-border-subtle bg-white px-5 font-semibold text-[#17212b] hover:bg-[#f8fafc] sm:w-[138px]"
           >
             Editar evento
           </Button>
@@ -94,7 +94,7 @@ export function EventDetailContent({
             onClick={
               onDeleteEvent
             }
-            className="h-11 rounded-[10px] bg-[#c9413b] px-5 font-semibold text-white hover:bg-[#ad3530] focus-visible:ring-[#c2413a]/30 sm:w-[118px]"
+            className="h-11 rounded-lg bg-[#c9413b] px-5 font-semibold text-white hover:bg-[#ad3530] focus-visible:ring-[#c2413a]/30 sm:w-[118px]"
           >
             Eliminar
           </Button>
@@ -139,7 +139,7 @@ export function EventDetailContent({
               <Button
                 type="button"
                 onClick={focusProgress}
-                className="h-11 rounded-[10px] bg-[#eef2ff] px-5 text-[14px] font-semibold text-[#3730a3] hover:bg-[#e0e7ff] sm:min-w-[207px]"
+                className="h-11 rounded-lg bg-[#eef2ff] px-5 text-[14px] font-semibold text-[#3730a3] hover:bg-[#e0e7ff] sm:min-w-[207px]"
               >
                 Ver progreso detallado
               </Button>
@@ -160,7 +160,7 @@ export function EventDetailContent({
               role="region"
               aria-label="Lista de tareas del evento"
               tabIndex={0}
-              className="event-task-list space-y-2 rounded-[12px] pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2"
+              className="event-task-list space-y-2 rounded-xl pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2"
             >
               {orderedSubtasks.map(
                 (subtask) => (

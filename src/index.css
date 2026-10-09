@@ -50,6 +50,8 @@
     oklch(0.577 0.245 27.325);
   --border:
     oklch(0.922 0 0);
+  --border-subtle:
+    #dde2ea;
   --input:
     oklch(0.922 0 0);
   --ring:
@@ -478,6 +480,8 @@ html[data-auth-direction]::view-transition-new(auth-card-form) {
     var(--input);
   --color-border:
     var(--border);
+  --color-border-subtle:
+    var(--border-subtle);
   --color-destructive:
     var(--destructive);
   --color-accent-foreground:
@@ -556,6 +560,8 @@ html[data-auth-direction]::view-transition-new(auth-card-form) {
   --destructive:
     oklch(0.704 0.191 22.216);
   --border:
+    oklch(1 0 0 / 10%);
+  --border-subtle:
     oklch(1 0 0 / 10%);
   --input:
     oklch(1 0 0 / 15%);
