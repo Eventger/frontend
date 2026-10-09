@@ -38,6 +38,18 @@ function previewError(error: unknown) {
   return 'No pudimos consultar la carga de ese día. Inténtalo de nuevo.'
 }
 
+function calculateSuggestedReduction(conflict: DayPlan): { hours: string; minutes: string } {
+  const originalMinutes = Math.round(Number(conflict.added_hours) * 60)
+  const limitMinutes = Math.round(Number(conflict.daily_limit_hours) * 60)
+  const existingMinutes = Math.round(Number(conflict.existing_hours) * 60)
+  const availableMinutes = limitMinutes - existingMinutes
+  const targetMinutes = availableMinutes > 0 ? Math.min(originalMinutes, availableMinutes) : originalMinutes
+  return {
+    hours: String(Math.floor(targetMinutes / 60)),
+    minutes: String(targetMinutes % 60),
+  }
+}
+
 export function RescheduleTaskDialog({ task, eventDate, initialInput, initialConflict, getFocusFallback, preferFocusFallback = false, onClose, onSaved }: Props) {
   const { authenticatedRequest } = useAuthenticatedApi()
   const [taskEventDate, setTaskEventDate] = useState<string>()
@@ -148,9 +160,12 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
     if (!conflict) return
     setOption(next)
     setDate(next === 'recommended' && conflict.suggestion ? conflict.suggestion.date : conflict.date)
-    setHours(conflict.added_hours)
-    const minutes = Math.round(Number(conflict.added_hours) * 60)
-    setDurationInput(next === 'reduce' ? { hours: String(Math.floor(minutes / 60)), minutes: String(minutes % 60) } : null)
+    const reduction = calculateSuggestedReduction(conflict)
+    const targetHours = next === 'reduce'
+      ? Number((Number(reduction.hours) + Number(reduction.minutes) / 60).toFixed(2))
+      : Number(conflict.added_hours)
+    setHours(String(targetHours))
+    setDurationInput(next === 'reduce' ? reduction : null)
     setError('')
   }
 
@@ -173,7 +188,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose() }}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[min(640px,calc(100svh-2rem))] flex-col gap-0 overflow-hidden rounded-2xl border-border-subtle p-5 sm:max-w-[640px] sm:p-7 xl:left-[calc(50%+120px)]"
+        className="flex h-[min(640px,calc(100svh-2rem))] flex-col gap-0 overflow-hidden rounded-2xl border-border-subtle p-5 sm:max-w-[640px] sm:p-7"
         onCloseAutoFocus={event => {
           event.preventDefault()
           const fallback = getFocusFallback?.()
@@ -227,8 +242,8 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
           {option === 'reduce' && <fieldset className="mt-4 grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center"><legend className="sr-only">Tiempo estimado</legend>
             <p aria-hidden="true" className="text-sm font-semibold">Tiempo estimado</p>
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex min-w-0 items-center gap-2"><label htmlFor="resolution-hours" className="shrink-0 text-sm font-semibold">Horas</label><Select value={durationInput?.hours ?? '0'} disabled={busy} onValueChange={hours => { setDurationInput(value => ({ hours, minutes: value?.minutes ?? '0' })); setError('') }}><SelectTrigger id="resolution-hours" className="min-w-0 flex-1 data-[size=default]:h-11"><SelectValue /></SelectTrigger><SelectContent position="popper">{hourOptions.map(hours => <SelectItem key={hours} value={String(hours)}>{hours}</SelectItem>)}</SelectContent></Select></div>
-              <div className="flex min-w-0 items-center gap-2"><label htmlFor="resolution-minutes" className="shrink-0 text-sm font-semibold">Minutos</label><Select value={durationInput?.minutes ?? '0'} disabled={busy} onValueChange={minutes => { setDurationInput(value => ({ hours: value?.hours ?? '0', minutes })); setError('') }}><SelectTrigger id="resolution-minutes" className="min-w-0 flex-1 data-[size=default]:h-11"><SelectValue /></SelectTrigger><SelectContent position="popper">{Array.from({ length: 60 }, (_, minutes) => <SelectItem key={minutes} value={String(minutes)}>{minutes}</SelectItem>)}</SelectContent></Select></div>
+              <div className="flex min-w-0 items-center gap-2"><label htmlFor="resolution-hours" className="shrink-0 text-sm font-semibold">Horas</label><Select value={durationInput?.hours ?? '0'} disabled={busy} onValueChange={hours => { setDurationInput(value => ({ hours, minutes: value?.minutes ?? '0' })); setError('') }}><SelectTrigger id="resolution-hours" className="min-w-0 flex-1 data-[size=default]:h-11"><SelectValue placeholder="0">{durationInput?.hours ?? '0'}</SelectValue></SelectTrigger><SelectContent position="popper">{hourOptions.map(hours => <SelectItem key={hours} value={String(hours)}>{hours}</SelectItem>)}</SelectContent></Select></div>
+              <div className="flex min-w-0 items-center gap-2"><label htmlFor="resolution-minutes" className="shrink-0 text-sm font-semibold">Minutos</label><Select value={durationInput?.minutes ?? '0'} disabled={busy} onValueChange={minutes => { setDurationInput(value => ({ hours: value?.hours ?? '0', minutes })); setError('') }}><SelectTrigger id="resolution-minutes" className="min-w-0 flex-1 data-[size=default]:h-11"><SelectValue placeholder="0">{durationInput?.minutes ?? '0'}</SelectValue></SelectTrigger><SelectContent position="popper">{Array.from({ length: 60 }, (_, minutes) => <SelectItem key={minutes} value={String(minutes)}>{minutes}</SelectItem>)}</SelectContent></Select></div>
             </div>
           </fieldset>}
           {!conflict.suggestion && <p className="mt-3 text-sm text-[#667085]">No encontramos un día viable en los próximos 30 días antes del evento. Elige otra fecha o revisa la estimación.</p>}

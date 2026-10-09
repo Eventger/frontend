@@ -164,7 +164,7 @@ export function LoginPage() {
     recoveryInputRef.current?.focus()
   }
 
-  const validate = () => {
+  const validate = (targetEmail = email.trim()) => {
     let isValid = true
 
     setEmailError('')
@@ -172,14 +172,14 @@ export function LoginPage() {
     setGeneralError('')
     setFeedback(null)
 
-    if (!email.trim()) {
+    if (!targetEmail) {
       setEmailError(
         'Ingresa tu correo electrónico.',
       )
 
       isValid = false
     } else if (
-      !isValidEmail(email)
+      !isValidEmail(targetEmail)
     ) {
       setEmailError(
         'Ingresa una dirección de correo válida.',
@@ -198,8 +198,8 @@ export function LoginPage() {
 
     if (!isValid) {
       const emailIsInvalid =
-        !email.trim() ||
-        !isValidEmail(email)
+        !targetEmail ||
+        !isValidEmail(targetEmail)
 
       if (emailIsInvalid) {
         emailInputRef.current
@@ -258,7 +258,7 @@ export function LoginPage() {
     }
 
   const performLogin =
-    async () => {
+    async (targetEmail = email.trim()) => {
       if (isLoading) return
       setCredentialsError('')
       setLastAttempt('password')
@@ -274,7 +274,7 @@ export function LoginPage() {
         const result =
           await signIn.password({
             emailAddress:
-              email.trim(),
+              targetEmail,
             password,
           })
 
@@ -331,11 +331,16 @@ export function LoginPage() {
   ) => {
     event.preventDefault()
 
-    if (!validate()) {
+    const trimmedEmail = email.trim()
+    if (trimmedEmail !== email) {
+      setEmail(trimmedEmail)
+    }
+
+    if (!validate(trimmedEmail)) {
       return
     }
 
-    await performLogin()
+    await performLogin(trimmedEmail)
   }
 
   const handleGoogleSignIn =
@@ -400,7 +405,12 @@ export function LoginPage() {
       setGeneralError('')
       setFeedback(null)
 
-      if (!email.trim()) {
+      const trimmedEmail = email.trim()
+      if (trimmedEmail !== email) {
+        setEmail(trimmedEmail)
+      }
+
+      if (!trimmedEmail) {
         setEmailError(
           'Ingresa tu correo electrónico.',
         )
@@ -412,7 +422,7 @@ export function LoginPage() {
       }
 
       if (
-        !isValidEmail(email)
+        !isValidEmail(trimmedEmail)
       ) {
         setEmailError(
           'Ingresa una dirección de correo válida.',
@@ -429,7 +439,7 @@ export function LoginPage() {
         const createResult =
           await signIn.create({
             identifier:
-              email.trim(),
+              trimmedEmail,
           })
 
         if (
@@ -818,6 +828,11 @@ export function LoginPage() {
                     aria-describedby={
                       [emailError && 'login-email-error', credentialsError && 'login-credentials-error'].filter(Boolean).join(' ') || undefined
                     }
+                    onBlur={() => {
+                      setEmail((current) =>
+                        current.trim(),
+                      )
+                    }}
                     onChange={(
                       event,
                     ) => {

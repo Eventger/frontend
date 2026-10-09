@@ -186,6 +186,53 @@ describe('LoginPage', () => {
     ).toBeTruthy()
   })
 
+  it('aplica trim al correo y conserva la contraseña exactamente como fue ingresada', async () => {
+    const user = userEvent.setup()
+    password.mockResolvedValue({
+      error: null,
+    })
+    finalize.mockImplementation(
+      async ({ navigate }) => {
+        navigate({
+          session: null,
+          decorateUrl,
+        })
+        return { error: null }
+      },
+    )
+    mockSignIn('complete')
+    renderLogin({ from: '/eventos' })
+
+    const emailInput = screen.getByLabelText('Correo electrónico')
+    const passwordInput = screen.getByLabelText('Contraseña')
+
+    await user.type(emailInput, '   ana@example.com   ')
+    await user.type(passwordInput, '  una clave con espacios  ')
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Iniciar sesión',
+      }),
+    )
+
+    expect(password).toHaveBeenCalledWith({
+      emailAddress: 'ana@example.com',
+      password: '  una clave con espacios  ',
+    })
+    expect((emailInput as HTMLInputElement).value).toBe('ana@example.com')
+  })
+
+  it('aplica trim al correo al desenfocar el campo (onBlur)', async () => {
+    const user = userEvent.setup()
+    renderLogin()
+
+    const emailInput = screen.getByLabelText('Correo electrónico')
+    await user.type(emailInput, '   ana@example.com   ')
+    await user.tab()
+
+    expect((emailInput as HTMLInputElement).value).toBe('ana@example.com')
+  })
+
   it('inicia el flujo OAuth de Google', async () => {
     const user = userEvent.setup()
     sso.mockResolvedValue({ error: null })
