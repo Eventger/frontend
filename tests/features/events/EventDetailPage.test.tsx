@@ -721,7 +721,7 @@ describe('EventDetailContent', () => {
   const mockSubtasks: Subtask[] = [
     {
       id: 1,
-      eventId: 1, // 👈 Se agregó eventId
+      eventId: 1,
       name: 'Tarea Test',
       targetDate: '2026-10-15',
       estimatedHours: 2,
@@ -738,42 +738,51 @@ describe('EventDetailContent', () => {
     onSubtaskUpdated: vi.fn(),
   }
 
-  it('debe actualizar el estado visual de la tarea inmediatamente al guardar en el modal', async () => {
+  it('debe actualizar el estado visual al registrar avance', async () => {
     const user = userEvent.setup()
 
     render(<EventDetailContent {...defaultProps} />)
 
-    // 1. Verifica estado inicial
     expect(screen.getByText('En progreso')).toBeDefined()
 
-    // 2. Abre menú de acciones
     const actionsButton = screen.getByRole('button', {
       name: /Más acciones para Tarea Test/i,
     })
     await user.click(actionsButton)
 
-    // 3. Selecciona "Registrar avance"
     const registerOption = screen.getByRole('menuitem', { name: /Registrar avance/i })
     await user.click(registerOption)
 
-    // 4. Confirma apertura de modal
     expect(screen.getByTestId('mock-register-dialog')).toBeDefined()
 
-    // 5. Guarda cambios en el modal
     const saveButton = screen.getByRole('button', { name: /Simular Guardar Avance/i })
     await user.click(saveButton)
 
-    // 6. Confirma actualización inmediata a "Completada"
     await waitFor(() => {
       expect(screen.getByText('Completada')).toBeDefined()
     })
 
-    // 7. Valida que se ejecute la función callback
     expect(defaultProps.onSubtaskUpdated).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 1,
         state: 'completed',
       })
     )
+  })
+
+  it('debe permitir abrir la reprogramación de tareas', async () => {
+    const user = userEvent.setup()
+
+    render(<EventDetailContent {...defaultProps} />)
+
+    const actionsButton = screen.getByRole('button', {
+      name: /Más acciones para Tarea Test/i,
+    })
+    await user.click(actionsButton)
+
+    const rescheduleOption = screen.getByRole('menuitem', { name: /Reprogramar/i })
+    await user.click(rescheduleOption)
+
+    expect(screen.getByTestId('mock-reschedule-dialog')).toBeDefined()
   })
 })

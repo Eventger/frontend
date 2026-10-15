@@ -107,7 +107,7 @@ export function EventDetailContent({
           {!hasTasks ? (
             <EmptyTasksState onAddTask={onAddTask} onEditEvent={onEditEvent} />
           ) : (
-            <div role="region" aria-label="Lista de tareas del evento" tabIndex={0} className="event-task-list space-y-2 rounded-xl pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2">
+            <div role="region" aria-label="Lista de tareas del evento" className="event-task-list space-y-2 rounded-xl pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:ring-offset-2">
               {orderedSubtasks.map((subtask) => (
                 <EventTaskCard
                   key={subtask.id}
