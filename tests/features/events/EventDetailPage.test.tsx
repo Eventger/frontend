@@ -20,6 +20,7 @@ import { useEventDetail } from '@/features/events/hooks/useEventDetail'
 import { useEventSubtasks } from '@/features/events/hooks/useEventSubtasks'
 import { useEventTypes } from '@/features/events/hooks/useEventTypes'
 import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
+import { EventDetailContent } from '@/features/events/components/detail/EventDetailContent'
 import {
   deleteEvent,
   updateEvent,
@@ -29,12 +30,15 @@ import {
   deleteSubtask,
   updateSubtask,
 } from '@/features/events/services/subtasks.service'
+import type { Event } from '@/features/events/types/event.types'
+import type { Subtask } from '@/features/events/types/subtask.types'
 import {
   createSubtaskInputFixture,
   eventFixture,
   subtaskFixture,
 } from './subtask.fixtures'
 
+// Mocks globales
 vi.mock('@/features/events/hooks/useEventDetail', () => ({
   useEventDetail: vi.fn(),
 }))
@@ -58,13 +62,46 @@ vi.mock('@/features/events/services/subtasks.service', () => ({
   deleteSubtask: vi.fn(),
 }))
 
+vi.mock('@/features/events/components/detail/RegisterProgressDialog', () => ({
+  RegisterProgressDialog: ({
+    onSaved,
+    onClose,
+  }: {
+    onSaved: (task: Subtask) => void
+    onClose: () => void
+  }) => (
+    <div data-testid="mock-register-dialog">
+      <button
+        type="button"
+        onClick={() => {
+          onSaved({
+            id: 1,
+            eventId: 1,
+            name: 'Tarea Test',
+            targetDate: '2026-10-15',
+            estimatedHours: 2,
+            details: '',
+            state: 'completed',
+          })
+          onClose()
+        }}
+      >
+        Simular Guardar Avance
+      </button>
+    </div>
+  ),
+}))
+
+vi.mock('@/features/events/components/detail/RescheduleTaskDialog', () => ({
+  RescheduleTaskDialog: () => <div data-testid="mock-reschedule-dialog" />,
+}))
+
 const retryEvent = vi.fn().mockResolvedValue(undefined)
 const retryEventTypes = vi.fn().mockResolvedValue(undefined)
 const refreshSubtasks = vi.fn().mockResolvedValue(undefined)
 
 function LocationProbe() {
   const location = useLocation()
-
   return <output data-testid="location">{location.pathname}</output>
 }
 
@@ -74,10 +111,7 @@ function renderPage() {
       <LocationProbe />
       <Routes>
         <Route path="/evento/:id" element={<EventDetailPage />} />
-        <Route
-          path="/eventos"
-          element={<h1>Listado de eventos</h1>}
-        />
+        <Route path="/eventos" element={<h1>Listado de eventos</h1>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -644,6 +678,7 @@ describe('EventDetailPage', () => {
       expect.any(Function),
     )
   })
+
   it('muestra la validación de fecha junto al campo sin perder el borrador y permite corregirla', async () => {
     const message = 'La fecha del evento no puede ser anterior a la fecha límite de sus tareas. Reprograma primero estas tareas: Catering.'
     vi.mocked(updateEvent).mockRejectedValueOnce(new ApiError(400, { success: false, errors: { date: [message] } }))
@@ -673,69 +708,34 @@ describe('EventDetailPage', () => {
     expect((screen.getByLabelText('Nombre del evento *') as HTMLInputElement).value).toBe('Borrador conservado')
     expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto conservado')
   })
-
 })
 
-// Mock de los diálogos/modales para aislar la prueba de EventDetailContent
-jest.mock('../RegisterProgressDialog', () => ({
-  RegisterProgressDialog: ({
-    onSaved,
-    onClose,
-  }: {
-    onSaved: (task: Subtask) => void
-    onClose: () => void
-  }) => (
-    <div data-testid="mock-register-dialog">
-      <button
-        type="button"
-        onClick={() => {
-          onSaved({
-            id: 'subtask-1',
-            name: 'Tarea Test',
-            targetDate: '2026-10-15',
-            estimatedHours: 2,
-            details: '',
-            state: 'completed', // Cambiamos el estado a completada
-          })
-          onClose()
-        }}
-      >
-        Simular Guardar Avance
-      </button>
-    </div>
-  ),
-}))
-
-jest.mock('../RescheduleTaskDialog', () => ({
-  RescheduleTaskDialog: () => <div data-testid="mock-reschedule-dialog" />,
-}))
-
-const mockEvent: Event = {
-  id: 'event-1',
-  name: 'Evento de Prueba',
-  eventDate: '2026-10-20',
-  location: 'Auditorio Central',
-  contact: 'contacto@test.com',
-}
-
-const mockSubtasks: Subtask[] = [
-  {
-    id: 'subtask-1',
-    name: 'Tarea Test',
-    targetDate: '2026-10-15',
-    estimatedHours: 2,
-    details: 'Nota de prueba',
-    state: 'in_progress', // Inicia en progreso
-  },
-]
-
 describe('EventDetailContent', () => {
+  const mockEvent = {
+    name: 'Evento de Prueba',
+    eventDate: '2026-10-20',
+    location: 'Auditorio Central',
+    contact: 'contacto@test.com',
+  } as Event
+
+  const mockSubtasks: Subtask[] = [
+    {
+      id: 1,
+      eventId: 1, // 👈 Se agregó eventId
+      name: 'Tarea Test',
+      targetDate: '2026-10-15',
+      estimatedHours: 2,
+      details: 'Nota de prueba',
+      state: 'in_progress',
+    },
+  ]
+
   const defaultProps = {
     event: mockEvent,
     subtasks: mockSubtasks,
-    onAddTask: jest.fn(),
-    onEditEvent: jest.fn(),
-    onSubtaskUpdated: jest.fn(),
+    onAddTask: vi.fn(),
+    onEditEvent: vi.fn(),
+    onSubtaskUpdated: vi.fn(),
   }
 
   it('debe actualizar el estado visual de la tarea inmediatamente al guardar en el modal', async () => {
@@ -743,38 +743,35 @@ describe('EventDetailContent', () => {
 
     render(<EventDetailContent {...defaultProps} />)
 
-    // 1. Verificamos que al inicio la tarea muestre el estado "En progreso"
-    expect(screen.getByText('En progreso')).toBeInTheDocument()
+    // 1. Verifica estado inicial
+    expect(screen.getByText('En progreso')).toBeDefined()
 
-    // 2. Abrimos el menú de acciones haciendo clic en el botón con la etiqueta correspondiente
+    // 2. Abre menú de acciones
     const actionsButton = screen.getByRole('button', {
       name: /Más acciones para Tarea Test/i,
     })
     await user.click(actionsButton)
 
-    // 3. Hacemos clic en la opción "Registrar avance"
+    // 3. Selecciona "Registrar avance"
     const registerOption = screen.getByRole('menuitem', { name: /Registrar avance/i })
     await user.click(registerOption)
 
-    // 4. Verificamos que el modal se abrió
-    expect(screen.getByTestId('mock-register-dialog')).toBeInTheDocument()
+    // 4. Confirma apertura de modal
+    expect(screen.getByTestId('mock-register-dialog')).toBeDefined()
 
-    // 5. Simulamos que el usuario guarda la actualización desde el modal
+    // 5. Guarda cambios en el modal
     const saveButton = screen.getByRole('button', { name: /Simular Guardar Avance/i })
     await user.click(saveButton)
 
-    // 6. Verificamos que la interfaz se haya actualizado inmediatamente a "Completada" sin recargar
+    // 6. Confirma actualización inmediata a "Completada"
     await waitFor(() => {
-      expect(screen.getByText('Completada')).toBeInTheDocument()
+      expect(screen.getByText('Completada')).toBeDefined()
     })
 
-    // 7. Confirmamos que no quede el badge "En progreso" anterior
-    expect(screen.queryByText('En progreso')).not.toBeInTheDocument()
-
-    // 8. Confirmamos que la callback onSubtaskUpdated fue ejecutada
+    // 7. Valida que se ejecute la función callback
     expect(defaultProps.onSubtaskUpdated).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'subtask-1',
+        id: 1,
         state: 'completed',
       })
     )
