@@ -20,6 +20,7 @@ import { useEventDetail } from '@/features/events/hooks/useEventDetail'
 import { useEventSubtasks } from '@/features/events/hooks/useEventSubtasks'
 import { useEventTypes } from '@/features/events/hooks/useEventTypes'
 import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
+import { EventDetailContent } from '@/features/events/components/detail/EventDetailContent'
 import {
   deleteEvent,
   updateEvent,
@@ -29,12 +30,15 @@ import {
   deleteSubtask,
   updateSubtask,
 } from '@/features/events/services/subtasks.service'
+import type { Event } from '@/features/events/types/event.types'
+import type { Subtask } from '@/features/events/types/subtask.types'
 import {
   createSubtaskInputFixture,
   eventFixture,
   subtaskFixture,
 } from './subtask.fixtures'
 
+// Mocks globales
 vi.mock('@/features/events/hooks/useEventDetail', () => ({
   useEventDetail: vi.fn(),
 }))
@@ -58,13 +62,74 @@ vi.mock('@/features/events/services/subtasks.service', () => ({
   deleteSubtask: vi.fn(),
 }))
 
+vi.mock('@/features/events/components/detail/RegisterProgressDialog', () => ({
+  RegisterProgressDialog: ({
+    onSaved,
+    onClose,
+  }: {
+    onSaved: (task: Subtask) => void
+    onClose: () => void
+  }) => (
+    <div data-testid="mock-register-dialog">
+      <button
+        type="button"
+        onClick={() => {
+          onSaved({
+            id: 1,
+            eventId: 1,
+            name: 'Tarea Test',
+            targetDate: '2026-10-15',
+            estimatedHours: 2,
+            details: '',
+            state: 'completed',
+          })
+          onClose()
+        }}
+      >
+        Simular Guardar Avance
+      </button>
+    </div>
+  ),
+}))
+
+vi.mock('@/features/events/components/detail/RescheduleTaskDialog', () => ({
+  RescheduleTaskDialog: ({
+    onClose,
+    onSaved,
+  }: {
+    onClose: () => void
+    onSaved: (task: Subtask) => Promise<void> | void
+  }) => (
+    <div data-testid="mock-reschedule-dialog">
+      <button
+        type="button"
+        onClick={() => {
+          void onSaved({
+            id: 1,
+            eventId: 1,
+            name: 'Tarea Test Reprogramada',
+            targetDate: '2026-10-18',
+            estimatedHours: 2,
+            details: '',
+            state: 'pending',
+          })
+        }}
+      >
+        Simular Guardar Reprogramar
+      </button>
+      <button type="button" onClick={onClose}>
+        Simular Cerrar Reprogramar
+      </button>
+    </div>
+  ),
+}))
+
 const retryEvent = vi.fn().mockResolvedValue(undefined)
 const retryEventTypes = vi.fn().mockResolvedValue(undefined)
 const refreshSubtasks = vi.fn().mockResolvedValue(undefined)
 
 function LocationProbe() {
   const location = useLocation()
-
   return <output data-testid="location">{location.pathname}</output>
 }
 
@@ -74,10 +139,7 @@ function renderPage() {
       <LocationProbe />
       <Routes>
         <Route path="/evento/:id" element={<EventDetailPage />} />
-        <Route
-          path="/eventos"
-          element={<h1>Listado de eventos</h1>}
-        />
+        <Route path="/eventos" element={<h1>Listado de eventos</h1>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -644,6 +706,7 @@ describe('EventDetailPage', () => {
       expect.any(Function),
     )
   })
+
   it('muestra la validación de fecha junto al campo sin perder el borrador y permite corregirla', async () => {
     const message = 'La fecha del evento no puede ser anterior a la fecha límite de sus tareas. Reprograma primero estas tareas: Catering.'
     vi.mocked(updateEvent).mockRejectedValueOnce(new ApiError(400, { success: false, errors: { date: [message] } }))
@@ -673,5 +736,211 @@ describe('EventDetailPage', () => {
     expect((screen.getByLabelText('Nombre del evento *') as HTMLInputElement).value).toBe('Borrador conservado')
     expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto conservado')
   })
+})
 
+describe('EventDetailContent', () => {
+  const mockEvent = {
+    name: 'Evento de Prueba',
+    eventDate: '2026-10-20',
+    location: 'Auditorio Central',
+    contact: 'contacto@test.com',
+  } as Event
+
+  const mockSubtasks: Subtask[] = [
+    {
+      id: 1,
+      eventId: 1,
+      name: 'Tarea Test',
+      targetDate: '2026-10-15',
+      estimatedHours: 2,
+      details: 'Nota de prueba',
+      state: 'in_progress',
+    },
+  ]
+
+  const defaultProps = {
+    event: mockEvent,
+    subtasks: mockSubtasks,
+    onAddTask: vi.fn(),
+    onEditEvent: vi.fn(),
+    onSubtaskUpdated: vi.fn(),
+  }
+
+  it('debe actualizar el estado visual al registrar avance', async () => {
+    const user = userEvent.setup()
+    render(<EventDetailContent {...defaultProps} />)
+
+    expect(screen.getByText('En progreso')).toBeDefined()
+
+    const actionsButton = screen.getByRole('button', {
+      name: /Más acciones para Tarea Test/i,
+    })
+    await user.click(actionsButton)
+
+    const registerOption = screen.getByRole('menuitem', { name: /Registrar avance/i })
+    await user.click(registerOption)
+
+    expect(screen.getByTestId('mock-register-dialog')).toBeDefined()
+
+    const saveButton = screen.getByRole('button', { name: /Simular Guardar Avance/i })
+    await user.click(saveButton)
+
+    await waitFor(() => {
+      expect(screen.getByText('Completada')).toBeDefined()
+    })
+
+    expect(defaultProps.onSubtaskUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 1,
+        state: 'completed',
+      })
+    )
+  })
+
+  it('debe abrir y permitir interactuar con el diálogo de reprogramar', async () => {
+    const user = userEvent.setup()
+    render(<EventDetailContent {...defaultProps} />)
+
+    const actionsButton = screen.getByRole('button', {
+      name: /Más acciones para Tarea Test/i,
+    })
+    await user.click(actionsButton)
+
+    const rescheduleOption = screen.getByRole('menuitem', { name: /Reprogramar/i })
+    await user.click(rescheduleOption)
+
+    expect(screen.getByTestId('mock-reschedule-dialog')).toBeDefined()
+
+    // 1. Simular Guardar reprogramación (cubre onSaved)
+    await user.click(screen.getByRole('button', { name: /Simular Guardar Reprogramar/i }))
+    await waitFor(() => {
+      expect(screen.queryByTestId('mock-reschedule-dialog')).toBeNull()
+    })
+
+    // 2. Simular Cerrar reprogramación (cubre onClose)
+    await user.click(actionsButton)
+    await user.click(screen.getByRole('menuitem', { name: /Reprogramar/i }))
+    await user.click(screen.getByRole('button', { name: /Simular Cerrar Reprogramar/i }))
+    expect(screen.queryByTestId('mock-reschedule-dialog')).toBeNull()
+  })
+
+  it('permite enfocar el progreso y ordena tareas para hoy correctamente', async () => {
+    const user = userEvent.setup()
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date())
+    const subtaskToday: Subtask = {
+      id: 2,
+      eventId: 1,
+      name: 'Tarea Hoy',
+      targetDate: todayStr,
+      estimatedHours: 1,
+      details: '',
+      state: 'pending',
+    }
+    render(<EventDetailContent {...defaultProps} subtasks={[mockSubtasks[0], subtaskToday]} />)
+
+    const viewProgressBtn = screen.getByRole('button', { name: /Ver progreso detallado/i })
+    await user.click(viewProgressBtn)
+    expect(screen.getByText('Tarea Hoy')).toBeDefined()
+  })
+
+  it('debe manejar correctamente el caso cuando no se pasa onSubtaskUpdated', async () => {
+    const user = userEvent.setup()
+    const propsWithoutCallback = { ...defaultProps, onSubtaskUpdated: undefined }
+
+    render(<EventDetailContent {...propsWithoutCallback} />)
+
+    const actionsButton = screen.getByRole('button', {
+      name: /Más acciones para Tarea Test/i,
+    })
+    await user.click(actionsButton)
+
+    const registerOption = screen.getByRole('menuitem', { name: /Registrar avance/i })
+    await user.click(registerOption)
+
+    const saveButton = screen.getByRole('button', { name: /Simular Guardar Avance/i })
+    await user.click(saveButton)
+
+    await waitFor(() => {
+      expect(screen.getByText('Completada')).toBeDefined()
+    })
+  })
+
+  it('debe actualizar las subtareas si cambian las props externas', async () => {
+    const { rerender } = render(<EventDetailContent {...defaultProps} />)
+
+    expect(screen.getByText('En progreso')).toBeDefined()
+
+    const updatedSubtasks: Subtask[] = [
+      {
+        ...mockSubtasks[0],
+        state: 'completed',
+      },
+    ]
+
+    rerender(<EventDetailContent {...defaultProps} subtasks={updatedSubtasks} />)
+
+    expect(screen.getByText('Completada')).toBeDefined()
+  })
+})
+
+import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard'
+
+describe('EventTaskCard - Cobertura de interacciones', () => {
+  const mockSubtaskWithNote: Subtask = {
+    id: 99,
+    eventId: 1,
+    name: 'Subtarea con nota',
+    targetDate: '2026-10-15',
+    estimatedHours: 4,
+    details: 'Esta es una nota explicativa de la tarea',
+    state: 'in_progress',
+  }
+
+  it('debe abrir y cerrar la nota de la tarea al presionar el botón de nota', async () => {
+    const user = userEvent.setup()
+    render(<EventTaskCard subtask={mockSubtaskWithNote} />)
+
+    // 1. Selecciona exactamente el botón "Nota"
+    const noteButton = screen.getByRole('button', { name: /^Nota$/i })
+    await user.click(noteButton)
+    expect(screen.getByText('Esta es una nota explicativa de la tarea')).toBeDefined()
+
+    // 2. Oculta la nota
+    const hideNoteButton = screen.getByRole('button', { name: /Ocultar/i })
+    await user.click(hideNoteButton)
+    expect(screen.queryByText('Esta es una nota explicativa de la tarea')).toBeNull()
+  })
+
+  it('debe desplegar el menú de acciones con posicionamiento y permitir ver/ocultar detalles', async () => {
+    const user = userEvent.setup()
+    render(<EventTaskCard subtask={mockSubtaskWithNote} />)
+
+    // Abre el menú flotante calculando coordenadas
+    const moreButton = screen.getByRole('button', { name: /Más acciones para Subtarea con nota/i })
+    await user.click(moreButton)
+
+    // Opción Ver detalles
+    const detailsOption = screen.getByRole('menuitem', { name: /Ver detalles/i })
+    await user.click(detailsOption)
+
+    expect(screen.getByText('Detalles de la tarea')).toBeDefined()
+
+    // Volver a abrir menú para presionar Ocultar detalles
+    await user.click(moreButton)
+    const hideDetailsOption = screen.getByRole('menuitem', { name: /Ocultar detalles/i })
+    await user.click(hideDetailsOption)
+  })
+
+  it('debe cerrar el menú de acciones haciendo clic en el backdrop invisible', async () => {
+    const user = userEvent.setup()
+    render(<EventTaskCard subtask={mockSubtaskWithNote} />)
+
+    const moreButton = screen.getByRole('button', { name: /Más acciones para Subtarea con nota/i })
+    await user.click(moreButton)
+
+    const backdrop = screen.getByRole('button', { name: /Cerrar menú de acciones/i })
+    await user.click(backdrop)
+
+    expect(screen.queryByRole('menuitem', { name: /Registrar avance/i })).toBeNull()
+  })
 })

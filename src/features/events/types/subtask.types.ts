@@ -1,13 +1,20 @@
-export type SubtaskState = 'pending' | 'completed' | "in_progress"
+export type SubtaskState =
+  | 'pending'
+  | 'completed'
+  | 'in_progress'
+  | 'postponed'
 
 export interface SubtaskApiData {
   id: number
   event: number
   state: SubtaskState
+  status?: SubtaskState
   name: string
   target_date: string
   estimated_hours: string
   details: string
+  note?: string
+  done_at?: string | null
   created_at: string
   updated_at: string
 }

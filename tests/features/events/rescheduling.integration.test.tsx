@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
 import { TodayPage } from '@/features/today/pages/TodayPage'
@@ -17,6 +17,15 @@ function json(body: unknown, status = 200) {
 }
 
 describe('reprogramación con hooks, servicios y respuestas HTTP', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T02:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('mantiene la confirmación de Aplicar opción en Hoy mientras se recarga la lista', async () => {
     const user = userEvent.setup()
     let task = buildTodayApiTask({ target_date: '2026-10-10', estimated_hours: '2.00' })

@@ -74,7 +74,7 @@ describe('EventDetailContent', () => {
     })
 
     expect(taskList.classList.contains('event-task-list')).toBe(true)
-    expect(taskList.getAttribute('tabindex')).toBe('0')
+    expect(taskList.getAttribute('tabindex')).toBeNull()
 
     expect(
       within(taskList).queryByRole('button', {
