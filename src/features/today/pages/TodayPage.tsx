@@ -8,6 +8,8 @@ import {
 import { useNavigate } from 'react-router'
 import { usePlanningPreferences } from '@/features/settings/hooks/usePlanningPreferences'
 import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
+import { RegisterProgressDialog } from '@/features/events/components/detail/RegisterProgressDialog'
+import type { Subtask } from '@/features/events/types/subtask.types'
 import { getEventById } from '@/features/events/services/event.service'
 import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 
@@ -73,6 +75,7 @@ export function TodayPage() {
   const preferences = usePlanningPreferences()
   const dailyLimitHours = preferences.isLoading || preferences.error ? undefined : preferences.dailyLimitHours
   const [reschedulingTask, setReschedulingTask] = useState<{ task: TodayTaskItem; eventDate: string } | null>(null)
+  const [progressTask, setProgressTask] = useState<Subtask | null>(null)
   const [loadingRescheduleId, setLoadingRescheduleId] = useState<number | null>(null)
   const [rescheduleError, setRescheduleError] = useState('')
   const rescheduleRequestVersion = useRef(0)
@@ -139,6 +142,18 @@ export function TodayPage() {
     } finally {
       if (version === rescheduleRequestVersion.current) setLoadingRescheduleId(null)
     }
+  }
+
+  const handleRegisterProgress = (task: TodayTaskItem) => {
+    setProgressTask({
+      id: task.id,
+      eventId: task.eventId,
+      state: 'pending',
+      name: task.name,
+      targetDate: task.targetDate,
+      estimatedHours: task.estimatedHours,
+      details: '',
+    })
   }
 
   const handleClearFilters = () => {
@@ -448,6 +463,7 @@ export function TodayPage() {
                     }
                     group="overdue"
                     onOpenTask={handleOpenTask}
+                    onRegisterProgress={handleRegisterProgress}
                     onRescheduleTask={handleRescheduleTask}
                     loadingRescheduleId={loadingRescheduleId}
                   />
@@ -460,6 +476,7 @@ export function TodayPage() {
                     }
                     group="today"
                     onOpenTask={handleOpenTask}
+                    onRegisterProgress={handleRegisterProgress}
                     onRescheduleTask={handleRescheduleTask}
                     loadingRescheduleId={loadingRescheduleId}
                   />
@@ -472,6 +489,7 @@ export function TodayPage() {
                     }
                     group="upcoming"
                     onOpenTask={handleOpenTask}
+                    onRegisterProgress={handleRegisterProgress}
                     onRescheduleTask={handleRescheduleTask}
                     loadingRescheduleId={loadingRescheduleId}
                   />
@@ -480,6 +498,7 @@ export function TodayPage() {
             </>
           )}
       </PageContent>
+      {progressTask && <RegisterProgressDialog key={progressTask.id} task={progressTask} onClose={() => setProgressTask(null)} onSaved={async () => { await retry() }} />}
       {reschedulingTask && <RescheduleTaskDialog key={reschedulingTask.task.id} task={reschedulingTask.task} eventDate={reschedulingTask.eventDate} onClose={() => setReschedulingTask(null)} onSaved={retry} />}
     </PageContainer>
   )

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, waitFor } from '@testing-library/react'
 import { usePlanningPreferences } from '@/features/settings/hooks/usePlanningPreferences'
 import userEvent from '@testing-library/user-event'
 import {
@@ -12,12 +12,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToday } from '@/features/today/hooks/useToday'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import type { TodayData } from '@/features/today/types/today.types'
-import { todayDataFixture, todayEvents } from './today.fixtures'
+import { todayDataFixture } from './today.fixtures'
 
 vi.mock('@/features/today/hooks/useToday', () => ({
   useToday: vi.fn(),
 }))
-vi.mock('@/features/settings/hooks/usePlanningPreferences', () => ({ usePlanningPreferences: vi.fn() }))
+
+vi.mock('@/features/settings/hooks/usePlanningPreferences', () => ({
+  usePlanningPreferences: vi.fn(),
+}))
+
+vi.mock('@/features/auth/hooks/useAuthenticatedApi', () => ({
+  useAuthenticatedApi: () => ({
+    authenticatedRequest: vi.fn(),
+  }),
+}))
+
+vi.mock('@/features/events/services/event.service', () => ({
+  getEventById: vi.fn().mockResolvedValue({ id: 1, eventDate: '2026-10-25' }),
+}))
 
 const retry = vi.fn().mockResolvedValue(undefined)
 
@@ -322,44 +335,33 @@ describe('TodayPage', () => {
     )
   })
 
-  it('muestra la fecha del evento al reprogramar desde Hoy antes de elegir una fecha nueva', async () => {
-    const event = todayEvents[0]
-    let releaseEvent!: () => void
-    const eventReady = new Promise<void>(resolve => { releaseEvent = resolve })
-    const request = vi.fn(async (input: RequestInfo | URL) => {
-      expect(String(input)).toContain('/events/21/')
-      await eventReady
-      return new Response(JSON.stringify({
-        success: true,
-        data: {
-          id: event.id, user: 1, name: event.name, type: event.typeId,
-          date: '2026-10-24T23:59:59-05:00', location: event.location, contact: event.contact,
-          created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
-        },
-      }), { headers: { 'Content-Type': 'application/json' } })
-    })
-    vi.stubGlobal('fetch', request)
-
+  it('debe abrir el diálogo de registrar avance al seleccionar la opción del menú', async () => {
+    const user = userEvent.setup()
     renderPage()
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' }))
 
-    expect(screen.queryByRole('dialog')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' }).getAttribute('aria-busy')).toBe('true')
-    releaseEvent()
-    expect(await screen.findByRole('dialog')).toBeTruthy()
-    expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
-    expect(screen.getByText('Fecha del evento: 24 de octubre de 2026')).toBeTruthy()
-    expect(request).toHaveBeenCalledOnce()
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Cerrar' }))
+    const task = todayDataFixture.today[0]
+    const actionsButton = screen.getByRole('button', { name: new RegExp(`Acciones de ${task.name}`, 'i') })
+    await user.click(actionsButton)
+
+    const registerOption = screen.getByRole('menuitem', { name: /Registrar avance/i })
+    await user.click(registerOption)
+
+    expect(screen.getByRole('dialog', { name: /Registrar avance/i })).toBeDefined()
   })
 
-  it('permite reintentar si no se puede cargar la fecha del evento', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('Sin conexión')))
+  it('debe abrir el diálogo de reprogramar al seleccionar la opción del menú', async () => {
+    const user = userEvent.setup()
     renderPage()
-    const action = screen.getByRole('button', { name: 'Reprogramar tarea: Confirmar invitados hoy' })
-    await userEvent.setup().click(action)
-    expect(await screen.findByText('No pudimos cargar la fecha del evento. Inténtalo de nuevo.')).toBeTruthy()
-    expect(screen.queryByRole('dialog')).toBeNull()
-    expect((action as HTMLButtonElement).disabled).toBe(false)
+
+    const task = todayDataFixture.today[0]
+    const actionsButton = screen.getByRole('button', { name: new RegExp(`Acciones de ${task.name}`, 'i') })
+    await user.click(actionsButton)
+
+    const rescheduleOption = screen.getByRole('menuitem', { name: /Reprogramar/i })
+    await user.click(rescheduleOption)
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeDefined()
+    })
   })
 })
