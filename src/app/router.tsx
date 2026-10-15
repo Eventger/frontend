@@ -12,6 +12,7 @@ import { EventsPage } from '@/features/events/pages/EventsPage'
 import { CreateEventPage } from '@/features/events/pages/CreateEventPage'
 import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
 import { TodayPage } from '@/features/today/pages/TodayPage'
+import { ProgressPage } from '@/features/progress/pages/ProgressPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { SecurityPage } from '@/features/settings/pages/SecurityPage'
 
@@ -54,6 +55,10 @@ export const appRoutes: RouteObject[] = [{
         {
           path: '/hoy',
           element: <TodayPage />,
+        },
+        { 
+          path: '/progreso', 
+          element: <ProgressPage /> 
         },
         {
           path: '/eventos',

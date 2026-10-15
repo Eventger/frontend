@@ -21,30 +21,29 @@ type RequestFn = <T>(
   options?: RequestInit,
 ) => Promise<T>
 
-function mapEventResponse(
-  event: EventApiData,
-): Event {
+export function mapEventResponse(event: EventApiData): Event {
   return {
     id: event.id,
+    userId: event.user,
     name: event.name,
     typeId: event.type,
     eventDate: event.date,
     location: event.location,
     contact: event.contact,
-    ...(event.progress !== undefined ? { progress: event.progress } : {}),
+    progress: event.progress,
+    createdAt: event.created_at,
+    updatedAt: event.updated_at,
   }
 }
 
+// Alias por si alguna función antigua la llamaba por este nombre
+export const mapBackendEventToEvent = mapEventResponse
+
 export async function getEventTypes(): Promise<EventType[]> {
-  const response =
-    await apiRequest<EventTypesApiResponse>(
-      '/event-types/',
-    )
+  const response = await apiRequest<EventTypesApiResponse>('/event-types/')
 
   if (!response.success) {
-    throw new Error(
-      'Could not retrieve event types',
-    )
+    throw new Error('Could not retrieve event types')
   }
 
   return response.data
@@ -55,39 +54,27 @@ export async function createEvent(
   requestFn: RequestFn = apiRequest,
 ): Promise<Event> {
   if (data.typeId === null) {
-    throw new Error(
-      'Event type is required',
-    )
+    throw new Error('Event type is required')
   }
 
   const request: CreateEventApiRequest = {
     name: data.name,
     type: data.typeId,
-    date: toEventDateTime(
-      data.eventDate,
-    ),
+    date: toEventDateTime(data.eventDate),
     location: data.location,
     contact: data.contact,
   }
 
-  const response =
-    await requestFn<CreateEventApiResponse>(
-      '/events/',
-      {
-        method: 'POST',
-        body: JSON.stringify(request),
-      },
-    )
+  const response = await requestFn<CreateEventApiResponse>('/events/', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
 
   if (!response.success) {
-    throw new Error(
-      response.message,
-    )
+    throw new Error(response.message)
   }
 
-  return mapEventResponse(
-    response.data,
-  )
+  return mapEventResponse(response.data)
 }
 
 export async function getEvents(
@@ -97,19 +84,12 @@ export async function getEvents(
 ): Promise<EventsPageData> {
   const query = new URLSearchParams({ page: String(page) })
   if (typeId !== null) query.set('type', String(typeId))
-  const response =
-    await requestFn<EventsApiResponse>(
-      `/events/?${query}`,
-    )
+  const response = await requestFn<EventsApiResponse>(`/events/?${query}`)
 
   if (response?.success !== true || !Array.isArray(response.data)) {
-    throw new Error(
-      'Could not retrieve events',
-    )
+    throw new Error('Could not retrieve events')
   }
 
-  // El contrato anterior devuelve la lista completa sin metadatos.
-  // Conservamos filtro y páginas mientras el backend adopta la paginación.
   if (response.pagination === undefined) {
     const events = typeId === null
       ? response.data
@@ -141,20 +121,13 @@ export async function getEventById(
   eventId: number,
   requestFn: RequestFn = apiRequest,
 ): Promise<Event> {
-  const response =
-    await requestFn<EventApiResponse>(
-      `/events/${eventId}/`,
-    )
+  const response = await requestFn<EventApiResponse>(`/events/${eventId}/`)
 
   if (!response.success) {
-    throw new Error(
-      'No se pudo cargar el evento',
-    )
+    throw new Error('No se pudo cargar el evento')
   }
 
-  return mapEventResponse(
-    response.data,
-  )
+  return mapEventResponse(response.data)
 }
 
 export async function updateEvent(
@@ -163,58 +136,38 @@ export async function updateEvent(
   requestFn: RequestFn = apiRequest,
 ): Promise<Event> {
   if (data.typeId === null) {
-    throw new Error(
-      'Event type is required',
-    )
+    throw new Error('Event type is required')
   }
 
   const request: UpdateEventApiRequest = {
     name: data.name,
     type: data.typeId,
-    date: toEventDateTime(
-      data.eventDate,
-    ),
+    date: toEventDateTime(data.eventDate),
     location: data.location,
     contact: data.contact,
   }
 
-  const response =
-    await requestFn<UpdateEventApiResponse>(
-      `/events/${eventId}/`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify(request),
-      },
-    )
+  const response = await requestFn<UpdateEventApiResponse>(`/events/${eventId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(request),
+  })
 
   if (!response.success) {
-    throw new Error(
-      response.message,
-    )
+    throw new Error(response.message)
   }
 
-  return mapEventResponse(
-    response.data,
-  )
+  return mapEventResponse(response.data)
 }
 
 export async function deleteEvent(
   eventId: number,
   requestFn: RequestFn = apiRequest,
 ): Promise<void> {
-  await requestFn<void>(
-    `/events/${eventId}/`,
-    {
-      method: 'DELETE',
-    },
-  )
+  await requestFn<void>(`/events/${eventId}/`, {
+    method: 'DELETE',
+  })
 }
 
-function toEventDateTime(
-  date: string,
-) {
-  // El formulario captura un día, no una hora. Usar medianoche
-  // hacía que un evento programado para hoy quedara en el pasado
-  // apenas comenzaba el día y el API rechazara la actualización.
+function toEventDateTime(date: string) {
   return `${date}T23:59:59.999-05:00`
 }
