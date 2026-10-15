@@ -28,4 +28,34 @@ describe('EventProgressCard', () => {
     expect(screen.getByText('50%')).toBeTruthy()
     expect(screen.getByText('2 de 4 tareas completadas.')).toBeTruthy()
   })
+
+  it('excluye subtareas pospuestas de la carga activa del día', () => {
+    const subtasks = [
+      {
+        ...subtaskFixture,
+        id: 1,
+        state: 'postponed' as const,
+        estimatedHours: 5,
+      },
+      {
+        ...subtaskFixture,
+        id: 2,
+        state: 'completed' as const,
+        estimatedHours: 3,
+      },
+      {
+        ...subtaskFixture,
+        id: 3,
+        state: 'pending' as const,
+        estimatedHours: 2,
+      },
+    ]
+
+    render(<EventProgressCard subtasks={subtasks} eventDate="2026-10-25" />)
+
+    expect(screen.getByText('33%')).toBeTruthy()
+    expect(screen.getByText('1 de 3 tareas completadas.')).toBeTruthy()
+    // Solo la tarea pending (2h) suma para la carga activa
+    expect(screen.getByText(/h \/ día/)).toBeTruthy()
+  })
 })

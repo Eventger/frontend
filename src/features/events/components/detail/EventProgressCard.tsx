@@ -15,7 +15,7 @@ function getDailyLoad(
   const pendingHours = subtasks
     .filter(
       (subtask) =>
-        subtask.state !== 'completed',
+        subtask.state !== 'completed' && subtask.state !== 'postponed',
     )
     .reduce(
       (total, subtask) =>

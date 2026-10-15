@@ -19,25 +19,32 @@ function formatEventDate(date: string) {
 export function EventCard({
   event,
 }: EventCardProps) {
+  const hasServerProgress = event.progress !== undefined
   const {
     subtasks,
-    isLoading,
-    error,
-  } = useEventSubtasks(event.id)
+    isLoading: isSubtasksLoading,
+    error: subtasksError,
+  } = useEventSubtasks(hasServerProgress ? null : event.id)
 
-  const totalTasks = subtasks.length
+  const totalTasks = hasServerProgress ? event.progress!.total : subtasks.length
 
-  const completedTasks = subtasks.filter(
-    (subtask) =>
-      subtask.state === 'completed',
-  ).length
+  const completedTasks = hasServerProgress
+    ? event.progress!.completed
+    : subtasks.filter(
+        (subtask) =>
+          subtask.state === 'completed',
+      ).length
 
-  const progress =
-    totalTasks === 0
+  const progress = hasServerProgress
+    ? event.progress!.percentage
+    : totalTasks === 0
       ? 0
       : Math.round(
           (completedTasks / totalTasks) * 100,
         )
+
+  const isLoading = !hasServerProgress && isSubtasksLoading
+  const error = !hasServerProgress ? subtasksError : null
 
   return (
     <Link

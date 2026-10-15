@@ -60,6 +60,10 @@ export const appRoutes: RouteObject[] = [{
           element: <EventsPage />,
         },
         {
+          path: '/progreso',
+          element: <EventsPage />,
+        },
+        {
           path: '/crear',
           element: <CreateEventPage />,
         },
