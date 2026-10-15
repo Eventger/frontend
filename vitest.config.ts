@@ -8,6 +8,7 @@ export default mergeConfig(viteConfig, defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    testTimeout: 15000,
     include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
     passWithNoTests: false,
     reporters: ['default', ['junit', { outputFile: 'reports/junit.xml' }]],

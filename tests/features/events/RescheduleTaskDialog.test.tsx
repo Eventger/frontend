@@ -133,6 +133,8 @@ describe('RescheduleTaskDialog', () => {
     expect(writes).toHaveLength(0)
   })
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T02:00:00Z'))
     writes = []; patchStatus = 200; saved.mockReset(); closed.mockReset()
     vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
       const body = options.body ? JSON.parse(String(options.body)) : undefined

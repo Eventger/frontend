@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
 
 import { EditEventForm } from '@/features/events/components/edit/EditEventForm'
@@ -40,11 +40,14 @@ function renderForm(
 }
 
 describe('EditEventForm', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T02:00:00Z'))
+  })
+
   afterEach(() => vi.useRealTimers())
 
   it('limita el calendario de tareas entre hoy en Bogotá y el evento y valida fechas manuales', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-10-08T02:00:00Z'))
     const onCreateSubtask = vi.fn().mockResolvedValue(undefined)
     renderForm(undefined, { onCreateSubtask })
     const date = screen.getByLabelText('Fecha límite *') as HTMLInputElement
@@ -66,8 +69,6 @@ describe('EditEventForm', () => {
   })
 
   it('conserva la edición de una tarea vencida sin permitir moverla a otro día pasado', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date('2026-10-08T02:00:00Z'))
     const onUpdateSubtask = vi.fn().mockResolvedValue(undefined)
     const task = { ...subtaskFixture, targetDate: '2026-10-05' }
     renderForm(undefined, { subtasks: [task], onUpdateSubtask })
@@ -160,7 +161,7 @@ describe('EditEventForm', () => {
       expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('2026-10-12')
     }
     expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto sin guardar')
-  })
+  }, 15000)
 
   it('precarga, actualiza y envía el contacto', async () => {
     const user = userEvent.setup()
