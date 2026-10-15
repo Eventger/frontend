@@ -101,7 +101,7 @@ describe('TodayTaskCard', () => {
     )
 
     expect(screen.getByText(label)).toBeTruthy()
-    expect(screen.getByText('Ver tarea')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Ver tarea: Confirmar proveedores/i })).toBeTruthy()
     expect(screen.getByText(/1.2 h/)).toBeTruthy()
 
     const taskButtons =
@@ -125,7 +125,7 @@ describe('TodayTaskCard', () => {
       />,
     )
 
-    expect(screen.getByText('Ver tarea')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Ver tarea: Confirmar proveedores/i })).toBeTruthy()
     expect(screen.getByText(/2 h/)).toBeTruthy()
   })
 })

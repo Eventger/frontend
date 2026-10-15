@@ -52,7 +52,12 @@ describe('reprogramación con hooks, servicios y respuestas HTTP', () => {
       throw new Error(`Solicitud inesperada: ${path}`)
     }))
     render(<MemoryRouter><TodayPage /></MemoryRouter>)
-    await user.click(await screen.findByRole('button', { name: `Reprogramar tarea: ${task.name}` }))
+    // 1. Abre el menú flotante de acciones
+    await user.click(await screen.findByRole('button', { name: `Acciones de ${task.name}` }))
+
+    // 2. Hace clic en la opción Reprogramar del menú
+    await user.click(await screen.findByRole('menuitem', { name: /Reprogramar/i }))
+    
     fireEvent.change(await screen.findByLabelText('Nueva fecha'), { target: { value: '2026-10-12' } })
     await waitFor(() => expect((screen.getByRole('button', { name: 'Reprogramar' }) as HTMLButtonElement).disabled).toBe(false))
     await user.click(screen.getByRole('button', { name: 'Reprogramar' }))
