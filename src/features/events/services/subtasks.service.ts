@@ -7,6 +7,7 @@ import type {
   EventSubtasksApiResponse,
   Subtask,
   SubtaskApiData,
+  SubtaskState,
   UpdateSubtaskApiRequest,
   UpdateSubtaskApiResponse,
   UpdateSubtaskInput,
@@ -23,23 +24,16 @@ export function mapSubtaskResponse(
   return {
     id: subtask.id,
     eventId: subtask.event,
-    state: subtask.state,
+    state: subtask.state ?? subtask.status ?? 'pending',
     name: subtask.name,
     targetDate: subtask.target_date,
-    estimatedHours: Number(
-      subtask.estimated_hours,
-    ),
-    details: subtask.details,
+    estimatedHours: Number(subtask.estimated_hours),
+    details: subtask.note ?? subtask.details ?? '',
   }
 }
 
-export function toDeadlineDateTime(
-  date: string,
-) {
-  const localEndOfDay = new Date(
-    `${date}T23:59:59-05:00`,
-  )
-
+export function toDeadlineDateTime(date: string) {
+  const localEndOfDay = new Date(`${date}T23:59:59-05:00`)
   return localEndOfDay.toISOString()
 }
 
@@ -47,20 +41,9 @@ export async function getEventSubtasks(
   eventId: number,
   requestFn: RequestFn = apiRequest,
 ): Promise<Subtask[]> {
-  const response =
-    await requestFn<EventSubtasksApiResponse>(
-      `/events/${eventId}/subtasks/`,
-    )
-
-  if (!response.success) {
-    throw new Error(
-      'No se pudieron cargar las subtareas',
-    )
-  }
-
-  return response.data.map(
-    mapSubtaskResponse,
-  )
+  const response = await requestFn<EventSubtasksApiResponse>(`/events/${eventId}/subtasks/`)
+  if (!response.success) throw new Error('No se pudieron cargar las subtareas')
+  return response.data.map(mapSubtaskResponse)
 }
 
 export async function createSubtask(
@@ -70,32 +53,16 @@ export async function createSubtask(
 ): Promise<Subtask> {
   const request: CreateSubtaskApiRequest = {
     name: data.name,
-    target_date: toDeadlineDateTime(
-      data.targetDate,
-    ),
-    estimated_hours:
-      data.estimatedHours.toFixed(2),
+    target_date: toDeadlineDateTime(data.targetDate),
+    estimated_hours: data.estimatedHours.toFixed(2),
     details: data.details,
   }
-
-  const response =
-    await requestFn<CreateSubtaskApiResponse>(
-      `/events/${eventId}/subtasks/`,
-      {
-        method: 'POST',
-        body: JSON.stringify(request),
-      },
-    )
-
-  if (!response.success) {
-    throw new Error(
-      response.message,
-    )
-  }
-
-  return mapSubtaskResponse(
-    response.data,
-  )
+  const response = await requestFn<CreateSubtaskApiResponse>(`/events/${eventId}/subtasks/`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
+  if (!response.success) throw new Error(response.message)
+  return mapSubtaskResponse(response.data)
 }
 
 export async function updateSubtask(
@@ -106,42 +73,38 @@ export async function updateSubtask(
   const request: UpdateSubtaskApiRequest = {
     ...(data.state === undefined ? {} : { state: data.state }),
     name: data.name,
-    target_date: toDeadlineDateTime(
-      data.targetDate,
-    ),
-    estimated_hours:
-      data.estimatedHours.toFixed(2),
+    target_date: toDeadlineDateTime(data.targetDate),
+    estimated_hours: data.estimatedHours.toFixed(2),
     details: data.details,
   }
+  const response = await requestFn<UpdateSubtaskApiResponse>(`/subtasks/${subtaskId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(request),
+  })
+  if (!response.success) throw new Error(response.message)
+  return mapSubtaskResponse(response.data)
+}
 
-  const response =
-    await requestFn<UpdateSubtaskApiResponse>(
-      `/subtasks/${subtaskId}/`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify(request),
-      },
-    )
-
-  if (!response.success) {
-    throw new Error(
-      response.message,
-    )
-  }
-
-  return mapSubtaskResponse(
-    response.data,
-  )
+/** Registra el avance desde S4-A01…A08. La API expone el estado editable como `status`
+ * y la nota como `note` (alias de `details` en el backend).
+ */
+export async function registerSubtaskProgress(
+  subtaskId: number,
+  status: Extract<SubtaskState, 'completed' | 'postponed'>,
+  note: string,
+  requestFn: RequestFn = apiRequest,
+): Promise<Subtask> {
+  const response = await requestFn<UpdateSubtaskApiResponse>(`/subtasks/${subtaskId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, note: note.trim() }),
+  })
+  if (!response.success) throw new Error(response.message || 'No se pudo guardar el avance')
+  return mapSubtaskResponse(response.data)
 }
 
 export async function deleteSubtask(
   subtaskId: number,
   requestFn: RequestFn = apiRequest,
 ): Promise<void> {
-  await requestFn<void>(
-    `/subtasks/${subtaskId}/`,
-    {
-      method: 'DELETE',
-    },
-  )
+  await requestFn<void>(`/subtasks/${subtaskId}/`, { method: 'DELETE' })
 }
