@@ -15,6 +15,14 @@ describe('recuperación de rutas', () => {
     expect(screen.queryByText('Unexpected Application Error!')).toBeNull()
   })
 
+  it('la ruta /progreso está configurada en el árbol de rutas de la aplicación', () => {
+    const protectedRoute = appRoutes[0].children?.find(r => 'children' in r && Array.isArray(r.children))
+    const routePaths = protectedRoute && 'children' in protectedRoute
+      ? protectedRoute.children?.map(r => r.path)
+      : []
+    expect(routePaths).toContain('/progreso')
+  })
+
   it('permite volver al inicio desde el mensaje de página inexistente', async () => {
     const router = createMemoryRouter([
       { path: '/', element: <h1>Inicio</h1> },

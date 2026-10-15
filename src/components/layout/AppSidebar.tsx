@@ -63,6 +63,7 @@ function SidebarContent({
     : 'Usuario'
   const isEventsSection =
     location.pathname === '/eventos' ||
+    location.pathname === '/progreso' ||
     location.pathname === '/crear' ||
     location.pathname.startsWith('/evento/')
 

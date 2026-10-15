@@ -132,6 +132,41 @@ describe('getEvents', () => {
     expect(result.pagination).toEqual({ page: 2, pageSize: 6, total: 7, totalPages: 2 })
   })
 
+  it('mapea el campo progress cuando el backend lo incluye en los eventos', async () => {
+    const response: EventsApiResponse = {
+      success: true,
+      pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 },
+      data: [
+        {
+          id: 22,
+          user: 7,
+          name: 'Evento con progreso',
+          type: 1,
+          date: '2099-12-31T00:00:00.000Z',
+          location: 'Cali',
+          contact: 'Carlos',
+          progress: {
+            percentage: 60,
+            completed: 3,
+            total: 5,
+          },
+          created_at: '2099-01-01T10:00:00.000Z',
+          updated_at: '2099-01-01T10:00:00.000Z',
+        },
+      ],
+    }
+    vi.mocked(apiRequest).mockResolvedValue(response)
+
+    const result = await getEvents(1)
+
+    expect(result.events[0].progress).toEqual({
+      percentage: 60,
+      completed: 3,
+      total: 5,
+    })
+  })
+
+
   it('envía el tipo junto con la página al backend usando el cliente autenticado', async () => {
     const request = vi.fn().mockResolvedValue({ success: true, data: [], pagination: { page: 2, page_size: 6, total: 0, total_pages: 1 } })
     await getEvents(2, request, 3)

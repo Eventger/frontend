@@ -31,6 +31,7 @@ function mapEventResponse(
     eventDate: event.date,
     location: event.location,
     contact: event.contact,
+    ...(event.progress !== undefined ? { progress: event.progress } : {}),
   }
 }
 

@@ -698,6 +698,7 @@ export function EventDetailPage() {
                     onDeleteEvent={
                       handleOpenDeleteEvent
                     }
+                    onSubtaskUpdated={refreshSubtasks}
                   />
 
                   <DeleteEventDialog
