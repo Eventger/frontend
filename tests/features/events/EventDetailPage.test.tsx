@@ -823,3 +823,65 @@ describe('EventDetailContent', () => {
     expect(screen.getByText('Completada')).toBeDefined()
   })
 })
+
+import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard'
+
+describe('EventTaskCard - Cobertura de interacciones', () => {
+  const mockSubtaskWithNote: Subtask = {
+    id: 99,
+    eventId: 1,
+    name: 'Subtarea con nota',
+    targetDate: '2026-10-15',
+    estimatedHours: 4,
+    details: 'Esta es una nota explicativa de la tarea',
+    state: 'in_progress',
+  }
+
+  it('debe abrir y cerrar la nota de la tarea al presionar el botón de nota', async () => {
+    const user = userEvent.setup()
+    render(<EventTaskCard subtask={mockSubtaskWithNote} />)
+
+    // 1. Selecciona exactamente el botón "Nota"
+    const noteButton = screen.getByRole('button', { name: /^Nota$/i })
+    await user.click(noteButton)
+    expect(screen.getByText('Esta es una nota explicativa de la tarea')).toBeDefined()
+
+    // 2. Oculta la nota
+    const hideNoteButton = screen.getByRole('button', { name: /Ocultar/i })
+    await user.click(hideNoteButton)
+    expect(screen.queryByText('Esta es una nota explicativa de la tarea')).toBeNull()
+  })
+
+  it('debe desplegar el menú de acciones con posicionamiento y permitir ver/ocultar detalles', async () => {
+    const user = userEvent.setup()
+    render(<EventTaskCard subtask={mockSubtaskWithNote} />)
+
+    // Abre el menú flotante calculando coordenadas
+    const moreButton = screen.getByRole('button', { name: /Más acciones para Subtarea con nota/i })
+    await user.click(moreButton)
+
+    // Opción Ver detalles
+    const detailsOption = screen.getByRole('menuitem', { name: /Ver detalles/i })
+    await user.click(detailsOption)
+
+    expect(screen.getByText('Detalles de la tarea')).toBeDefined()
+
+    // Volver a abrir menú para presionar Ocultar detalles
+    await user.click(moreButton)
+    const hideDetailsOption = screen.getByRole('menuitem', { name: /Ocultar detalles/i })
+    await user.click(hideDetailsOption)
+  })
+
+  it('debe cerrar el menú de acciones haciendo clic en el backdrop invisible', async () => {
+    const user = userEvent.setup()
+    render(<EventTaskCard subtask={mockSubtaskWithNote} />)
+
+    const moreButton = screen.getByRole('button', { name: /Más acciones para Subtarea con nota/i })
+    await user.click(moreButton)
+
+    const backdrop = screen.getByRole('button', { name: /Cerrar menú de acciones/i })
+    await user.click(backdrop)
+
+    expect(screen.queryByRole('menuitem', { name: /Registrar avance/i })).toBeNull()
+  })
+})
