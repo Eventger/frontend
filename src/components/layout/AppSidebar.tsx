@@ -1,93 +1,49 @@
 import { useState } from 'react'
-import {
-  CalendarDays,
-  ChevronRight,
-  LogOut,
-  Menu,
-} from 'lucide-react'
-
-import {
-  Link,
-  useLocation,
-  useNavigate,
-} from 'react-router'
-
+import { CalendarDays, ChevronRight, LogOut, Menu } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useClerk, useUser } from '@clerk/react'
 import { Avatar } from 'radix-ui'
 
 import { Button } from '@/components/ui/button'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
-
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
-
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 
 const navigationItems = [
-  {
-    label: 'Hoy',
-    to: '/hoy',
-  },
-  {
-    label: 'Eventos',
-    to: '/eventos',
-  },
+  { label: 'Hoy', to: '/hoy' },
+  { label: 'Eventos', to: '/eventos' },
+  { label: 'Progreso', to: '/progreso' },
 ]
 
-type SidebarContentProps = {
-  onNavigate?: () => void
-}
+type SidebarContentProps = { onNavigate?: () => void }
 
-function SidebarContent({
-  onNavigate,
-}: SidebarContentProps) {
+function SidebarContent({ onNavigate }: SidebarContentProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const [isSigningOut, setIsSigningOut] =
-    useState(false)
-  const [signOutError, setSignOutError] =
-    useState('')
-
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
   const { signOut } = useClerk()
-  const {
-    user,
-    isLoaded,
-    isSignedIn,
-  } = useUser()
+  const { user, isLoaded, isSignedIn } = useUser()
   const displayName = isLoaded && isSignedIn
     ? user.firstName?.trim() || user.fullName?.trim().split(/\s+/)[0] || 'Usuario'
     : 'Usuario'
-  const isEventsSection =
-    location.pathname === '/eventos' ||
-    location.pathname === '/progreso' ||
-    location.pathname === '/crear' ||
-    location.pathname.startsWith('/evento/')
+  const isEventsSection = location.pathname === '/eventos'
+    || location.pathname === '/crear'
+    || location.pathname.startsWith('/evento/')
 
   const handleCreateEvent = () => {
-    navigate('/crear', {
-      viewTransition: true,
-    })
+    navigate('/crear', { viewTransition: true })
     onNavigate?.()
   }
 
   const handleSignOut = async () => {
     setIsSigningOut(true)
     setSignOutError('')
-
     try {
-      await signOut({
-        redirectUrl: '/',
-      })
-
+      await signOut({ redirectUrl: '/' })
       onNavigate?.()
     } catch {
-      setSignOutError(
-        'No pudimos cerrar la sesión. Inténtalo de nuevo.',
-      )
+      setSignOutError('No pudimos cerrar la sesión. Inténtalo de nuevo.')
       setIsSigningOut(false)
     }
   }
@@ -99,51 +55,31 @@ function SidebarContent({
 
   return (
     <div className="flex h-full flex-col bg-white">
-
-      {/* Logo */}
       <div className="flex items-center gap-3 px-6 pt-6">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[#4f46e5]">
-          <CalendarDays
-            size={22}
-            strokeWidth={2.2}
-            className="text-white"
-            aria-hidden="true"
-          />
+          <CalendarDays size={22} strokeWidth={2.2} className="text-white" aria-hidden="true" />
         </div>
-
-        <span className="text-[20px] font-semibold text-[#17212b]">
-          Eventger
-        </span>
+        <span className="text-[20px] font-semibold text-[#17212b]">Eventger</span>
       </div>
 
-      {/* Navegación */}
-      <nav
-        className="mt-10 flex flex-col gap-3 px-6"
-        aria-label="Navegación principal"
-      >
-        {navigationItems.map((item) => {
-          const isCurrent =
-            item.to === '/eventos'
-              ? isEventsSection
+      <nav className="mt-10 flex flex-col gap-3 px-6" aria-label="Navegación principal">
+        {navigationItems.map(item => {
+          const isCurrent = item.to === '/eventos'
+            ? isEventsSection
+            : item.to === '/progreso'
+              ? location.pathname === '/progreso'
               : location.pathname === item.to
-
           return (
             <Link
               key={item.to}
               to={item.to}
               viewTransition
               onClick={onNavigate}
-              aria-current={
-                isCurrent
-                  ? 'page'
-                  : undefined
-              }
+              aria-current={isCurrent ? 'page' : undefined}
               className={cn(
-                'flex h-11 items-center rounded-lg px-4',
-                'text-sm font-medium text-[#17212b]',
+                'flex h-11 items-center rounded-lg px-4 text-sm font-medium text-[#17212b]',
                 'transition-colors hover:bg-[#f7f8fc] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]',
-                isCurrent &&
-                  'bg-[#eef2ff] font-semibold text-[#3730a3]',
+                isCurrent && 'bg-[#eef2ff] font-semibold text-[#3730a3]',
               )}
             >
               {item.label}
@@ -152,26 +88,18 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* Crear evento */}
       <div className="mt-10 px-6">
         <Button
           type="button"
           onClick={handleCreateEvent}
-          aria-current={
-            location.pathname === '/crear'
-              ? 'page'
-              : undefined
-          }
+          aria-current={location.pathname === '/crear' ? 'page' : undefined}
           className="h-11 w-full justify-start rounded-lg bg-[#4f46e5] px-4 text-sm font-semibold text-white hover:cursor-pointer hover:bg-[#4338ca]"
         >
           + Crear evento
         </Button>
       </div>
 
-      {/* Parte inferior */}
       <div className="mt-auto p-6">
-
-        {/* Usuario */}
         <button
           type="button"
           onClick={handleOpenProfile}
@@ -183,36 +111,26 @@ function SidebarContent({
             location.pathname.startsWith('/configuracion') && 'border-[#4f46e5] bg-[#eef2ff]',
           )}
         >
-            <Avatar.Root className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#4f46e5] text-xs font-bold text-white">
-              <Avatar.Image
-                src={isLoaded && isSignedIn && user.hasImage ? user.imageUrl : undefined}
-                alt=""
-                width={36}
-                height={36}
-                className="size-full object-cover"
-              />
-              <Avatar.Fallback className="flex size-full items-center justify-center">
-                {isLoaded && isSignedIn
-                  ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`
-                    .toUpperCase() || 'U'
-                  : 'U'}
-              </Avatar.Fallback>
-            </Avatar.Root>
-
-            <span
-              title={displayName}
-              className="ml-3 mr-2 min-w-0 flex-1 truncate text-[13px] font-semibold text-[#17212b]"
-            >
-              {displayName}
-            </span>
-
-            <ChevronRight
-              className="ml-auto size-4 shrink-0 text-[#98a2b3] transition-transform group-hover:translate-x-0.5 group-hover:text-[#4f46e5]"
-              aria-hidden="true"
+          <Avatar.Root className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#4f46e5] text-xs font-bold text-white">
+            <Avatar.Image
+              src={isLoaded && isSignedIn && user.hasImage ? user.imageUrl : undefined}
+              alt=""
+              width={36}
+              height={36}
+              className="size-full object-cover"
             />
+            <Avatar.Fallback className="flex size-full items-center justify-center">
+              {isLoaded && isSignedIn
+                ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || 'U'
+                : 'U'}
+            </Avatar.Fallback>
+          </Avatar.Root>
+          <span title={displayName} className="ml-3 mr-2 min-w-0 flex-1 truncate text-[13px] font-semibold text-[#17212b]">
+            {displayName}
+          </span>
+          <ChevronRight className="ml-auto size-4 shrink-0 text-[#98a2b3] transition-transform group-hover:translate-x-0.5 group-hover:text-[#4f46e5]" aria-hidden="true" />
         </button>
 
-        {/* Cerrar sesión */}
         <button
           type="button"
           onClick={handleSignOut}
@@ -220,71 +138,33 @@ function SidebarContent({
           className="mt-3 flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-[#667085] transition-colors hover:bg-[#fef2f2] hover:text-[#b42318] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-wait disabled:opacity-60"
         >
           <LogOut size={18} aria-hidden="true" />
-
-          <span>
-            {isSigningOut
-              ? 'Cerrando sesión…'
-              : 'Cerrar sesión'}
-          </span>
+          <span>{isSigningOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</span>
         </button>
-
-        {signOutError && (
-          <InlineFeedback
-            className="mt-2 px-2.5"
-          >
-            {signOutError}
-          </InlineFeedback>
-        )}
+        {signOutError && <InlineFeedback className="mt-2 px-2.5">{signOutError}</InlineFeedback>}
       </div>
     </div>
   )
 }
 
 export function AppSidebar() {
-  const [open, setOpen] =
-    useState(false)
-
+  const [open, setOpen] = useState(false)
   return (
     <>
-      {/* Mobile */}
       <header className="sticky top-0 z-30 flex h-16 items-center border-b border-border-subtle bg-white/95 px-4 backdrop-blur xl:hidden">
-        <Sheet
-          open={open}
-          onOpenChange={setOpen}
-        >
+        <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Abrir menú"
-              className="size-11"
-            >
+            <Button variant="ghost" size="icon" aria-label="Abrir menú" className="size-11">
               <Menu className="size-5" />
             </Button>
           </SheetTrigger>
-
-          <SheetContent
-            side="left"
-            className="w-[260px] p-0"
-          >
-            <SheetTitle className="sr-only">
-              Navegación
-            </SheetTitle>
-
-            <SidebarContent
-              onNavigate={() =>
-                setOpen(false)
-              }
-            />
+          <SheetContent side="left" className="w-[260px] p-0">
+            <SheetTitle className="sr-only">Navegación</SheetTitle>
+            <SidebarContent onNavigate={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
-
-        <span className="ml-3 text-lg font-bold text-[#3730a3]">
-          Eventger
-        </span>
+        <span className="ml-3 text-lg font-bold text-[#3730a3]">Eventger</span>
       </header>
 
-      {/* Desktop */}
       <aside className="hidden h-svh w-[var(--app-sidebar-width)] shrink-0 border-r border-border-subtle bg-white xl:sticky xl:top-0 xl:block">
         <SidebarContent />
       </aside>

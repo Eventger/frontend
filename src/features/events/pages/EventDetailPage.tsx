@@ -275,7 +275,10 @@ export function EventDetailPage() {
   const handleReturnToEvent = () => {
     setView('detail')
 
-    void refreshSubtasks()
+    void Promise.all([
+      retryEvent(),
+      refreshSubtasks(),
+    ])
   }
 
   const handleAddAnother = () => {
@@ -375,7 +378,10 @@ export function EventDetailPage() {
         authenticatedRequest,
       )
 
-      await refreshSubtasks()
+      await Promise.all([
+        refreshSubtasks(),
+        retryEvent(),
+      ])
     }
 
   const handleUpdateSubtaskFromEdit =
@@ -389,7 +395,10 @@ export function EventDetailPage() {
         authenticatedRequest,
       )
 
-      await refreshSubtasks()
+      await Promise.all([
+        refreshSubtasks(),
+        retryEvent(),
+      ])
     }
 
   const handleDeleteSubtaskFromEdit =
@@ -399,7 +408,10 @@ export function EventDetailPage() {
         authenticatedRequest,
       )
 
-      await refreshSubtasks()
+      await Promise.all([
+        refreshSubtasks(),
+        retryEvent(),
+      ])
     }
 
   const handleOpenDeleteEvent = () => {

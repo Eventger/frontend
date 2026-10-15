@@ -25,11 +25,13 @@ export interface CreateEventApiRequest {
   contact: string
 }
 
-export interface EventProgress {
+export interface EventProgressSummary {
   percentage: number
   completed: number
   total: number
 }
+
+export type EventProgress = EventProgressSummary
 
 export interface EventApiData {
   id: number
@@ -39,7 +41,7 @@ export interface EventApiData {
   date: string
   location: string
   contact: string
-  progress?: EventProgress
+  progress?: EventProgressSummary
   created_at: string
   updated_at: string
 }
@@ -85,14 +87,14 @@ export interface Event {
   eventDate: string
   location: string
   contact: string
-  progress?: EventProgress
+  userId?: number         
+  progress?: EventProgressSummary
+  createdAt?: string      
+  updatedAt?: string      
 }
 
-export type UpdateEventInput =
-  CreateEventInput
-
-export type UpdateEventApiRequest =
-  CreateEventApiRequest
+export type UpdateEventInput = CreateEventInput
+export type UpdateEventApiRequest = CreateEventApiRequest
 
 export interface UpdateEventApiResponse {
   success: boolean

@@ -1,6 +1,5 @@
 import { Link } from 'react-router'
 
-import { useEventSubtasks } from '@/features/events/hooks/useEventSubtasks'
 import { formatCalendarDate } from '@/lib/calendar'
 import type { Event } from '@/features/events/types/event.types'
 
@@ -16,35 +15,14 @@ function formatEventDate(date: string) {
   })
 }
 
-export function EventCard({
-  event,
-}: EventCardProps) {
-  const hasServerProgress = event.progress !== undefined
-  const {
-    subtasks,
-    isLoading: isSubtasksLoading,
-    error: subtasksError,
-  } = useEventSubtasks(hasServerProgress ? null : event.id)
+export function EventCard({ event }: EventCardProps) {
+  const progressData = event.progress ?? {
+    completed: 0,
+    total: 0,
+    percentage: 0,
+  }
 
-  const totalTasks = hasServerProgress ? event.progress!.total : subtasks.length
-
-  const completedTasks = hasServerProgress
-    ? event.progress!.completed
-    : subtasks.filter(
-        (subtask) =>
-          subtask.state === 'completed',
-      ).length
-
-  const progress = hasServerProgress
-    ? event.progress!.percentage
-    : totalTasks === 0
-      ? 0
-      : Math.round(
-          (completedTasks / totalTasks) * 100,
-        )
-
-  const isLoading = !hasServerProgress && isSubtasksLoading
-  const error = !hasServerProgress ? subtasksError : null
+  const { completed, total, percentage } = progressData
 
   return (
     <Link
@@ -61,20 +39,15 @@ export function EventCard({
       </p>
 
       <p className="mt-[22px] text-[14px] font-medium text-[#17212b]">
-        {isLoading
-          ? 'Cargando progreso…'
-          : error
-            ? 'Progreso no disponible'
-            : `${progress} % · ${completedTasks}/${totalTasks} tareas`}
+        {`${percentage} % · ${completed}/${total} tareas`}
       </p>
 
       <div className="mt-[21px] h-2 w-full max-w-[440px] overflow-hidden rounded-[4px] bg-[#eaecf0]">
         <div
-          className={`h-full rounded-[4px] bg-[#4f46e5] transition-[width] duration-500 ease-out ${isLoading || error ? 'opacity-50' : ''}`}
+          className="h-full rounded-[4px] bg-[#4f46e5] transition-[width] duration-500 ease-out"
           style={{
-            width: `${progress}%`,
+            width: `${percentage}%`,
           }}
-          aria-busy={isLoading}
         />
       </div>
 

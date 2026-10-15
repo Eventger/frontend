@@ -74,6 +74,9 @@ describe('createEvent', () => {
       eventDate: '2099-12-31T00:00:00.000Z',
       location: 'Cali',
       contact: 'Laura 3001234567',
+      userId: 7,
+      createdAt: '2099-01-01T10:00:00.000Z',
+      updatedAt: '2099-01-01T10:00:00.000Z',
     })
   })
 })
@@ -127,6 +130,9 @@ describe('getEvents', () => {
         eventDate: '2099-12-31T00:00:00.000Z',
         location: 'Cali',
         contact: 'Laura 3001234567',
+        userId: 7,
+        createdAt: '2099-01-01T10:00:00.000Z',
+        updatedAt: '2099-01-01T10:00:00.000Z',
       },
     ])
     expect(result.pagination).toEqual({ page: 2, pageSize: 6, total: 7, totalPages: 2 })
@@ -274,9 +280,12 @@ describe('updateEvent', () => {
       id: response.data.id,
       name: input.name,
       typeId: input.typeId,
-      eventDate: response.data.date,
+      eventDate: '2099-12-31T00:00:00.000Z',
       location: input.location,
       contact: input.contact,
+      userId: 7,
+      createdAt: '2099-01-01T10:00:00.000Z',
+      updatedAt: '2099-02-01T10:00:00.000Z',
     })
   })
 })
@@ -374,6 +383,9 @@ describe('service error handling', () => {
       eventDate: '2099-12-31T00:00:00.000Z',
       location: 'Cali',
       contact: 'Laura',
+      userId: 7,
+      createdAt: '2099-01-01T10:00:00.000Z',
+      updatedAt: '2099-01-01T10:00:00.000Z',
     })
     expect(apiRequest).toHaveBeenCalledWith('/events/21/')
   })
