@@ -4,6 +4,7 @@ import {
   createSubtask,
   deleteSubtask,
   getEventSubtasks,
+  registerSubtaskProgress,
   updateSubtask,
 } from '@/features/events/services/subtasks.service'
 import type {
@@ -228,3 +229,94 @@ describe('deleteSubtask', () => {
     )
   })
 })
+
+describe('registerSubtaskProgress', () => {
+  it('actualiza el avance como hecha (completed) y trimmea la nota', async () => {
+    const response: UpdateSubtaskApiResponse = {
+      success: true,
+      message: 'Avance registrado',
+      data: {
+        ...subtaskApiFixture,
+        state: 'completed',
+        details: 'Nota completada',
+      },
+    }
+    vi.mocked(apiRequest).mockResolvedValue(response)
+
+    const result = await registerSubtaskProgress(
+      subtaskApiFixture.id,
+      'completed',
+      '   Nota completada   ',
+    )
+
+    expect(apiRequest).toHaveBeenCalledOnce()
+    expect(apiRequest).toHaveBeenCalledWith(
+      `/subtasks/${subtaskApiFixture.id}/`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'completed',
+          note: 'Nota completada',
+        }),
+      },
+    )
+    expect(result.state).toBe('completed')
+    expect(result.details).toBe('Nota completada')
+  })
+
+  it('actualiza el avance como pospuesta (postponed)', async () => {
+    const response: UpdateSubtaskApiResponse = {
+      success: true,
+      message: 'Avance registrado',
+      data: {
+        ...subtaskApiFixture,
+        state: 'postponed',
+        details: 'Pendiente confirmar',
+      },
+    }
+    vi.mocked(apiRequest).mockResolvedValue(response)
+
+    const result = await registerSubtaskProgress(
+      subtaskApiFixture.id,
+      'postponed',
+      'Pendiente confirmar',
+    )
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      `/subtasks/${subtaskApiFixture.id}/`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'postponed',
+          note: 'Pendiente confirmar',
+        }),
+      },
+    )
+    expect(result.state).toBe('postponed')
+  })
+
+  it('lanza el mensaje devuelto por la API en caso de fallo', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({
+      success: false,
+      message: 'No tienes permisos para actualizar esta tarea',
+      data: subtaskApiFixture,
+    } satisfies UpdateSubtaskApiResponse)
+
+    await expect(
+      registerSubtaskProgress(subtaskApiFixture.id, 'completed', ''),
+    ).rejects.toThrow('No tienes permisos para actualizar esta tarea')
+  })
+
+  it('lanza mensaje genérico si la API falla sin mensaje', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({
+      success: false,
+      message: '',
+      data: subtaskApiFixture,
+    } satisfies UpdateSubtaskApiResponse)
+
+    await expect(
+      registerSubtaskProgress(subtaskApiFixture.id, 'completed', ''),
+    ).rejects.toThrow('No se pudo guardar el avance')
+  })
+})
+

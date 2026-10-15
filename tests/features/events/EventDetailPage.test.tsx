@@ -93,7 +93,35 @@ vi.mock('@/features/events/components/detail/RegisterProgressDialog', () => ({
 }))
 
 vi.mock('@/features/events/components/detail/RescheduleTaskDialog', () => ({
-  RescheduleTaskDialog: () => <div data-testid="mock-reschedule-dialog" />,
+  RescheduleTaskDialog: ({
+    onClose,
+    onSaved,
+  }: {
+    onClose: () => void
+    onSaved: (task: Subtask) => Promise<void> | void
+  }) => (
+    <div data-testid="mock-reschedule-dialog">
+      <button
+        type="button"
+        onClick={() => {
+          void onSaved({
+            id: 1,
+            eventId: 1,
+            name: 'Tarea Test Reprogramada',
+            targetDate: '2026-10-18',
+            estimatedHours: 2,
+            details: '',
+            state: 'pending',
+          })
+        }}
+      >
+        Simular Guardar Reprogramar
+      </button>
+      <button type="button" onClick={onClose}>
+        Simular Cerrar Reprogramar
+      </button>
+    </div>
+  ),
 }))
 
 const retryEvent = vi.fn().mockResolvedValue(undefined)
@@ -782,6 +810,37 @@ describe('EventDetailContent', () => {
     await user.click(rescheduleOption)
 
     expect(screen.getByTestId('mock-reschedule-dialog')).toBeDefined()
+
+    // 1. Simular Guardar reprogramación (cubre onSaved)
+    await user.click(screen.getByRole('button', { name: /Simular Guardar Reprogramar/i }))
+    await waitFor(() => {
+      expect(screen.queryByTestId('mock-reschedule-dialog')).toBeNull()
+    })
+
+    // 2. Simular Cerrar reprogramación (cubre onClose)
+    await user.click(actionsButton)
+    await user.click(screen.getByRole('menuitem', { name: /Reprogramar/i }))
+    await user.click(screen.getByRole('button', { name: /Simular Cerrar Reprogramar/i }))
+    expect(screen.queryByTestId('mock-reschedule-dialog')).toBeNull()
+  })
+
+  it('permite enfocar el progreso y ordena tareas para hoy correctamente', async () => {
+    const user = userEvent.setup()
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date())
+    const subtaskToday: Subtask = {
+      id: 2,
+      eventId: 1,
+      name: 'Tarea Hoy',
+      targetDate: todayStr,
+      estimatedHours: 1,
+      details: '',
+      state: 'pending',
+    }
+    render(<EventDetailContent {...defaultProps} subtasks={[mockSubtasks[0], subtaskToday]} />)
+
+    const viewProgressBtn = screen.getByRole('button', { name: /Ver progreso detallado/i })
+    await user.click(viewProgressBtn)
+    expect(screen.getByText('Tarea Hoy')).toBeDefined()
   })
 
   it('debe manejar correctamente el caso cuando no se pasa onSubtaskUpdated', async () => {
