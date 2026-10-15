@@ -740,7 +740,6 @@ describe('EventDetailContent', () => {
 
   it('debe actualizar el estado visual al registrar avance', async () => {
     const user = userEvent.setup()
-
     render(<EventDetailContent {...defaultProps} />)
 
     expect(screen.getByText('En progreso')).toBeDefined()
@@ -770,9 +769,8 @@ describe('EventDetailContent', () => {
     )
   })
 
-  it('debe permitir abrir la reprogramación de tareas', async () => {
+  it('debe abrir y permitir interactuar con el diálogo de reprogramar', async () => {
     const user = userEvent.setup()
-
     render(<EventDetailContent {...defaultProps} />)
 
     const actionsButton = screen.getByRole('button', {
@@ -784,5 +782,44 @@ describe('EventDetailContent', () => {
     await user.click(rescheduleOption)
 
     expect(screen.getByTestId('mock-reschedule-dialog')).toBeDefined()
+  })
+
+  it('debe manejar correctamente el caso cuando no se pasa onSubtaskUpdated', async () => {
+    const user = userEvent.setup()
+    const propsWithoutCallback = { ...defaultProps, onSubtaskUpdated: undefined }
+
+    render(<EventDetailContent {...propsWithoutCallback} />)
+
+    const actionsButton = screen.getByRole('button', {
+      name: /Más acciones para Tarea Test/i,
+    })
+    await user.click(actionsButton)
+
+    const registerOption = screen.getByRole('menuitem', { name: /Registrar avance/i })
+    await user.click(registerOption)
+
+    const saveButton = screen.getByRole('button', { name: /Simular Guardar Avance/i })
+    await user.click(saveButton)
+
+    await waitFor(() => {
+      expect(screen.getByText('Completada')).toBeDefined()
+    })
+  })
+
+  it('debe actualizar las subtareas si cambian las props externas', async () => {
+    const { rerender } = render(<EventDetailContent {...defaultProps} />)
+
+    expect(screen.getByText('En progreso')).toBeDefined()
+
+    const updatedSubtasks: Subtask[] = [
+      {
+        ...mockSubtasks[0],
+        state: 'completed',
+      },
+    ]
+
+    rerender(<EventDetailContent {...defaultProps} subtasks={updatedSubtasks} />)
+
+    expect(screen.getByText('Completada')).toBeDefined()
   })
 })
