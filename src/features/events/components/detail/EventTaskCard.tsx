@@ -278,7 +278,7 @@ export function EventTaskCard({
                 <Pause className="size-4 shrink-0 text-[#667085]" aria-hidden="true" />
                 Sin fecha
               </span>
-              <span aria-hidden="true" className="shrink-0 text-[#98a2b3]">•</span>
+              <span aria-hidden="true" className="shrink-0 text-[#475467]">•</span>
               <span>No cuenta en la carga planificada</span>
             </p>
           ) : (
@@ -290,14 +290,14 @@ export function EventTaskCard({
                 <Calendar className={cn('size-4 shrink-0', scheduleIconTone)} aria-hidden="true" />
                 <time dateTime={subtask.targetDate ?? undefined}>{formatTaskDate(subtask.targetDate)}</time>
               </span>
-              <span aria-hidden="true" className={cn('shrink-0', scheduleStatus === 'overdue' ? 'text-[#fda29b]' : 'text-[#98a2b3]')}>•</span>
+              <span aria-hidden="true" className="shrink-0 text-[#475467]">•</span>
               <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap sm:w-[72px]">
                 <Clock className={cn('size-4 shrink-0', scheduleIconTone)} aria-hidden="true" />
                 <span className="tabular-nums">{formatEstimatedHours(subtask.estimatedHours)} h</span>
               </span>
               {scheduleStatus && (
                 <>
-                  <span aria-hidden="true" className={cn('hidden sm:inline shrink-0', scheduleStatus === 'overdue' ? 'text-[#fda29b]' : 'text-[#98a2b3]')}>•</span>
+                  <span aria-hidden="true" className="hidden sm:inline shrink-0 text-[#475467]">•</span>
                   <span
                     data-task-schedule-status
                     className={cn('inline-flex shrink-0 items-center justify-start gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium leading-[15px]', STATUS_STYLES[scheduleStatus])}
