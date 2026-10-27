@@ -660,6 +660,7 @@ export function EventForm({
               >
                 <SelectTrigger
                   id="event-type"
+                  aria-label="Tipo de evento *"
                   className={`min-h-[44px]! w-full rounded-lg border-border-subtle bg-white pl-10 text-[14px] text-[#17212b] ${
                     errors.typeId
                       ? 'border-[#d92d20]'

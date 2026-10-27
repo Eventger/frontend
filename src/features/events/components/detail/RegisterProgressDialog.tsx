@@ -139,7 +139,7 @@ export function RegisterProgressDialog({ task, onClose, onSaved }: Props) {
                     <span className={`block text-sm font-semibold leading-5 ${status === 'pending' ? 'text-[#3538cd]' : 'text-[#101828]'}`}>
                       Pendiente
                     </span>
-                    <span className="mt-0.5 block text-xs leading-4 text-[#667085]">
+                    <span className="mt-0.5 block text-xs leading-4 text-[#344054]">
                       Aún falta por realizar
                     </span>
                   </div>
@@ -161,7 +161,7 @@ export function RegisterProgressDialog({ task, onClose, onSaved }: Props) {
                   <div
                     className={`flex size-10 shrink-0 items-center justify-center rounded-full border transition-colors ${status === 'in_progress'
                         ? 'border-[#4f46e5] bg-[#4f46e5] text-white shadow-xs'
-                        : 'border-[#eaecf0] bg-[#f9fafb] text-[#667085]'
+                        : 'border-[#eaecf0] bg-[#f9fafb] text-[#475467]'
                       }`}
                     aria-hidden="true"
                   >
@@ -171,7 +171,7 @@ export function RegisterProgressDialog({ task, onClose, onSaved }: Props) {
                     <span className={`block text-sm font-semibold leading-5 ${status === 'in_progress' ? 'text-[#3538cd]' : 'text-[#101828]'}`}>
                       En progreso
                     </span>
-                    <span className="mt-0.5 block text-xs leading-4 text-[#667085]">
+                    <span className="mt-0.5 block text-xs leading-4 text-[#344054]">
                       La tarea se está realizando
                     </span>
                   </div>
@@ -193,7 +193,7 @@ export function RegisterProgressDialog({ task, onClose, onSaved }: Props) {
                   <div
                     className={`flex size-10 shrink-0 items-center justify-center rounded-full border transition-colors ${status === 'completed'
                         ? 'border-[#4f46e5] bg-[#4f46e5] text-white shadow-xs'
-                        : 'border-[#eaecf0] bg-[#f9fafb] text-[#667085]'
+                        : 'border-[#eaecf0] bg-[#f9fafb] text-[#475467]'
                       }`}
                     aria-hidden="true"
                   >
@@ -206,7 +206,7 @@ export function RegisterProgressDialog({ task, onClose, onSaved }: Props) {
                     >
                       Completada
                     </span>
-                    <span className="mt-0.5 block text-xs leading-4 text-[#667085]">
+                    <span className="mt-0.5 block text-xs leading-4 text-[#344054]">
                       La tarea se completó
                     </span>
                   </div>
@@ -241,7 +241,7 @@ export function RegisterProgressDialog({ task, onClose, onSaved }: Props) {
                     >
                       Pospuesta
                     </span>
-                    <span className="mt-0.5 block text-xs leading-4 text-[#667085]">
+                    <span className="mt-0.5 block text-xs leading-4 text-[#344054]">
                       No se puede realizar por ahora
                     </span>
                   </div>
@@ -249,7 +249,7 @@ export function RegisterProgressDialog({ task, onClose, onSaved }: Props) {
               </div>
             </fieldset>
 
-            <p className="mt-3 text-xs text-[#667085]">
+            <p className="mt-3 text-xs text-[#344054]">
               Puedes actualizar el estado nuevamente cuando sea necesario.
             </p>
 

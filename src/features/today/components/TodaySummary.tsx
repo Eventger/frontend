@@ -116,10 +116,10 @@ export function TodaySummary({
 
             {dailyLimitHours !== undefined && dailyLimitHours > 0 && (
               <div className="mt-3 space-y-1">
-                <div className="flex items-center justify-between text-[11px] font-medium text-[#667085]">
+                <div className="flex items-center justify-between text-[11px] font-medium text-[#344054]">
                   <span>{formatHours(plannedHours)} h ocupadas</span>
                   <span className={cn(
-                    plannedHours > dailyLimitHours ? 'font-semibold text-[#b42318]' : 'text-[#667085]',
+                    plannedHours > dailyLimitHours ? 'font-semibold text-[#b42318]' : 'text-[#344054]',
                   )}>
                     {plannedHours > dailyLimitHours
                       ? `+${formatHours(plannedHours - dailyLimitHours)} h sobrecarga`
@@ -153,9 +153,9 @@ export function TodaySummary({
                 onClick={onEditDailyLimit}
                 variant="outline"
                 aria-label="Cambiar horas"
-                className="mt-2.5 h-8 w-full rounded-lg border-0 bg-[#eef2ff] px-2 text-[12px] sm:text-[13px] font-semibold text-[#4f46e5] shadow-none hover:bg-[#e0e7ff] hover:text-[#4338ca] transition-colors flex items-center justify-center gap-1.5"
+                className="mt-2.5 h-8 w-full rounded-lg border-0 bg-[#eef2ff] px-2 text-[12px] sm:text-[13px] font-semibold text-[#3730a3] shadow-none hover:bg-[#e0e7ff] hover:text-[#312e81] transition-colors flex items-center justify-center gap-1.5"
               >
-                <Pencil className="size-3.5 shrink-0 text-[#4f46e5]" aria-hidden="true" />
+                <Pencil className="size-3.5 shrink-0 text-[#3730a3]" aria-hidden="true" />
                 <span>Cambiar horas diarias</span>
               </Button>
             )}

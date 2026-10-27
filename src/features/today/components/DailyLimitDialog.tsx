@@ -154,8 +154,7 @@ export function DailyLimitDialog({
               <Minus className="size-4 stroke-[3]" aria-hidden="true" />
             </button>
 
-            <label
-              htmlFor="daily-hours-field"
+            <div
               className="flex flex-1 cursor-text flex-col items-center justify-center px-1"
             >
               <input
@@ -181,7 +180,7 @@ export function DailyLimitDialog({
               <span className="mt-1 text-[12px] font-normal leading-none text-[#667085]">
                 horas / día
               </span>
-            </label>
+            </div>
 
             <button
               type="button"

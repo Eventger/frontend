@@ -100,6 +100,7 @@ export function DateInput({
         <input
           ref={pickerRef}
           type="date"
+          aria-label={calendarLabel}
           value={/^\d{4}-\d{2}-\d{2}$/.test(value) ? value : ''}
           min={min}
           max={max}
@@ -111,7 +112,7 @@ export function DateInput({
             setEditor({ sourceValue: nextValue, draft: formatDateInput(nextValue) })
             onValueChange(nextValue)
           }}
-          className="pointer-events-none absolute right-3 top-1/2 size-px -translate-y-1/2 opacity-0"
+          className="hidden"
         />
       )}
       <button

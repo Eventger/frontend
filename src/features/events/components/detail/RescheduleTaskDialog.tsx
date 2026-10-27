@@ -620,7 +620,7 @@ export function RescheduleTaskDialog({ task, eventDate, initialInput, initialCon
                               </span>
                               {item.event_name && (
                                 <>
-                                  <span aria-hidden="true" className="text-[#98a2b3]">•</span>
+                                  <span aria-hidden="true" className="text-[#475467]">•</span>
                                   <span className="font-normal text-[#667085]">{item.event_name}</span>
                                 </>
                               )}

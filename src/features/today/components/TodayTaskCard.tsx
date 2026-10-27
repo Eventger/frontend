@@ -22,10 +22,10 @@ type TodayTaskCardProps = {
 }
 
 const groupStyles: Record<TaskGroup, { accent: string; badgeBackground: string; badgeText: string; badgeLabel: string; metadataText: string; metadataIcon: string; separator: string }> = {
-  overdue: { accent: 'bg-[#b42318]', badgeBackground: 'bg-[#feeeec]', badgeText: 'text-[#b42318]', badgeLabel: 'Vencida', metadataText: 'font-medium text-[#b42318]', metadataIcon: 'text-[#b42318]', separator: 'text-[#fda29b]' },
-  today: { accent: 'bg-[#c2410c]', badgeBackground: 'bg-[#fff7e6]', badgeText: 'text-[#c2410c]', badgeLabel: 'Hoy', metadataText: 'font-medium text-[#c2410c]', metadataIcon: 'text-[#c2410c]', separator: 'text-[#fedf89]' },
-  upcoming: { accent: 'bg-[#175cd3]', badgeBackground: 'bg-[#eff8ff]', badgeText: 'text-[#175cd3]', badgeLabel: 'Próxima', metadataText: 'font-medium text-[#175cd3]', metadataIcon: 'text-[#175cd3]', separator: 'text-[#b2ddff]' },
-  completed: { accent: 'bg-[#027a48]', badgeBackground: 'bg-[#ecfdf3]', badgeText: 'text-[#027a48]', badgeLabel: 'Completada', metadataText: 'font-medium text-[#475467]', metadataIcon: 'text-[#027a48]', separator: 'text-[#d0d5dd]' },
+  overdue: { accent: 'bg-[#b42318]', badgeBackground: 'bg-[#feeeec]', badgeText: 'text-[#b42318]', badgeLabel: 'Vencida', metadataText: 'font-medium text-[#b42318]', metadataIcon: 'text-[#b42318]', separator: 'text-[#475467]' },
+  today: { accent: 'bg-[#c2410c]', badgeBackground: 'bg-[#fff7e6]', badgeText: 'text-[#c2410c]', badgeLabel: 'Hoy', metadataText: 'font-medium text-[#c2410c]', metadataIcon: 'text-[#c2410c]', separator: 'text-[#475467]' },
+  upcoming: { accent: 'bg-[#175cd3]', badgeBackground: 'bg-[#eff8ff]', badgeText: 'text-[#175cd3]', badgeLabel: 'Próxima', metadataText: 'font-medium text-[#175cd3]', metadataIcon: 'text-[#175cd3]', separator: 'text-[#475467]' },
+  completed: { accent: 'bg-[#027a48]', badgeBackground: 'bg-[#ecfdf3]', badgeText: 'text-[#027a48]', badgeLabel: 'Completada', metadataText: 'font-medium text-[#475467]', metadataIcon: 'text-[#027a48]', separator: 'text-[#475467]' },
 }
 
 function formatTaskDate(date: string) {

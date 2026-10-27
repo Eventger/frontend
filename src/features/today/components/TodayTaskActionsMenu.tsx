@@ -135,7 +135,7 @@ export function TodayTaskActionsMenu({
             type="button"
             role="menuitem"
             onClick={() => choose(onRegisterProgress)}
-            className="flex min-h-11 w-full items-center gap-2 rounded-md bg-[#eef2ff] px-3 text-left text-[13px] font-medium text-[#4f46e5] hover:bg-[#e0e7ff] focus-visible:outline-2 focus-visible:outline-[#4f46e5] sm:hidden"
+            className="flex min-h-11 w-full items-center gap-2 rounded-md bg-[#eef2ff] px-3 text-left text-[13px] font-medium text-[#3730a3] hover:bg-[#e0e7ff] focus-visible:outline-2 focus-visible:outline-[#4f46e5] sm:hidden"
           >
             <ListTodo size={16} aria-hidden="true" />
             Registrar avance
