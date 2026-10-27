@@ -112,8 +112,8 @@ export function PreferencesForm() {
                   <Minus className="size-4 stroke-[3]" aria-hidden="true" />
                 </button>
 
-                <div
-                  onClick={() => inputRef.current?.focus()}
+                <label
+                  htmlFor="daily-limit"
                   className="flex flex-1 cursor-text flex-col items-center justify-center px-1"
                 >
                   <input
@@ -139,7 +139,7 @@ export function PreferencesForm() {
                   <span className="mt-1 text-[12px] font-normal leading-none text-[#667085]">
                     horas / día
                   </span>
-                </div>
+                </label>
 
                 <button
                   type="button"

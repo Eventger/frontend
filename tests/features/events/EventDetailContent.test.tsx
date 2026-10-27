@@ -37,6 +37,32 @@ describe('EventDetailContent', () => {
     expect(screen.getByText('Teléfono no registrado')).toBeTruthy()
   })
 
+  it('separa un teléfono internacional y conserva contactos sin teléfono válido', () => {
+    const props = {
+      subtasks: [],
+      onAddTask: vi.fn(),
+      onEditEvent: vi.fn(),
+    }
+    const { rerender } = render(
+      <EventDetailContent
+        {...props}
+        event={{ ...eventFixture, contact: 'Ana Pérez +57 (300) 123-4567' }}
+      />,
+    )
+
+    expect(screen.getByText('Ana Pérez')).toBeTruthy()
+    expect(screen.getByText('+57 (300) 123-4567')).toBeTruthy()
+
+    rerender(
+      <EventDetailContent
+        {...props}
+        event={{ ...eventFixture, contact: 'Ana Pérez 12345' }}
+      />,
+    )
+    expect(screen.getByText('Ana Pérez 12345')).toBeTruthy()
+    expect(screen.getByText('Teléfono no registrado')).toBeTruthy()
+  })
+
   it('muestra el estado vacío y permite agregar una tarea', async () => {
     const user = userEvent.setup()
     const onAddTask = vi.fn()

@@ -64,15 +64,20 @@ function EventInfoItem({
 
 function getContactDetails(contact: string) {
   const normalizedContact = contact.trim()
-  const phoneMatch = normalizedContact.match(/^(.+?)\s+(\+?[\d(][\d\s().-]{5,}\d)$/)
+  let phoneStart = normalizedContact.length
+  while (phoneStart > 0 && /[\d\s()+.-]/.test(normalizedContact[phoneStart - 1])) {
+    phoneStart -= 1
+  }
+  const name = normalizedContact.slice(0, phoneStart).trim()
+  const phone = normalizedContact.slice(phoneStart).trim()
 
-  if (!phoneMatch || phoneMatch[2].replace(/\D/g, '').length < 7) {
+  if (!name || !/^\+?[\d(]/.test(phone) || !/\d$/.test(phone) || phone.replace(/\D/g, '').length < 7) {
     return { name: normalizedContact }
   }
 
   return {
-    name: phoneMatch[1].trim(),
-    phone: phoneMatch[2].trim(),
+    name,
+    phone,
   }
 }
 
