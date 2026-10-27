@@ -58,4 +58,50 @@ describe('EventProgressCard', () => {
     // Solo la tarea pending (2h) suma para la carga activa
     expect(screen.getByText(/h \/ día/)).toBeTruthy()
   })
+
+  it('formatea la carga diaria en horas y minutos en lugar de decimales', () => {
+    // Tarea de 1h con 3 días restantes -> 0.33h/día = 20 min / día
+    const subtasks = [
+      {
+        ...subtaskFixture,
+        id: 1,
+        state: 'pending' as const,
+        estimatedHours: 1,
+      },
+    ]
+
+    // Simulando fecha para obtener una fracción
+    render(<EventProgressCard subtasks={subtasks} eventDate="2026-10-26" />)
+
+    // No debe contener coma decimal de horas (e.g., "0,3 h / día")
+    expect(screen.queryByText(/0,\d+\s*h \/ día/)).toBeNull()
+    // Debe contener formato legible con min o h
+    expect(screen.getByText(/\/( día|dia)/)).toBeTruthy()
+  })
+
+  it('muestra las horas pendientes totales como métrica principal junto al progreso del evento', () => {
+    const subtasks = [
+      {
+        ...subtaskFixture,
+        id: 1,
+        state: 'pending' as const,
+        estimatedHours: 2,
+      },
+      {
+        ...subtaskFixture,
+        id: 2,
+        state: 'completed' as const,
+        estimatedHours: 1,
+      },
+    ]
+
+    render(<EventProgressCard subtasks={subtasks} eventDate="2026-10-30" />)
+
+    expect(screen.getByText('Progreso del evento')).toBeTruthy()
+    expect(screen.getByText('50%')).toBeTruthy()
+    expect(screen.getByText('1 de 2 tareas completadas.')).toBeTruthy()
+
+    expect(screen.getByText('Horas pendientes')).toBeTruthy()
+    expect(screen.getByText('2 h')).toBeTruthy()
+  })
 })

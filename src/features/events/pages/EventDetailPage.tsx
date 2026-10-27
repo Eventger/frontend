@@ -1,12 +1,15 @@
-import { getApiFieldError } from '@/lib/api'
+import { ApiError, getApiFieldError } from '@/lib/api'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
 import {
+  useEffect,
+  useRef,
   useState,
 } from 'react'
 
 import {
   useNavigate,
   useParams,
+  useSearchParams,
 } from 'react-router'
 
 import { PageContainer } from '@/components/layout/PageContainer'
@@ -14,18 +17,21 @@ import { PageFlowSurface } from '@/components/layout/PageFlowSurface'
 import { usePageFlowNavigation } from '@/components/layout/usePageFlowNavigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import type { BreadcrumbItem } from '@/components/layout/PageBreadcrumbs'
+import { useDocumentTitle } from '@/components/layout/useDocumentTitle'
 
 import {
   useAuthenticatedApi,
 } from '@/features/auth/hooks/useAuthenticatedApi'
 
 import { AddSubtaskDialog } from '@/features/events/components/detail/AddSubtaskDialog'
+import { DeleteSubtaskDialog } from '@/features/events/components/detail/DeleteSubtaskDialog'
 import { CreateSubtaskError } from '@/features/events/components/detail/CreateSubtaskError'
 import { CreateSubtaskSuccess } from '@/features/events/components/detail/CreateSubtaskSuccess'
 import { EventDetailContent } from '@/features/events/components/detail/EventDetailContent'
 import { EventDetailErrorState } from '@/features/events/components/detail/EventDetailErrorState'
 import { EventDetailLoadingState } from '@/features/events/components/detail/EventDetailLoadingState'
 import { EventNotFoundState } from '@/features/events/components/detail/EventNotFoundState'
+import { DestructiveConfirmationDialog } from '@/features/events/components/detail/DestructiveConfirmationDialog'
 
 import {
   DeleteEventError,
@@ -56,6 +62,7 @@ import type {
   Subtask,
   UpdateSubtaskInput,
 } from '@/features/events/types/subtask.types'
+import { usePlanningPreferences } from '@/features/settings/hooks/usePlanningPreferences'
 
 import { useEventTypes } from '../hooks/useEventTypes'
 
@@ -94,6 +101,7 @@ export function EventDetailPage() {
   const {
     authenticatedRequest,
   } = useAuthenticatedApi()
+  const { dailyLimitHours } = usePlanningPreferences()
 
   const eventId =
     Number.isInteger(parsedId) &&
@@ -115,6 +123,8 @@ export function EventDetailPage() {
     retry: retryEvent,
   } = useEventDetail(eventId)
 
+  useDocumentTitle(event?.name ? `${event.name} · Eventger` : 'Detalle de evento · Eventger')
+
   const {
     subtasks,
     isLoading: isLoadingSubtasks,
@@ -122,8 +132,41 @@ export function EventDetailPage() {
     refresh: refreshSubtasks,
   } = useEventSubtasks(event?.id ?? null)
 
+  const [searchParams, setSearchParams] = useSearchParams()
+  const isEditModeInUrl = searchParams.get('modo') === 'editar'
+  const highlightedSubtaskId = searchParams.get('tarea') ? Number(searchParams.get('tarea')) : null
+
   const [view, setView] =
-    useState<DetailFlowView>('detail')
+    useState<DetailFlowView>(isEditModeInUrl ? 'event-edit' : 'detail')
+
+  useEffect(() => {
+    const isEdit = searchParams.get('modo') === 'editar'
+    if (isEdit && view === 'detail') {
+      setView('event-edit')
+    } else if (!isEdit && view === 'event-edit') {
+      setView('detail')
+    }
+  }, [searchParams, view])
+
+  const clearEditModeFromUrl = () => {
+    if (searchParams.get('modo') === 'editar') {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('modo')
+        return next
+      })
+    }
+  }
+
+  const handleOpenEditEvent = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('modo', 'editar')
+      return next
+    })
+    setView('event-edit')
+  }
+
 
   const [
     isAddSubtaskOpen,
@@ -156,9 +199,23 @@ export function EventDetailPage() {
     setFormVersion,
   ] = useState(0)
 
+  const hasLoadedInitialData = useRef(false)
+  const [previousEventId, setPreviousEventId] = useState(eventId)
+
+  if (previousEventId !== eventId) {
+    setPreviousEventId(eventId)
+    hasLoadedInitialData.current = false
+  }
+
+  useEffect(() => {
+    if (event !== null && !isLoadingEvent && !isLoadingSubtasks) {
+      hasLoadedInitialData.current = true
+    }
+  }, [event, isLoadingEvent, isLoadingSubtasks])
+
   const isLoading =
-    isLoadingEvent ||
-    (event !== null && isLoadingSubtasks)
+    !hasLoadedInitialData.current &&
+    (isLoadingEvent || (event !== null && isLoadingSubtasks))
 
   const error =
     eventError ?? (event ? subtasksError : null)
@@ -201,6 +258,21 @@ export function EventDetailPage() {
     setIsDeletingEvent,
   ] = useState(false)
 
+  const [subtaskToDelete, setSubtaskToDelete] = useState<Subtask | null>(null)
+  const [isDeletingSubtask, setIsDeletingSubtask] = useState(false)
+
+  const handleConfirmDeleteSubtask = async () => {
+    if (!subtaskToDelete) return
+    setIsDeletingSubtask(true)
+    try {
+      await deleteSubtask(subtaskToDelete.id, authenticatedRequest)
+      setSubtaskToDelete(null)
+      await Promise.all([refreshSubtasks(), retryEvent()])
+    } finally {
+      setIsDeletingSubtask(false)
+    }
+  }
+
   const [
     deletedEventName,
     setDeletedEventName,
@@ -208,6 +280,10 @@ export function EventDetailPage() {
     useState<string | null>(
       null,
     )
+
+  const [isEditDirty, setIsEditDirty] = useState(false)
+  const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false)
+  const pendingNavigationRef = useRef<(() => void) | null>(null)
 
   const currentEvent =
     updatedEvent ?? event
@@ -219,15 +295,6 @@ export function EventDetailPage() {
             eventType.id ===
             currentEvent.typeId,
         )?.name
-      : undefined
-
-  const currentEventDescription =
-    currentEvent
-      ? eventTypes.find(
-          (eventType) =>
-            eventType.id ===
-            currentEvent.typeId,
-        )?.description
       : undefined
 
   const handleCreateSubtask = async (
@@ -313,6 +380,8 @@ export function EventDetailPage() {
         )
 
       setUpdatedEvent(updated)
+      clearEditModeFromUrl()
+      setIsEditDirty(false)
 
       setView(
         'event-edit-success',
@@ -341,25 +410,39 @@ export function EventDetailPage() {
       }
     }
 
+  const confirmOrExecute = (action: () => void) => {
+    if (isEditDirty) {
+      pendingNavigationRef.current = action
+      setIsDiscardConfirmOpen(true)
+    } else {
+      action()
+    }
+  }
+
   const handleCancelEventEdit =
     () => {
-      setSubmittedEventData(null)
-
-      setView('detail')
+      confirmOrExecute(() => {
+        setIsEditDirty(false)
+        clearEditModeFromUrl()
+        setSubmittedEventData(null)
+        setView('detail')
+      })
     }
 
   const handleContinueEditingEvent =
     () => {
-      setView('event-edit')
+      handleOpenEditEvent()
     }
 
   const handleReturnFromEventEdit =
     () => {
-      setSubmittedEventData(null)
-
-      setView('detail')
-
-      void retryEvent()
+      confirmOrExecute(() => {
+        setIsEditDirty(false)
+        clearEditModeFromUrl()
+        setSubmittedEventData(null)
+        setView('detail')
+        void retryEvent()
+      })
     }
 
   const handleCreateSubtaskFromEdit =
@@ -449,7 +532,19 @@ export function EventDetailPage() {
         setView(
           'event-delete-success',
         )
-      } catch {
+      } catch (err: unknown) {
+        const is404 =
+          (err instanceof ApiError && err.status === 404) ||
+          (typeof err === 'object' && err !== null && 'status' in err && (err as { status: unknown }).status === 404) ||
+          (err instanceof Error && (err.message.includes('404') || err.message.toLowerCase().includes('not found')))
+
+        if (is404) {
+          setDeletedEventName(currentEvent.name)
+          setIsDeleteEventOpen(false)
+          setView('event-delete-success')
+          return
+        }
+
         setIsDeleteEventOpen(
           false,
         )
@@ -541,7 +636,7 @@ export function EventDetailPage() {
                 handleContinueEditingEvent
               }
               onReturnToEvent={
-                handleReturnFromEventEdit
+                handleReturnToEvent
               }
             />
           )}
@@ -604,6 +699,7 @@ export function EventDetailPage() {
                       eventTypes={
                         eventTypes
                       }
+                      dailyLimitHours={dailyLimitHours}
                       subtasks={subtasks}
                       subtasksError={subtasksError}
                       isRefreshingSubtasks={isLoadingSubtasks}
@@ -627,6 +723,7 @@ export function EventDetailPage() {
                       }
                       onSubtasksChanged={refreshSubtasks}
                       onRetrySubtasks={refreshSubtasks}
+                      onDirtyChange={setIsEditDirty}
                     />
                   </PageFlowSurface>
                 )}
@@ -693,24 +790,27 @@ export function EventDetailPage() {
                   <EventDetailContent
                     event={currentEvent}
                     subtasks={subtasks}
+                    dailyLimitHours={dailyLimitHours}
                     eventTypeName={
                       currentEventTypeName
                     }
-                    eventDescription={
-                      currentEventDescription
+                    highlightedSubtaskId={
+                      highlightedSubtaskId
                     }
                     onAddTask={() =>
                       setIsAddSubtaskOpen(
                         true,
                       )
                     }
-                    onEditEvent={() =>
-                      setView('event-edit')
+                    onEditEvent={
+                      handleOpenEditEvent
                     }
                     onDeleteEvent={
                       handleOpenDeleteEvent
                     }
+                    onDeleteTask={setSubtaskToDelete}
                     onSubtaskUpdated={refreshSubtasks}
+                    onViewProgress={() => navigate('/progreso', { viewTransition: true })}
                   />
 
                   <DeleteEventDialog
@@ -728,11 +828,21 @@ export function EventDetailPage() {
                     }
                   />
 
+                  {subtaskToDelete && (
+                    <DeleteSubtaskDialog
+                      subtask={subtaskToDelete}
+                      isDeleting={isDeletingSubtask}
+                      onClose={() => setSubtaskToDelete(null)}
+                      onConfirm={handleConfirmDeleteSubtask}
+                    />
+                  )}
+
                   <AddSubtaskDialog
                     key={formVersion}
                     open={
                       isAddSubtaskOpen
                     }
+                    dailyLimitHours={dailyLimitHours}
                     eventName={
                       currentEvent.name
                     }
@@ -754,6 +864,21 @@ export function EventDetailPage() {
           </>
         )}
       </div>
+
+      <DestructiveConfirmationDialog
+        open={isDiscardConfirmOpen}
+        onOpenChange={setIsDiscardConfirmOpen}
+        title="¿Descartar cambios?"
+        description="Tienes cambios sin guardar en el evento. Si sales ahora, se perderán las modificaciones realizadas."
+        confirmLabel="Descartar cambios"
+        isDeleting={false}
+        onConfirm={() => {
+          setIsDiscardConfirmOpen(false)
+          setIsEditDirty(false)
+          pendingNavigationRef.current?.()
+          pendingNavigationRef.current = null
+        }}
+      />
     </PageContainer>
   )
 }

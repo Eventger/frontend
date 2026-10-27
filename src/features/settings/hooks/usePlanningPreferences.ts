@@ -13,45 +13,52 @@ export function usePlanningPreferences() {
   const [limit, setLimit] = useState(DEFAULT_DAILY_LIMIT_HOURS)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const version = useRef(0)
+  const refreshVersion = useRef(0)
+  const saveVersion = useRef(0)
+  const isMounted = useRef(true)
 
   const refresh = useCallback(async () => {
-    const current = ++version.current
+    const current = ++refreshVersion.current
     setLoading(true)
     setError('')
     try {
       let preferences = await getPlanningPreferences(authenticatedRequest)
-      if (current !== version.current) return
+      if (current !== refreshVersion.current) return
       // Importa una preferencia anterior válida una sola vez; Clerk conserva sus demás metadatos.
       if (!preferences.configured && legacyLimit !== DEFAULT_DAILY_LIMIT_HOURS) {
         preferences = await savePlanningPreferences(legacyLimit, authenticatedRequest, true)
       }
-      if (current === version.current) setLimit(preferences.dailyLimitHours)
+      if (current === refreshVersion.current) setLimit(preferences.dailyLimitHours)
     } catch {
-      if (current === version.current) setError('No pudimos cargar tu límite diario. Inténtalo de nuevo.')
+      if (current === refreshVersion.current) setError('No pudimos cargar tu límite diario. Inténtalo de nuevo.')
     } finally {
-      if (current === version.current) setLoading(false)
+      if (current === refreshVersion.current) setLoading(false)
     }
   }, [authenticatedRequest, legacyLimit])
 
   useEffect(() => {
-    const requests = version
+    isMounted.current = true
     let active = true
     if (isAuthLoaded && isSignedIn) {
       void Promise.resolve().then(() => { if (active) void refresh() })
     }
-    return () => { active = false; requests.current++ }
+    return () => {
+      active = false
+      isMounted.current = false
+      refreshVersion.current++
+      saveVersion.current++
+    }
   }, [accountId, isAuthLoaded, isSignedIn, refresh])
 
   const save = async (hours: number) => {
-    const current = ++version.current
+    const current = ++saveVersion.current
     if (hours < limit) {
       const tasks = await getToday(authenticatedRequest)
-      if (current !== version.current) return
+      if (!isMounted.current || current !== saveVersion.current) return
       validateDailyLimitForTasks(hours, tasks)
     }
     const preferences = await savePlanningPreferences(hours, authenticatedRequest)
-    if (current === version.current) setLimit(preferences.dailyLimitHours)
+    if (isMounted.current && current === saveVersion.current) setLimit(preferences.dailyLimitHours)
   }
 
   return { dailyLimitHours: limit, isLoading: loading, error, refresh, save }

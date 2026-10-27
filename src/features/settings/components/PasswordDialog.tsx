@@ -58,11 +58,11 @@ export function PasswordDialog({ user, onClose, onSaved }: PasswordDialogProps) 
   ]
 
   return (
-    <AccountDialog title={user.passwordEnabled ? 'Cambiar contraseña' : 'Establecer contraseña'} description="Clerk protege tu contraseña y verifica los cambios sensibles de tu cuenta." busy={busy} onClose={onClose}>
+    <AccountDialog title={user.passwordEnabled ? 'Cambiar contraseña' : 'Establecer contraseña'} description="Protegemos tu contraseña y verificamos los cambios sensibles de tu cuenta." busy={busy} onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {fields.map((field) => (
           <div key={field.key} className="space-y-2">
-            <label htmlFor={`account-password-${field.key}`} className="text-sm font-medium">{field.label}</label>
+            <label htmlFor={`account-password-${field.key}`} className="type-label">{field.label}</label>
             <Input id={`account-password-${field.key}`} type={visible ? 'text' : 'password'} autoComplete={field.autoComplete} value={field.value} onChange={(event) => {
               field.setValue(event.target.value)
               setErrors(current => ({ ...current, [field.key]: '', ...(field.key === 'new' ? { confirmation: '' } : {}) }))
@@ -75,11 +75,11 @@ export function PasswordDialog({ user, onClose, onSaved }: PasswordDialogProps) 
         <Button type="button" className={settingsSecondaryButton} disabled={busy} aria-pressed={visible} onClick={() => setVisible(!visible)}>
           {visible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}{visible ? 'Ocultar contraseñas' : 'Mostrar contraseñas'}
         </Button>
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[13px]">
+        <label className="type-supporting flex min-h-11 cursor-pointer items-center gap-3">
           <input type="checkbox" className="size-4 accent-[#4f46e5]" checked={signOutOthers} onChange={(event) => setSignOutOthers(event.target.checked)} disabled={busy} />Cerrar las demás sesiones al guardar
         </label>
         {error && <InlineFeedback>{error}</InlineFeedback>}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row">
           <Button type="button" className={settingsSecondaryButton} disabled={busy} onClick={onClose}>Cancelar</Button>
           <Button type="submit" className={settingsPrimaryButton} disabled={busy}>{busy ? 'Guardando…' : 'Guardar contraseña'}</Button>
         </div>

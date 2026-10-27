@@ -54,7 +54,7 @@ export async function createSubtask(
   const request: CreateSubtaskApiRequest = {
     name: data.name,
     target_date: toDeadlineDateTime(data.targetDate),
-    estimated_hours: data.estimatedHours.toFixed(2),
+    estimated_hours: Math.max(0.01, data.estimatedHours).toFixed(2),
     details: data.details,
   }
   const response = await requestFn<CreateSubtaskApiResponse>(`/events/${eventId}/subtasks/`, {
@@ -74,7 +74,7 @@ export async function updateSubtask(
     ...(data.state === undefined ? {} : { state: data.state }),
     name: data.name,
     target_date: toDeadlineDateTime(data.targetDate),
-    estimated_hours: data.estimatedHours.toFixed(2),
+    estimated_hours: Math.max(0.01, data.estimatedHours).toFixed(2),
     details: data.details,
   }
   const response = await requestFn<UpdateSubtaskApiResponse>(`/subtasks/${subtaskId}/`, {
@@ -90,7 +90,7 @@ export async function updateSubtask(
  */
 export async function registerSubtaskProgress(
   subtaskId: number,
-  status: Extract<SubtaskState, 'completed' | 'postponed'>,
+  status: SubtaskState,
   note: string,
   requestFn: RequestFn = apiRequest,
 ): Promise<Subtask> {

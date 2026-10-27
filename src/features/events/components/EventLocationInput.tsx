@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type ComponentProps, type KeyboardE
 import { MapPin } from 'lucide-react'
 import { Popover } from 'radix-ui'
 import { Input } from '@/components/ui/input'
-import { searchAddresses, type AddressSuggestion } from '../services/address.service'
+import { searchAddresses, type AddressSearchCoordinates, type AddressSuggestion } from '../services/address.service'
 
 type Props = Pick<ComponentProps<typeof Input>, 'id' | 'disabled' | 'className' | 'aria-invalid' | 'aria-describedby'> & {
   value: string
@@ -19,8 +19,10 @@ export function EventLocationInput({ value, onChange, className, disabled, ...in
   const [open, setOpen] = useState(false)
   const [result, setResult] = useState<SearchResult | null>(null)
   const [activeIndex, setActiveIndex] = useState(-1)
+  const [coordinates, setCoordinates] = useState<AddressSearchCoordinates | null>(null)
+  const requestedLocation = useRef(false)
   const query = value.trim()
-  const key = query
+  const key = `${query}:${coordinates?.latitude ?? ''}:${coordinates?.longitude ?? ''}`
   const showMenu = open && !disabled && query.length >= 3
   const suggestions = result?.key === key ? result.suggestions : []
   const loading = showMenu && result?.key !== key
@@ -31,7 +33,7 @@ export function EventLocationInput({ value, onChange, className, disabled, ...in
     const controller = new AbortController()
     const timer = setTimeout(async () => {
       try {
-        const suggestions = await searchAddresses(query, { signal: controller.signal })
+        const suggestions = await searchAddresses(query, { signal: controller.signal, ...(coordinates ? { coordinates } : {}) })
         if (!controller.signal.aborted) setResult({ key, suggestions, failed: false })
       } catch {
         if (!controller.signal.aborted) setResult({ key, suggestions: [], failed: true })
@@ -67,6 +69,16 @@ export function EventLocationInput({ value, onChange, className, disabled, ...in
     if (event.key === 'Tab') setOpen(false)
   }
 
+  function requestCurrentLocation() {
+    if (requestedLocation.current || typeof navigator === 'undefined' || !navigator.geolocation) return
+    requestedLocation.current = true
+    navigator.geolocation.getCurrentPosition(
+      position => setCoordinates({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+      () => undefined,
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
+    )
+  }
+
   return (
     <div onBlur={event => {
       if (!event.currentTarget.contains(event.relatedTarget) && !menu.current?.contains(event.relatedTarget)) setOpen(false)
@@ -87,7 +99,13 @@ export function EventLocationInput({ value, onChange, className, disabled, ...in
               aria-controls={showMenu ? listId : undefined}
               aria-activedescendant={showMenu && suggestions[activeIndex] ? `${listId}-${activeIndex}` : undefined}
               placeholder="Busca un lugar o una dirección"
-              onFocus={() => setOpen(true)}
+              onFocus={() => { setOpen(true); requestCurrentLocation() }}
+              onBlur={event => {
+                const nextTarget = event.relatedTarget as Node | null
+                if (!anchor.current?.contains(nextTarget) && !menu.current?.contains(nextTarget)) {
+                  setOpen(false)
+                }
+              }}
               onChange={event => { onChange(event.target.value); setOpen(true); setActiveIndex(-1) }}
               onKeyDown={handleKeyDown}
               className={className}
@@ -117,7 +135,9 @@ export function EventLocationInput({ value, onChange, className, disabled, ...in
             {loading && <p role="status" className="px-3 pb-3 text-xs text-[#667085]">Buscando direcciones…</p>}
             {failed && <p role="status" className="px-3 pb-3 text-xs text-[#667085]">No pudimos buscar direcciones. Puedes escribir el lugar completo.</p>}
             {!loading && !failed && !suggestions.length && <p role="status" className="px-3 pb-3 text-xs text-[#667085]">No encontramos resultados. Prueba con la ciudad o la dirección completa.</p>}
-            <p className="border-t border-border-subtle px-3 py-2 text-[11px] text-[#667085]">Datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap</a></p>
+            <p className="border-t border-border-subtle px-3 py-2 text-[11px] text-[#667085]">
+              Sugerencias anónimas de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap</a> (Photon). Puedes escribir tu dirección manualmente.
+            </p>
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>

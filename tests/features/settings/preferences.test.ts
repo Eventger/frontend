@@ -46,10 +46,29 @@ describe('carga diaria para reducir el límite', () => {
     expect(() => validateDailyLimitForTasks(1, tasks)).toThrow(DailyLimitConflictError)
   })
 
-  it('indica el día de mayor carga y el mínimo para todas las fechas', () => {
+  it('indica el día de mayor carga y el mínimo para todas las fechas y expone propiedades del conflicto', () => {
     const tasks = tasksForDay([2])
     tasks.today = [buildTodayTask({ targetDate: '2026-10-19', estimatedHours: 4.5 })]
-    expect(() => validateDailyLimitForTasks(1, tasks)).toThrow('Tienes 4,5 h programadas para el 19 de octubre de 2026. Usa al menos 4,5 h o reprograma.')
+    try {
+      validateDailyLimitForTasks(1, tasks)
+      expect.unreachable()
+    } catch (error) {
+      expect(error).toBeInstanceOf(DailyLimitConflictError)
+      const conflict = error as DailyLimitConflictError
+      expect(conflict.conflictDate).toBe('2026-10-19')
+      expect(conflict.conflictHours).toBe(4.5)
+      expect(conflict.message).toContain('Tienes 4,5 h programadas para el 19 de octubre de 2026')
+    }
+  })
+
+  it('no permite comprobar una carga con fecha inválida o vacía sin lanzar RangeError no capturado', () => {
+    const tasks = tasksForDay([1])
+    tasks.today = [buildTodayTask({ targetDate: 'fecha-no-valida', estimatedHours: 2 })]
+    expect(() => validateDailyLimitForTasks(1, tasks)).toThrow('No pudimos comprobar la carga de tus tareas.')
+
+    const tasksEmpty = tasksForDay([1])
+    tasksEmpty.today = [buildTodayTask({ targetDate: '', estimatedHours: 2 })]
+    expect(() => validateDailyLimitForTasks(1, tasksEmpty)).toThrow('No pudimos comprobar la carga de tus tareas.')
   })
 
   it.each([NaN, Infinity, -1])('no permite comprobar una carga inválida: %s', (hours) => {

@@ -55,9 +55,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           description:
             '!text-[12px] !leading-[18px] !text-[#667085]',
           actionButton:
-            '!h-9 !rounded-[8px] !bg-[#4f46e5] !px-3 !text-white',
+            '!h-11 sm:!h-9 !rounded-lg !bg-[#4f46e5] !px-3 !text-white',
           cancelButton:
-            '!h-9 !rounded-[8px] !border !border-border-subtle !bg-white !px-3 !text-[#17212b]',
+            '!h-11 sm:!h-9 !rounded-lg !border !border-border-subtle !bg-white !px-3 !text-[#17212b]',
           success:
             '!border-[#abefc6]',
           error:

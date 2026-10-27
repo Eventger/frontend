@@ -40,10 +40,10 @@ export function EmailDialog({ user, onClose, onSaved }: EmailDialogProps) {
   }
 
   async function sendCode(address: EmailAddressResource) {
-    setPendingEmail(address)
     setCode('')
     setFieldError('')
     await prepareEmail(address)
+    setPendingEmail(address)
     setSent(true)
   }
 
@@ -121,14 +121,31 @@ export function EmailDialog({ user, onClose, onSaved }: EmailDialogProps) {
       </ul>
       <form onSubmit={handleSubmit} noValidate className="space-y-4 border-t border-border-subtle pt-4">
         <div className="space-y-2">
-          <label htmlFor="account-email-input" className="text-sm font-medium">{pendingEmail ? 'Código de verificación' : 'Nuevo correo electrónico'}</label>
+          <label htmlFor="account-email-input" className="type-label">{pendingEmail ? 'Código de verificación' : 'Nuevo correo electrónico'}</label>
           {pendingEmail && <p className="break-all text-xs text-[#667085]">{sent ? 'Enviamos un código a' : 'Verifica'} {pendingEmail.emailAddress}.</p>}
           <Input id="account-email-input" type={pendingEmail ? 'text' : 'email'} autoComplete={pendingEmail ? 'one-time-code' : 'email'} inputMode={pendingEmail ? 'numeric' : 'email'} maxLength={pendingEmail ? 6 : 254} value={pendingEmail ? code : email} onChange={(event) => { if (pendingEmail) setCode(event.target.value); else setEmail(event.target.value); setFieldError('') }} disabled={busy} className={settingsInput} aria-invalid={Boolean(fieldError)} aria-describedby={fieldError ? 'account-email-error' : undefined} />
           {fieldError && <FieldError id="account-email-error">{fieldError}</FieldError>}
         </div>
         {error && <InlineFeedback>{error}</InlineFeedback>}
-        {pendingEmail && <Button type="button" className={settingsSecondaryButton} disabled={busy} onClick={() => void startVerification(pendingEmail)}>Reenviar código</Button>}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        {pendingEmail && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" className={settingsSecondaryButton} disabled={busy} onClick={() => void startVerification(pendingEmail)}>Reenviar código</Button>
+            <Button
+              type="button"
+              className={settingsSecondaryButton}
+              disabled={busy}
+              onClick={() => {
+                setPendingEmail(null)
+                setCode('')
+                setFieldError('')
+                setError('')
+              }}
+            >
+              Cambiar correo
+            </Button>
+          </div>
+        )}
+        <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row">
           <Button type="button" className={settingsSecondaryButton} disabled={busy} onClick={onClose}>Cancelar</Button>
           <Button type="submit" className={settingsPrimaryButton} disabled={busy}>{busy ? 'Guardando…' : pendingEmail ? 'Verificar y guardar' : 'Continuar'}</Button>
         </div>

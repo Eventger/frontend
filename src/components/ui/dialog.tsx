@@ -71,10 +71,11 @@ function DialogContent({
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
             <Button
               variant="ghost"
-              className="absolute top-2 right-2 size-11"
-              size="icon-sm"
+              className="absolute right-3 top-3 z-20 size-11 rounded-lg bg-white text-[#667085] shadow-xs ring-1 ring-[#dde2ea] hover:bg-[#f2f4f7] hover:text-[#101828] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] sm:size-10"
+              size="icon"
             >
               <XIcon
+                className="size-5"
               />
               <span className="sr-only">Cerrar</span>
             </Button>
@@ -130,7 +131,7 @@ function DialogTitle({
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-base leading-none font-medium",
+        "type-dialog-title font-heading text-[#17212b]",
         className
       )}
       {...props}
@@ -146,7 +147,7 @@ function DialogDescription({
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        "type-body text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
         className
       )}
       {...props}

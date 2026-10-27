@@ -152,7 +152,7 @@ describe('EventsPage', () => {
       isLoading: false, error: null, retry: vi.fn(),
     })
     renderPage(`/eventos?page=${page}`)
-    expect(useEvents).toHaveBeenCalledWith(page, null)
+    expect(useEvents).toHaveBeenCalledWith(page, null, '')
     expect(screen.getByText(`Página ${page} de 3`)).toBeTruthy()
     expect((screen.getByRole('button', { name: 'Anterior' }) as HTMLButtonElement).disabled).toBe(previousDisabled)
     expect((screen.getByRole('button', { name: 'Siguiente' }) as HTMLButtonElement).disabled).toBe(nextDisabled)
@@ -169,13 +169,13 @@ describe('EventsPage', () => {
     expect(screen.getByText('Página 2 de 3')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Anterior' }))
     expect(screen.getByText('Página 1 de 3')).toBeTruthy()
-    expect(useEvents).toHaveBeenLastCalledWith(1, null)
+    expect(useEvents).toHaveBeenLastCalledWith(1, null, '')
   })
 
   it.each(['-1', 'texto', '1.5'])('normaliza la página inválida %s a la primera', page => {
     vi.mocked(useEvents).mockReturnValue({ events: [], pagination: null, isLoading: true, error: null, retry: vi.fn() })
     renderPage(`/eventos?page=${page}`)
-    expect(useEvents).toHaveBeenCalledWith(1, null)
+    expect(useEvents).toHaveBeenCalledWith(1, null, '')
   })
 
   it('cambiar el tipo reinicia la página y conserva el filtro al paginar', async () => {
@@ -188,11 +188,11 @@ describe('EventsPage', () => {
     await user.click(screen.getByRole('combobox', { name: 'Tipo de evento' }))
     await user.keyboard('{ArrowDown}')
     await user.click(await screen.findByRole('option', { name: 'Social' }))
-    expect(useEvents).toHaveBeenLastCalledWith(1, 2)
+    expect(useEvents).toHaveBeenLastCalledWith(1, 2, '')
     await user.click(screen.getByRole('button', { name: 'Siguiente' }))
-    expect(useEvents).toHaveBeenLastCalledWith(2, 2)
+    expect(useEvents).toHaveBeenLastCalledWith(2, 2, '')
     await user.click(screen.getByRole('button', { name: 'Limpiar filtro' }))
-    expect(useEvents).toHaveBeenLastCalledWith(1, null)
+    expect(useEvents).toHaveBeenLastCalledWith(1, null, '')
     expect(screen.getByRole('combobox', { name: 'Tipo de evento' }).textContent).toBe('Todos los tipos')
   })
 
@@ -201,9 +201,10 @@ describe('EventsPage', () => {
     renderPage('/eventos?type=2')
     expect(screen.getByRole('heading', { name: 'No hay eventos de este tipo' })).toBeTruthy()
     expect(screen.getByRole('combobox', { name: 'Tipo de evento' })).toBeTruthy()
+    expect(screen.getByRole('searchbox', { name: 'Buscar por nombre' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Aún no tienes eventos' })).toBeNull()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Ver todos los eventos' }))
-    expect(useEvents).toHaveBeenLastCalledWith(1, null)
+    expect(useEvents).toHaveBeenLastCalledWith(1, null, '')
   })
 
   it('un fallo del catálogo mantiene la lista de eventos y permite reintentar los tipos', async () => {
@@ -215,5 +216,98 @@ describe('EventsPage', () => {
     expect(screen.getByRole('alert')).toBeTruthy()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Reintentar tipos' }))
     expect(retryTypes).toHaveBeenCalledOnce()
+  })
+
+  it('redirige a la última página válida cuando ?page supera totalPages', async () => {
+    vi.mocked(useEvents).mockReturnValue({
+      events: [],
+      pagination: { page: 99, pageSize: 6, total: 10, totalPages: 2 },
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+    })
+    renderPage('/eventos?page=99')
+    expect(useEvents).toHaveBeenCalledWith(2, null, '')
+  })
+
+  it('permite buscar por subcadena del nombre del evento y pasar el filtro al hook', async () => {
+    vi.mocked(useEvents).mockReturnValue({
+      events: [event],
+      pagination: { page: 1, pageSize: 6, total: 1, totalPages: 1 },
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+    })
+    renderPage('/eventos?search=Backend')
+    expect(useEvents).toHaveBeenCalledWith(1, null, 'Backend')
+    const searchInput = screen.getByRole('searchbox', { name: 'Buscar por nombre' }) as HTMLInputElement
+    expect(searchInput.value).toBe('Backend')
+    expect(screen.getByRole('button', { name: 'Limpiar búsqueda' })).toBeTruthy()
+  })
+
+  it('escribir en el buscador con tecla Enter ejecuta la búsqueda inmediatamente y reinicia a la página 1', async () => {
+    vi.mocked(useEvents).mockReturnValue({
+      events: [event],
+      pagination: { page: 2, pageSize: 6, total: 12, totalPages: 2 },
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+    })
+    renderPage('/eventos?page=2')
+    const user = userEvent.setup()
+    const searchInput = screen.getByRole('searchbox', { name: 'Buscar por nombre' })
+    await user.type(searchInput, 'Gala{Enter}')
+    expect(useEvents).toHaveBeenLastCalledWith(1, null, 'Gala')
+  })
+
+  it('limpiar la búsqueda con el botón X elimina el término y restaura la lista', async () => {
+    vi.mocked(useEvents).mockReturnValue({
+      events: [event],
+      pagination: { page: 1, pageSize: 6, total: 1, totalPages: 1 },
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+    })
+    renderPage('/eventos?search=Backend')
+    const user = userEvent.setup()
+    const clearBtn = screen.getByRole('button', { name: 'Limpiar búsqueda' })
+    await user.click(clearBtn)
+    expect(useEvents).toHaveBeenLastCalledWith(1, null, '')
+  })
+
+  it('muestra estado vacío personalizado cuando la búsqueda no coincide con eventos', async () => {
+    vi.mocked(useEvents).mockReturnValue({
+      events: [],
+      pagination: null,
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+    })
+    renderPage('/eventos?search=EventoInexistente')
+    expect(screen.getByRole('heading', { name: 'No se encontraron eventos' })).toBeTruthy()
+    expect(screen.getByText(/No encontramos eventos que coincidan con "EventoInexistente"/)).toBeTruthy()
+    expect(screen.getByRole('searchbox', { name: 'Buscar por nombre' })).toBeTruthy()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Ver todos los eventos' }))
+    expect(useEvents).toHaveBeenLastCalledWith(1, null, '')
+  })
+
+  it('mantiene el buscador y los filtros visibles sin desmontarlos durante la carga al buscar', () => {
+    vi.mocked(useEvents).mockReturnValue({
+      events: [event],
+      pagination: { page: 1, pageSize: 6, total: 1, totalPages: 1 },
+      isLoading: true,
+      error: null,
+      retry: vi.fn(),
+    })
+
+    renderPage('/eventos?search=Boda')
+
+    // Los filtros permanecen visibles y montados sin desmontarse
+    expect(screen.getByRole('searchbox', { name: 'Buscar por nombre' })).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: 'Tipo de evento' })).toBeTruthy()
+    // La lista de eventos se mantiene visible con transición atenuada
+    const cardsSection = screen.getByRole('region', { name: 'Lista de eventos' })
+    expect(cardsSection.className).toContain('opacity-50')
   })
 })

@@ -42,15 +42,15 @@ export function DestructiveConfirmationDialog({
         aria-busy={
           isDeleting || undefined
         }
-        className="flex max-h-[calc(100svh-2rem)] min-h-[430px] flex-col items-center gap-0 overflow-y-auto rounded-2xl border-border-subtle bg-white px-6 py-10 shadow-none sm:max-w-[760px] sm:px-10 sm:pb-12 sm:pt-12 xl:left-[calc(50%+120px)]"
-        overlayClassName="bg-[#17212b]/36 backdrop-blur-none xl:left-[var(--app-sidebar-width)]"
+        className="flex max-h-[calc(100svh-2rem)] min-h-[430px] flex-col items-center justify-center gap-0 overflow-y-auto rounded-2xl border-border-subtle bg-white px-6 py-10 shadow-none sm:max-w-[760px] sm:px-10 sm:pb-12 sm:pt-12"
+        overlayClassName="bg-[#17212b]/36 backdrop-blur-none"
         showCloseButton={false}
       >
         <FeedbackIcon
           variant="warning"
         />
 
-        <DialogTitle className="mt-7 w-full max-w-[530px] text-center text-[clamp(1.35rem,3vw,1.5rem)] font-bold leading-8 text-[#17212b]">
+        <DialogTitle className="type-dialog-title mt-7 w-full max-w-[530px] text-center text-[#17212b]">
           {title}
         </DialogTitle>
 

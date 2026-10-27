@@ -44,7 +44,7 @@ export function OperationFeedback({
 
       <div className="mt-8 w-full max-w-[var(--app-content-max-width)] md:mt-[146px]">
         <section
-          className="mx-auto flex min-h-[430px] w-full max-w-[760px] flex-col items-center rounded-2xl border border-border-subtle bg-white px-6 py-10 sm:px-10 sm:pb-12 sm:pt-12"
+          className="mx-auto flex min-h-[430px] w-full max-w-[760px] flex-col items-center justify-center rounded-2xl border border-border-subtle bg-white px-6 py-10 sm:px-10 sm:pb-12 sm:pt-12"
           aria-labelledby={titleId}
           aria-describedby={descriptionId}
           aria-busy={isBusy || undefined}

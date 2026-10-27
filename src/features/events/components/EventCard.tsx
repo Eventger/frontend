@@ -28,30 +28,37 @@ export function EventCard({ event }: EventCardProps) {
     <Link
       to={`/evento/${event.id}`}
       viewTransition
-      className="block min-h-[190px] w-full rounded-2xl border border-border-subtle bg-white p-5 transition-[border-color,box-shadow,transform] hover:border-[#c7d2fe] hover:shadow-[0_10px_24px_rgba(23,33,43,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none"
+      className="block min-h-[190px] w-full rounded-2xl border border-border-subtle bg-white p-5 transition-[border-color,box-shadow] hover:border-[#c7d2fe] hover:shadow-[0_10px_24px_rgba(23,33,43,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] motion-reduce:transition-none"
     >
-      <h2 className="break-words text-[20px] font-semibold leading-6 text-[#17212b]">
+      <h2 className="type-section-title break-words text-[#17212b]">
         {event.name}
       </h2>
 
-      <p className="mt-2 text-[13px] text-[#667085]">
+      <p className="mt-2 text-sm text-[#667085]">
         {formatEventDate(event.eventDate)}
       </p>
 
-      <p className="mt-[22px] text-[14px] font-medium text-[#17212b]">
+      <p className="mt-[22px] text-sm font-medium text-[#17212b]">
         {`${percentage} % · ${completed}/${total} tareas`}
       </p>
 
-      <div className="mt-[21px] h-2 w-full max-w-[440px] overflow-hidden rounded-[4px] bg-[#eaecf0]">
+      <div
+        role="progressbar"
+        aria-valuenow={percentage}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Progreso del evento ${event.name}: ${percentage}%`}
+        className="mt-[21px] h-2 w-full overflow-hidden rounded-full bg-neutral-100"
+      >
         <div
-          className="h-full rounded-[4px] bg-[#4f46e5] transition-[width] duration-500 ease-out"
+          className="h-full rounded-full bg-[#4f46e5] transition-[width] duration-500 ease-out"
           style={{
             width: `${percentage}%`,
           }}
         />
       </div>
 
-      <p className="mt-3 text-[13px] font-semibold text-[#4f46e5]">
+      <p className="mt-3 text-sm font-semibold text-[#4f46e5]">
         Ver evento →
       </p>
     </Link>

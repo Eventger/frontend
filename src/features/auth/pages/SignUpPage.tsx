@@ -1,6 +1,9 @@
 import {
   Check,
   EyeOff,
+  Mail,
+  ShieldCheck,
+  User,
 } from 'lucide-react'
 
 import {
@@ -29,6 +32,8 @@ import { AuthBrandPanel } from '@/features/auth/components/AuthBrandPanel'
 import { AuthFeedbackModal } from '@/features/auth/components/AuthFeedbackModal'
 import { AuthLogoMark } from '@/features/auth/components/AuthLogoMark'
 import { AuthRouteLink } from '@/features/auth/components/AuthRouteLink'
+import { LegalTermsModal, type LegalTab } from '@/features/auth/components/LegalTermsModal'
+import { useDocumentTitle } from '@/components/layout/useDocumentTitle'
 
 import { isValidEmail } from '@/features/auth/utils/isValidEmail'
 
@@ -191,9 +196,29 @@ export function SignUpPage() {
     setAcceptedTerms,
   ] = useState(false)
 
+  const [legalModalOpen, setLegalModalOpen] = useState(false)
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('terms')
+
+  useDocumentTitle('Crear cuenta · Eventger')
+
   const [
     showPassword,
     setShowPassword,
+  ] = useState(false)
+
+  const [
+    isPasswordFocused,
+    setIsPasswordFocused,
+  ] = useState(false)
+
+  const [
+    confirmPassword,
+    setConfirmPassword,
+  ] = useState('')
+
+  const [
+    showConfirmPassword,
+    setShowConfirmPassword,
   ] = useState(false)
 
   const [
@@ -224,6 +249,11 @@ export function SignUpPage() {
   const [
     passwordError,
     setPasswordError,
+  ] = useState('')
+
+  const [
+    confirmPasswordError,
+    setConfirmPasswordError,
   ] = useState('')
 
   const [
@@ -353,6 +383,12 @@ export function SignUpPage() {
       isValid = false
     }
 
+    setConfirmPasswordError('')
+    if (confirmPassword && confirmPassword !== password) {
+      setConfirmPasswordError('Las contraseñas no coinciden.')
+      isValid = false
+    }
+
     if (
       !acceptedTerms
     ) {
@@ -405,7 +441,11 @@ export function SignUpPage() {
     try {
       await signOut()
     } catch {
-      // La cuenta ya fue creada.
+      try {
+        await signOut()
+      } catch {
+        // La cuenta ya fue creada; se procede a la redirección
+      }
     }
 
     navigate('/', {
@@ -794,7 +834,7 @@ export function SignUpPage() {
         <AuthBrandPanel />
 
         <section className="auth-form-shell flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:px-[clamp(24px,2.4vw,50px)] min-[1360px]:py-12">
-          <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-border-subtle bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] md:w-[516px] md:flex-none">
+          <div className="auth-card flex w-full max-w-[500px] flex-col rounded-[26px] border border-border-subtle bg-white p-7 shadow-[0_10px_32px_rgba(23,33,43,0.06)] sm:p-9 sm:py-8 md:w-[500px] md:flex-none">
 
             <div className="flex items-center gap-3">
               <AuthLogoMark
@@ -807,8 +847,8 @@ export function SignUpPage() {
             </div>
 
             <div className="auth-card__content flex flex-1 flex-col">
-              <div className="auth-card__intro mt-[60px]">
-                <h1 className="text-pretty text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
+              <div className="auth-card__intro mt-7 sm:mt-8">
+                <h1 className="text-pretty text-[32px] sm:text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
                   Verifica tu correo
                 </h1>
 
@@ -832,7 +872,7 @@ export function SignUpPage() {
                 <div className="space-y-1.5">
                   <label
                     htmlFor="verification-code"
-                    className="text-[12px] font-medium text-[#17212b]"
+                    className="type-label text-[#17212b]"
                   >
                     Código de verificación
                   </label>
@@ -938,12 +978,33 @@ export function SignUpPage() {
     )
   }
 
+  const hasMinLength = password.length >= PASSWORD_MIN_LENGTH
+  const hasUpperAndLower = /[a-z]/.test(password) && /[A-Z]/.test(password)
+  const hasNumberOrSymbol = /[\d\W]/.test(password)
+
+  let strengthScore = 0
+  if (password.length > 0) strengthScore = 1
+  if (password.length >= 8) strengthScore = 2
+  if (hasMinLength && (hasUpperAndLower || hasNumberOrSymbol)) strengthScore = 3
+  if (hasMinLength && hasUpperAndLower && hasNumberOrSymbol) strengthScore = 4
+
+  const strengthLabel =
+    password.length === 0
+      ? 'Baja'
+      : strengthScore <= 1
+      ? 'Baja'
+      : strengthScore === 2
+      ? 'Media'
+      : strengthScore === 3
+      ? 'Buena'
+      : 'Fuerte'
+
   return (
     <main className="auth-page flex min-h-svh bg-[#f7f8fc]">
       <AuthBrandPanel />
 
       <section className="auth-form-shell flex min-h-svh min-w-0 flex-1 items-center justify-center px-4 py-4 sm:px-6 min-[1360px]:px-[clamp(24px,2.4vw,50px)] min-[1360px]:py-12">
-        <div className="auth-card flex w-full max-w-[516px] flex-col rounded-[22px] border border-border-subtle bg-white px-5 pb-5 pt-[23px] shadow-[0_10px_28px_rgba(23,33,43,0.08)] sm:px-[38px] md:w-[516px] md:flex-none">
+        <div className="auth-card flex w-full max-w-[500px] flex-col rounded-[26px] border border-border-subtle bg-white p-7 shadow-[0_10px_32px_rgba(23,33,43,0.06)] sm:p-9 sm:py-8 md:w-[500px] md:flex-none">
 
           <div className="flex items-center gap-3">
             <AuthLogoMark
@@ -956,8 +1017,8 @@ export function SignUpPage() {
           </div>
 
           <div className="auth-card__content flex flex-1 flex-col">
-            <div className="auth-card__intro mt-[60px]">
-              <h1 className="text-pretty text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
+            <div className="auth-card__intro mt-7 sm:mt-8">
+              <h1 className="text-pretty text-[32px] sm:text-[34px] font-bold leading-[1.15] tracking-[-0.03em] text-[#17212b]">
                 Crear tu cuenta
               </h1>
 
@@ -978,68 +1039,75 @@ export function SignUpPage() {
               onSubmit={
                 handleSubmit
               }
-              className="auth-card__form mt-10"
+              className="auth-card__form mt-6 sm:mt-7"
               noValidate
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label
-                    htmlFor="signup-first-name"
-                    className="text-[12px] font-medium text-[#17212b]"
-                  >
-                    Nombre
-                  </label>
+                  <div className="flex items-center gap-0.5">
+                    <label
+                      htmlFor="signup-first-name"
+                      className="type-label block text-[13px] font-medium text-[#17212b]"
+                    >
+                      Nombre
+                    </label>
+                    <span aria-hidden="true" className="text-[13px] font-medium text-[#4f46e5]">*</span>
+                  </div>
 
-                  <Input
-                    ref={
-                      firstNameInputRef
-                    }
-                    id="signup-first-name"
-                    name="given-name"
-                    value={
-                      firstName
-                    }
-                    placeholder="Mateo"
-                    disabled={
-                      isLoading
-                    }
-                    autoComplete="given-name"
-                    required
-                    aria-invalid={
-                      Boolean(
-                        firstNameError,
-                      )
-                    }
-                    aria-describedby={
-                      firstNameError
-                        ? 'signup-first-name-error'
-                        : undefined
-                    }
-                    onChange={(
-                      event,
-                    ) => {
-                      setFirstName(
-                        event.target.value,
-                      )
+                  <div className="relative mt-2">
+                    <User className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
+                    <Input
+                      ref={
+                        firstNameInputRef
+                      }
+                      id="signup-first-name"
+                      name="given-name"
+                      value={
+                        firstName
+                      }
+                      placeholder="Tu nombre"
+                      disabled={
+                        isLoading
+                      }
+                      autoComplete="given-name"
+                      required
+                      aria-invalid={
+                        Boolean(
+                          firstNameError,
+                        )
+                      }
+                      aria-describedby={
+                        firstNameError
+                          ? 'signup-first-name-error'
+                          : undefined
+                      }
+                      onChange={(
+                        event,
+                      ) => {
+                        setFirstName(
+                          event.target.value,
+                        )
 
-                      setFirstNameError(
-                        '',
-                      )
+                        setFirstNameError(
+                          '',
+                        )
 
-                      setFeedback(
-                        null,
-                      )
-                    }}
-                    className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
-                      firstNameError
-                        ? 'border-[#d92d20]'
-                        : ''
-                    }`}
-                  />
+                        setFeedback(
+                          null,
+                        )
+                      }}
+                      className={`h-11 rounded-xl pl-10 pr-3.5 text-[13px] ${
+                        firstNameError
+                          ? 'border-[#d92d20]'
+                          : ''
+                      }`}
+                    />
+                  </div>
 
                   {firstNameError && (
                     <FieldError
                       id="signup-first-name-error"
+                      className="mt-1.5"
                     >
                       {firstNameError}
                     </FieldError>
@@ -1047,63 +1115,70 @@ export function SignUpPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="signup-last-name"
-                    className="text-[12px] font-medium text-[#17212b]"
-                  >
-                    Apellido
-                  </label>
+                  <div className="flex items-center gap-0.5">
+                    <label
+                      htmlFor="signup-last-name"
+                      className="type-label block text-[13px] font-medium text-[#17212b]"
+                    >
+                      Apellido
+                    </label>
+                    <span aria-hidden="true" className="text-[13px] font-medium text-[#4f46e5]">*</span>
+                  </div>
 
-                  <Input
-                    ref={
-                      lastNameInputRef
-                    }
-                    id="signup-last-name"
-                    name="family-name"
-                    value={
-                      lastName
-                    }
-                    placeholder="Noguera"
-                    disabled={
-                      isLoading
-                    }
-                    autoComplete="family-name"
-                    required
-                    aria-invalid={
-                      Boolean(
-                        lastNameError,
-                      )
-                    }
-                    aria-describedby={
-                      lastNameError
-                        ? 'signup-last-name-error'
-                        : undefined
-                    }
-                    onChange={(
-                      event,
-                    ) => {
-                      setLastName(
-                        event.target.value,
-                      )
+                  <div className="relative mt-2">
+                    <User className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
+                    <Input
+                      ref={
+                        lastNameInputRef
+                      }
+                      id="signup-last-name"
+                      name="family-name"
+                      value={
+                        lastName
+                      }
+                      placeholder="Tu apellido"
+                      disabled={
+                        isLoading
+                      }
+                      autoComplete="family-name"
+                      required
+                      aria-invalid={
+                        Boolean(
+                          lastNameError,
+                        )
+                      }
+                      aria-describedby={
+                        lastNameError
+                          ? 'signup-last-name-error'
+                          : undefined
+                      }
+                      onChange={(
+                        event,
+                      ) => {
+                        setLastName(
+                          event.target.value,
+                        )
 
-                      setLastNameError(
-                        '',
-                      )
+                        setLastNameError(
+                          '',
+                        )
 
-                      setFeedback(
-                        null,
-                      )
-                    }}
-                    className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
-                      lastNameError
-                        ? 'border-[#d92d20]'
-                        : ''
-                    }`}
-                  />
+                        setFeedback(
+                          null,
+                        )
+                      }}
+                      className={`h-11 rounded-xl pl-10 pr-3.5 text-[13px] ${
+                        lastNameError
+                          ? 'border-[#d92d20]'
+                          : ''
+                      }`}
+                    />
+                  </div>
 
                   {lastNameError && (
                     <FieldError
                       id="signup-last-name-error"
+                      className="mt-1.5"
                     >
                       {lastNameError}
                     </FieldError>
@@ -1111,79 +1186,89 @@ export function SignUpPage() {
                 </div>
               </div>
 
-              <div className="mt-5">
-                <label
-                  htmlFor="signup-email"
-                  className="text-[12px] font-medium text-[#17212b]"
-                >
-                  Correo electrónico
-                </label>
+              <div className="mt-4">
+                <div className="flex items-center gap-0.5">
+                  <label
+                    htmlFor="signup-email"
+                    className="type-label block text-[13px] font-medium text-[#17212b]"
+                  >
+                    Correo electrónico
+                  </label>
+                  <span aria-hidden="true" className="text-[13px] font-medium text-[#4f46e5]">*</span>
+                </div>
 
-                <Input
-                  ref={
-                    emailInputRef
-                  }
-                  id="signup-email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  disabled={
-                    isLoading
-                  }
-                  autoComplete="email"
-                  spellCheck={
-                    false
-                  }
-                  placeholder="nombre@correo.com"
-                  required
-                  aria-invalid={
-                    Boolean(
-                      emailError,
-                    )
-                  }
-                  aria-describedby={
-                    emailError
-                      ? 'signup-email-error'
-                      : undefined
-                  }
-                  onChange={(
-                    event,
-                  ) => {
-                    setEmail(
-                      event.target.value,
-                    )
+                <div className="relative mt-2">
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
+                  <Input
+                    ref={
+                      emailInputRef
+                    }
+                    id="signup-email"
+                    name="email"
+                    type="email"
+                    value={email}
+                    disabled={
+                      isLoading
+                    }
+                    autoComplete="email"
+                    spellCheck={
+                      false
+                    }
+                    placeholder="nombre@correo.com"
+                    required
+                    aria-invalid={
+                      Boolean(
+                        emailError,
+                      )
+                    }
+                    aria-describedby={
+                      emailError
+                        ? 'signup-email-error'
+                        : undefined
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      setEmail(
+                        event.target.value,
+                      )
 
-                    setEmailError(
-                      '',
-                    )
+                      setEmailError(
+                        '',
+                      )
 
-                    setFeedback(
-                      null,
-                    )
-                  }}
-                  className={`mt-2 h-11 rounded-lg px-3 text-[13px] ${
-                    emailError
-                      ? 'border-[#d92d20]'
-                      : ''
-                  }`}
-                />
+                      setFeedback(
+                        null,
+                      )
+                    }}
+                    className={`h-11 rounded-xl pl-10 pr-3.5 text-[13px] ${
+                      emailError
+                        ? 'border-[#d92d20]'
+                        : ''
+                    }`}
+                  />
+                </div>
 
                 {emailError && (
                   <FieldError
                     id="signup-email-error"
+                    className="mt-1.5"
                   >
                     {emailError}
                   </FieldError>
                 )}
               </div>
 
-              <div className="mt-5">
-                <label
-                  htmlFor="signup-password"
-                  className="text-[12px] font-medium text-[#17212b]"
-                >
-                  Contraseña
-                </label>
+              <div className="relative mt-4">
+                <div className="flex items-center gap-0.5">
+                  <label
+                    htmlFor="signup-password"
+                    className="type-label block text-[13px] font-medium text-[#17212b]"
+                  >
+                    Contraseña
+                  </label>
+                  <span aria-hidden="true" className="text-[13px] font-medium text-[#4f46e5]">*</span>
+                </div>
 
                 <div className="relative mt-2">
                   <img
@@ -1191,7 +1276,7 @@ export function SignUpPage() {
                       lockIcon
                     }
                     alt=""
-                    className="absolute left-3 top-1/2 size-5 -translate-y-1/2"
+                    className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 opacity-70"
                   />
 
                   <Input
@@ -1212,6 +1297,7 @@ export function SignUpPage() {
                       isLoading
                     }
                     autoComplete="new-password"
+                    placeholder="Ingresa tu contraseña"
                     required
                     minLength={
                       PASSWORD_MIN_LENGTH
@@ -1226,22 +1312,36 @@ export function SignUpPage() {
                         ? 'signup-password-error'
                         : 'signup-password-hint'
                     }
+                    onFocus={() =>
+                      setIsPasswordFocused(true)
+                    }
+                    onBlur={() =>
+                      setIsPasswordFocused(false)
+                    }
                     onChange={(
                       event,
                     ) => {
-                      setPassword(
-                        event.target.value,
-                      )
+                      const nextPassword =
+                        event.target.value
+
+                      setPassword(nextPassword)
 
                       setPasswordError(
                         '',
+                      )
+
+                      setConfirmPasswordError(
+                        confirmPassword &&
+                          confirmPassword !== nextPassword
+                          ? 'Las contraseñas no coinciden.'
+                          : '',
                       )
 
                       setFeedback(
                         null,
                       )
                     }}
-                    className={`app-password-input h-11 rounded-lg pl-10 pr-11 text-[13px] ${
+                    className={`app-password-input h-11 rounded-xl pl-11 pr-11 text-[13px] ${
                       passwordError
                         ? 'border-[#d92d20]'
                         : ''
@@ -1285,25 +1385,180 @@ export function SignUpPage() {
                   </button>
                 </div>
 
+                {password && isPasswordFocused && (
+                  <div
+                    role="status"
+                    className="absolute left-0 right-0 top-full z-20 mt-2 rounded-xl border border-[#e0e7ff] bg-[#f8faff] p-3.5 shadow-lg"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex flex-1 items-center gap-1.5">
+                        {[1, 2, 3, 4].map((seg) => (
+                          <div
+                            key={seg}
+                            className={`h-1 flex-1 rounded-full transition-colors ${
+                              strengthScore >= seg
+                                ? 'bg-[#10b981]'
+                                : 'bg-[#e5e7eb]'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[11px] font-medium text-[#667085]">
+                        Fuerza de la contraseña: <span className="font-semibold text-[#17212b]">{strengthLabel}</span>
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex items-start gap-2.5">
+                      <ShieldCheck className="size-5 shrink-0 text-[#4f46e5]" />
+                      <ul className="space-y-1 text-[11px] text-[#4b5563]">
+                        <li className={`flex items-center gap-1.5 ${hasMinLength ? 'font-medium text-[#16a34a]' : ''}`}>
+                          <span className="size-1 rounded-full bg-current" />
+                          Mínimo {PASSWORD_MIN_LENGTH} caracteres
+                        </li>
+                        <li className={`flex items-center gap-1.5 ${hasUpperAndLower ? 'font-medium text-[#16a34a]' : ''}`}>
+                          <span className="size-1 rounded-full bg-current" />
+                          Debe incluir mayúsculas y minúsculas
+                        </li>
+                        <li className={`flex items-center gap-1.5 ${hasNumberOrSymbol ? 'font-medium text-[#16a34a]' : ''}`}>
+                          <span className="size-1 rounded-full bg-current" />
+                          Debe incluir al menos un número o símbolo
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
                 {passwordError ? (
                   <FieldError
                     id="signup-password-error"
-                    className="mt-2.5"
+                    className="mt-2"
                   >
                     {passwordError}
                   </FieldError>
                 ) : (
                   <p
                     id="signup-password-hint"
-                    className="mt-2.5 text-[11px] text-[#667085]"
+                    className="sr-only"
                   >
                     {PASSWORD_MIN_LENGTH_HINT}
                   </p>
                 )}
               </div>
 
-              <div className="mt-[18px]">
-                <label className="flex cursor-pointer items-start gap-3 text-[11px] leading-5 text-[#17212b]">
+              <div className="mt-4">
+                <div className="flex items-center gap-0.5">
+                  <label
+                    htmlFor="signup-confirm-password"
+                    className="type-label block text-[13px] font-medium text-[#17212b]"
+                  >
+                    Confirmar contraseña
+                  </label>
+                  <span aria-hidden="true" className="text-[13px] font-medium text-[#4f46e5]">*</span>
+                </div>
+
+                <div className="relative mt-2">
+                  <img
+                    src={
+                      lockIcon
+                    }
+                    alt=""
+                    className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 opacity-70"
+                  />
+
+                  <Input
+                    id="signup-confirm-password"
+                    name="confirm-password"
+                    type={
+                      showConfirmPassword
+                        ? 'text'
+                        : 'password'
+                    }
+                    value={confirmPassword}
+                    disabled={
+                      isLoading
+                    }
+                    autoComplete="new-password"
+                    placeholder="Repite tu contraseña"
+                    aria-invalid={
+                      Boolean(
+                        confirmPasswordError,
+                      )
+                    }
+                    aria-describedby={
+                      confirmPasswordError
+                        ? 'signup-confirm-password-error'
+                        : undefined
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      const nextConfirmPassword =
+                        event.target.value
+
+                      setConfirmPassword(nextConfirmPassword)
+                      setConfirmPasswordError(
+                        nextConfirmPassword &&
+                          nextConfirmPassword !== password
+                          ? 'Las contraseñas no coinciden.'
+                          : '',
+                      )
+                    }}
+                    className={`app-password-input h-11 rounded-xl pl-11 pr-11 text-[13px] ${
+                      confirmPasswordError
+                        ? 'border-[#d92d20]'
+                        : ''
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowConfirmPassword(
+                        (
+                          current,
+                        ) =>
+                          !current,
+                      )
+                    }
+                    className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center text-[#667085] hover:text-[#3730a3] focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#4f46e5]"
+                    aria-label={
+                      showConfirmPassword
+                        ? 'Ocultar confirmación de contraseña'
+                        : 'Mostrar confirmación de contraseña'
+                    }
+                    aria-pressed={
+                      showConfirmPassword
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff
+                        size={20}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <img
+                        src={
+                          eyeIcon
+                        }
+                        alt=""
+                        className="size-5"
+                      />
+                    )}
+                  </button>
+                </div>
+
+                {confirmPasswordError && (
+                  <FieldError
+                    id="signup-confirm-password-error"
+                    className="mt-1.5"
+                  >
+                    {confirmPasswordError}
+                  </FieldError>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <label className="type-caption flex cursor-pointer items-start gap-3 text-[#17212b]">
                   <input
                     ref={
                       termsInputRef
@@ -1347,26 +1602,51 @@ export function SignUpPage() {
                   />
 
                   <span
-                    className="mt-px flex size-5 shrink-0 items-center justify-center rounded-[5px] border border-border-subtle bg-white text-white transition-colors peer-checked:border-[#4f46e5] peer-checked:bg-[#4f46e5] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#4f46e5]"
+                    className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-[6px] border border-border-subtle bg-white text-white transition-colors peer-checked:border-[#4f46e5] peer-checked:bg-[#4f46e5] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#4f46e5]"
                     aria-hidden="true"
                   >
                     <Check
-                      className="size-3.5"
+                      className="size-4"
                       strokeWidth={
                         2.5
                       }
                     />
                   </span>
 
-                  <span>
-                    Acepto los Términos y condiciones y la Política de privacidad.
+                  <span className="flex flex-wrap items-center gap-x-1 text-[12px] text-[#4b5563]">
+                    <span>Acepto los</span>{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setLegalModalTab('terms')
+                        setLegalModalOpen(true)
+                      }}
+                      className="inline-flex min-h-11 items-center cursor-pointer font-semibold text-[#4f46e5] underline underline-offset-2 hover:text-[#4338ca] focus-visible:outline-2 focus-visible:outline-[#4f46e5] rounded-xs sm:min-h-0"
+                    >
+                      Términos y condiciones
+                    </button>{' '}
+                    <span>y la</span>{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setLegalModalTab('privacy')
+                        setLegalModalOpen(true)
+                      }}
+                      className="inline-flex min-h-11 items-center cursor-pointer font-semibold text-[#4f46e5] underline underline-offset-2 hover:text-[#4338ca] focus-visible:outline-2 focus-visible:outline-[#4f46e5] rounded-xs sm:min-h-0"
+                    >
+                      Política de privacidad
+                    </button>.
                   </span>
                 </label>
 
                 {termsError && (
                   <FieldError
                     id="signup-terms-error"
-                    className="ml-7 mt-2"
+                    className="ml-8 mt-1.5"
                   >
                     {termsError}
                   </FieldError>
@@ -1393,17 +1673,17 @@ export function SignUpPage() {
                 disabled={
                   isLoading
                 }
-                className="mt-8 h-11 w-full rounded-lg bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30"
+                className="mt-6 h-11 w-full rounded-xl bg-[#4f46e5] text-[13px] font-semibold text-white shadow-sm hover:bg-[#4338ca] focus-visible:ring-[#4f46e5]/30"
               >
                 {isLoading
                   ? 'Creando cuenta…'
                   : 'Crear cuenta'}
               </Button>
 
-              <div className="mt-[26px] flex items-center gap-4">
+              <div className="my-5 flex items-center gap-4">
                 <div className="h-px flex-1 bg-border-subtle" />
 
-                <span className="text-[11px] text-[#667085]">
+                <span className="text-[12px] text-[#667085]">
                   o continúa con
                 </span>
 
@@ -1419,32 +1699,19 @@ export function SignUpPage() {
                 onClick={
                   handleGoogleSignUp
                 }
-                className="mt-5 h-11 w-full rounded-lg border-border-subtle text-[13px] font-semibold text-[#17212b] hover:border-[#c7d2fe] hover:bg-[#f7f8fc]"
+                aria-label="Registrarme con Google"
+                className="h-11 w-full rounded-xl border border-border-subtle bg-white text-[13px] font-semibold text-[#17212b] shadow-none hover:border-[#c7d2fe] hover:bg-[#f7f8fc]"
               >
                 <img
                   src={
                     googleLogo
                   }
                   alt=""
-                  className="mr-2 size-6"
+                  className="mr-2.5 size-5"
                 />
 
-                Registrarme con Google
+                Continuar con Google
               </Button>
-
-              <p className="mt-[22px] text-center text-[11px] leading-4 text-[#667085]">
-                Al crear tu cuenta aceptas nuestros{' '}
-
-                <span className="font-semibold text-[#4f46e5] underline underline-offset-2">
-                  Términos y condiciones
-                </span>{' '}
-
-                y la{' '}
-
-                <span className="font-semibold text-[#4f46e5] underline underline-offset-2">
-                  Política de privacidad.
-                </span>
-              </p>
             </form>
           </div>
         </div>
@@ -1476,6 +1743,12 @@ export function SignUpPage() {
             replace: true,
           })
         }}
+      />
+
+      <LegalTermsModal
+        open={legalModalOpen}
+        onOpenChange={setLegalModalOpen}
+        initialTab={legalModalTab}
       />
     </main>
   )

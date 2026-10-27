@@ -9,8 +9,9 @@ import { getEvents } from '@/features/events/services/event.service'
 import type { EventsPageData } from '@/features/events/types/event.types'
 import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 
-export function useEvents(page = 1, typeId: number | null = null) {
-  const requestKey = `${page}:${typeId ?? 'all'}`
+export function useEvents(page = 1, typeId: number | null = null, search = '') {
+  const normalizedSearch = search.trim()
+  const requestKey = `${page}:${typeId ?? 'all'}:${normalizedSearch}`
   const {
     authenticatedRequest,
     isAuthLoaded,
@@ -37,12 +38,9 @@ export function useEvents(page = 1, typeId: number | null = null) {
         setIsLoading(true)
         setError(null)
 
-        const data =
-          await getEvents(
-            page,
-            authenticatedRequest,
-            typeId,
-          )
+        const data = normalizedSearch
+          ? await getEvents(page, authenticatedRequest, typeId, normalizedSearch)
+          : await getEvents(page, authenticatedRequest, typeId)
 
         if (version === requestVersion.current) {
           setData(data)
@@ -60,7 +58,7 @@ export function useEvents(page = 1, typeId: number | null = null) {
         }
       }
     },
-    [authenticatedRequest, page, typeId, requestKey],
+    [authenticatedRequest, page, typeId, normalizedSearch, requestKey],
   )
 
   useEffect(() => {

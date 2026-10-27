@@ -9,8 +9,10 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthenticatedApi } from '@/features/auth/hooks/useAuthenticatedApi'
 import { AuthLoadingState } from '@/features/auth/components/AuthLoadingState'
 import { OperationFeedback } from '@/components/OperationFeedback'
+import { Button } from '@/components/ui/button'
 import { CreateEventError } from '@/features/events/components/CreateEventError'
 import { CreateEventSuccess } from '@/features/events/components/CreateEventSuccess'
+import { DestructiveConfirmationDialog } from '@/features/events/components/detail/DestructiveConfirmationDialog'
 import { EventForm } from '@/features/events/components/EventForm'
 import {
   clearCreateEventDraft,
@@ -19,6 +21,8 @@ import {
 } from '@/features/events/utils/createEventDraft'
 import { createEvent } from '@/features/events/services/event.service'
 import { createSubtask } from '@/features/events/services/subtasks.service'
+import { usePlanningPreferences } from '@/features/settings/hooks/usePlanningPreferences'
+import { getApiFieldError } from '@/lib/api'
 
 import type {
   CreateEventInput,
@@ -48,17 +52,12 @@ function CreateEventContent({ userId }: { userId: string }) {
   const [initialDraft] =
     useState(() => readCreateEventDraft(userId))
 
-  const handleCancel = () => {
-    clearCreateEventDraft(userId)
-
-    navigate('/eventos', {
-      viewTransition: true,
-    })
-  }
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false)
 
   const {
     authenticatedRequest,
   } = useAuthenticatedApi()
+  const { dailyLimitHours } = usePlanningPreferences()
 
   const [view, setView] =
     useState<CreateEventView>(initialDraft?.createdEvent ? 'error' : 'form')
@@ -88,6 +87,32 @@ function CreateEventContent({ userId }: { userId: string }) {
     setCreatedEvent,
   ] = useState<Event | undefined>(initialDraft?.createdEvent)
 
+  const [serverFieldErrors, setServerFieldErrors] = useState<
+    Partial<Record<keyof CreateEventInput, string>>
+  >({})
+
+  const hasDraftData = Boolean(
+    submittedData?.name?.trim() ||
+    submittedData?.location?.trim() ||
+    submittedData?.contact?.trim() ||
+    submittedSubtasks.length > 0
+  )
+
+  const handleCancelClick = () => {
+    if (hasDraftData) {
+      setIsCancelConfirmOpen(true)
+    } else {
+      handleConfirmCancel()
+    }
+  }
+
+  const handleConfirmCancel = () => {
+    clearCreateEventDraft(userId)
+    navigate('/eventos', {
+      viewTransition: true,
+    })
+  }
+
   const pendingTasksLabel = `${submittedSubtasks.length} ${
     submittedSubtasks.length === 1 ? 'tarea pendiente' : 'tareas pendientes'
   }`
@@ -115,6 +140,7 @@ function CreateEventContent({ userId }: { userId: string }) {
   ) => {
     setSubmittedData(data)
     setSubmittedSubtasks(subtasks)
+    setServerFieldErrors({})
     setIsSubmitting(true)
 
     try {
@@ -126,8 +152,25 @@ function CreateEventContent({ userId }: { userId: string }) {
 
       setCreatedEvent(event)
       await savePendingSubtasks(event, data, subtasks)
-    } catch {
-      setView('error')
+    } catch (error) {
+      const dateError = getApiFieldError(error, 'date')
+      const nameError = getApiFieldError(error, 'name')
+      const locationError = getApiFieldError(error, 'location')
+      const contactError = getApiFieldError(error, 'contact')
+      const typeError = getApiFieldError(error, 'type')
+
+      if (dateError || nameError || locationError || contactError || typeError) {
+        setServerFieldErrors({
+          ...(dateError ? { eventDate: dateError } : {}),
+          ...(nameError ? { name: nameError } : {}),
+          ...(locationError ? { location: locationError } : {}),
+          ...(contactError ? { contact: contactError } : {}),
+          ...(typeError ? { typeId: typeError } : {}),
+        })
+        setView('form')
+      } else {
+        setView('error')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -186,10 +229,12 @@ function CreateEventContent({ userId }: { userId: string }) {
                 onSubmit={
                   handleSubmit
                 }
-                onCancel={handleCancel}
+                dailyLimitHours={dailyLimitHours}
+                onCancel={handleCancelClick}
                 onDraftChange={
                   handleDraftChange
                 }
+                serverErrors={serverFieldErrors}
                 isSubmitting={
                   isSubmitting
                 }
@@ -207,21 +252,42 @@ function CreateEventContent({ userId }: { userId: string }) {
 
         {view === 'error' &&
           submittedData && (
-            createdEvent ? <OperationFeedback
-              pageTitle="Evento creado con tareas pendientes"
-              status="error"
-              title="No pudimos guardar todas las tareas"
-              description={`${createdEvent.name} ya se creó. Conservamos ${pendingTasksLabel} para que puedas reintentar sin crear otro evento.`}
-              primaryAction={{
-                label: 'Reintentar tareas',
-                onClick: () => void retryPendingSubtasks(),
-                loading: isSubmitting,
-              }}
-              secondaryAction={{
-                label: 'Ver detalle del evento',
-                onClick: () => navigate(`/evento/${createdEvent.id}`),
-              }}
-            /> : <CreateEventError
+            createdEvent ? (
+              <div className="flex flex-col items-center">
+                <OperationFeedback
+                  pageTitle="Evento creado con tareas pendientes"
+                  status="error"
+                  title="No pudimos guardar todas las tareas"
+                  description={`${createdEvent.name} ya se creó. Conservamos ${pendingTasksLabel} para que puedas reintentar sin crear otro evento.`}
+                  primaryAction={{
+                    label: 'Reintentar tareas',
+                    onClick: () => void retryPendingSubtasks(),
+                    loading: isSubmitting,
+                  }}
+                  secondaryAction={{
+                    label: 'Ver detalle del evento',
+                    onClick: () => {
+                      clearCreateEventDraft(userId)
+                      navigate(`/evento/${createdEvent.id}`)
+                    },
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    clearCreateEventDraft(userId)
+                    setCreatedEvent(undefined)
+                    setSubmittedData(undefined)
+                    setSubmittedSubtasks([])
+                    setView('form')
+                  }}
+                  className="mt-4 text-sm text-[#667085] hover:text-[#17212b]"
+                >
+                  Descartar tareas pendientes y crear otro evento
+                </Button>
+              </div>
+            ) : <CreateEventError
               eventName={
                 submittedData.name
               }
@@ -231,6 +297,16 @@ function CreateEventContent({ userId }: { userId: string }) {
             />
           )}
       </div>
+
+      <DestructiveConfirmationDialog
+        open={isCancelConfirmOpen}
+        onOpenChange={setIsCancelConfirmOpen}
+        title="¿Descartar evento?"
+        description="Tienes información o tareas escritas en el borrador. Si sales ahora, se perderán todos los datos ingresados."
+        confirmLabel="Descartar borrador"
+        isDeleting={false}
+        onConfirm={handleConfirmCancel}
+      />
     </PageContainer>
   )
 }

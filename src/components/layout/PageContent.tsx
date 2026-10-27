@@ -16,7 +16,7 @@ export function PageContent({
   return (
     <div
       className={cn(
-        'w-full max-w-[var(--app-content-max-width)]',
+        'w-full max-w-[var(--app-page-max-width)]',
         className,
       )}
     >

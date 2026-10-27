@@ -25,11 +25,25 @@ const benefits = [
 ]
 
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
-const days = Array.from({ length: 35 }, (_, index) => index + 1)
+const calendarCells = [
+  { label: '30', isCurrentMonth: false, isHighlighted: false },
+  { label: '31', isCurrentMonth: false, isHighlighted: false },
+  ...Array.from({ length: 30 }, (_, index) => ({
+    label: String(index + 1),
+    isCurrentMonth: true,
+    isHighlighted: index + 1 === 12,
+  })),
+  { label: '1', isCurrentMonth: false, isHighlighted: false },
+  { label: '2', isCurrentMonth: false, isHighlighted: false },
+  { label: '3', isCurrentMonth: false, isHighlighted: false },
+]
 
 export function AuthBrandPanel() {
   return (
-    <aside className="auth-brand-panel relative hidden min-h-svh overflow-hidden bg-[#3730a3] text-white min-[1360px]:block min-[1360px]:w-[57%] min-[1360px]:max-w-[820px] min-[1360px]:shrink-0 min-[1360px]:self-stretch">
+    <aside
+      aria-label="Información de la marca Eventger"
+      className="auth-brand-panel relative hidden min-h-svh overflow-hidden bg-[#3730a3] text-white min-[1360px]:block min-[1360px]:w-[57%] min-[1360px]:max-w-[820px] min-[1360px]:shrink-0 min-[1360px]:self-stretch"
+    >
       <img
         src={glowTop}
         alt=""
@@ -89,16 +103,18 @@ export function AuthBrandPanel() {
                     {day}
                   </span>
                 ))}
-                {days.map((day) => (
+                {calendarCells.map((cell, index) => (
                   <span
-                    key={day}
+                    key={`${cell.label}-${index}`}
                     className={`flex size-6 items-center justify-center rounded-[6px] text-[10px] font-medium ${
-                      day === 12
+                      cell.isHighlighted
                         ? 'bg-white font-bold text-[#4f46e5]'
-                        : 'bg-white/[0.08] text-white/70'
+                        : cell.isCurrentMonth
+                          ? 'bg-white/[0.08] text-white/80'
+                          : 'text-white/60'
                     }`}
                   >
-                    {day}
+                    {cell.label}
                   </span>
                 ))}
               </div>
@@ -116,10 +132,10 @@ export function AuthBrandPanel() {
           </div>
         </div>
 
-        <div className="auth-brand-benefits absolute bottom-[147px] left-[clamp(64px,5.8vw,84px)] flex flex-col gap-8">
+        <div className="auth-brand-benefits absolute bottom-[58px] left-[clamp(64px,5.8vw,84px)] right-[clamp(64px,5.8vw,84px)] flex flex-row items-center justify-between gap-4">
           {benefits.map((benefit) => (
-            <div key={benefit.title} className="auth-brand-benefit flex items-center gap-4">
-              <span className="auth-brand-benefit-icon flex size-11 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10">
+            <div key={benefit.title} className="auth-brand-benefit flex items-center gap-3">
+              <span className="auth-brand-benefit-icon flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10">
                 <img
                   src={benefit.icon}
                   alt=""
@@ -127,10 +143,10 @@ export function AuthBrandPanel() {
                 />
               </span>
               <span>
-                <span className="block text-[16px] font-semibold leading-5">
+                <span className="block text-[15px] font-semibold leading-5">
                   {benefit.title}
                 </span>
-                <span className="block text-[13px] leading-5 text-white/70">
+                <span className="block text-[12px] leading-4 text-white/70">
                   {benefit.description}
                 </span>
               </span>
@@ -138,7 +154,7 @@ export function AuthBrandPanel() {
           ))}
         </div>
 
-        <p className="auth-brand-footer absolute bottom-[62px] left-[clamp(64px,5.8vw,84px)] text-[11px] text-white/55">
+        <p className="auth-brand-footer absolute bottom-[22px] left-[clamp(64px,5.8vw,84px)] text-[11px] text-white/80">
           © 2026 Eventger. Todos los derechos reservados.
         </p>
       </div>

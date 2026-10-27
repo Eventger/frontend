@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CreateEventPage } from '@/features/events/pages/CreateEventPage'
 import { createEvent } from '@/features/events/services/event.service'
 import { createSubtask } from '@/features/events/services/subtasks.service'
+import { ApiError } from '@/lib/api'
 import type {
   CreateEventInput,
   Event,
@@ -45,6 +46,7 @@ vi.mock('@/features/events/components/EventForm', () => ({
     onDraftChange,
     initialValues,
     initialSubtasks = [],
+    serverErrors = {},
   }: {
     onSubmit: (
       data: CreateEventInput,
@@ -57,6 +59,7 @@ vi.mock('@/features/events/components/EventForm', () => ({
     ) => void
     initialValues?: CreateEventInput
     initialSubtasks?: CreateSubtaskInput[]
+    serverErrors?: Record<string, string>
   }) => (
     <>
       <button
@@ -88,6 +91,9 @@ vi.mock('@/features/events/components/EventForm', () => ({
       <span data-testid="initial-subtask-count">
         {initialSubtasks.length}
       </span>
+      {serverErrors.eventDate && (
+        <span data-testid="server-error-date">{serverErrors.eventDate}</span>
+      )}
     </>
   ),
 }))
@@ -188,6 +194,33 @@ describe('CreateEventPage', () => {
     expect(createEvent).toHaveBeenCalledOnce()
   })
 
+  it('muestra errores 400 del servidor por campo y conserva el formulario', async () => {
+    const user = userEvent.setup()
+    vi.mocked(createEvent).mockRejectedValue(
+      new ApiError(400, {
+        errors: {
+          date: ['La fecha del evento no puede ser anterior a la actual.'],
+        },
+      }),
+    )
+
+    renderPage()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Enviar formulario de prueba',
+      }),
+    )
+
+    expect(
+      screen.queryByRole('heading', { name: 'Evento no creado' }),
+    ).toBeNull()
+    expect(
+      screen.getByTestId('server-error-date').textContent,
+    ).toBe('La fecha del evento no puede ser anterior a la actual.')
+    expect(createEvent).toHaveBeenCalledOnce()
+  })
+
   it('cierra la creación y vuelve a eventos', async () => {
     const user = userEvent.setup()
 
@@ -220,6 +253,13 @@ describe('CreateEventPage', () => {
         name: 'Cancelar',
       }),
     )
+
+    const confirmButton = screen.queryByRole('button', {
+      name: 'Descartar borrador',
+    })
+    if (confirmButton) {
+      await user.click(confirmButton)
+    }
 
     expect(
       screen.getByRole('heading', {

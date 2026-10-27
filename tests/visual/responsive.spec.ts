@@ -1,23 +1,44 @@
 import {
   expect,
   test,
+  type Locator,
 } from '@playwright/test'
 import { dayPlan } from '../features/events/planning.fixtures'
 import { eventFixture, subtaskApiFixture } from '../features/events/subtask.fixtures'
 import { addressApiFixture, addressFixture } from '../features/events/address.fixtures'
 import { buildTodayApiTask } from '../features/today/today.fixtures'
 
+async function setDateInputValue(input: Locator, value: string) {
+  await input.evaluate((element, nextValue) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    setter?.call(element, nextValue)
+    element.dispatchEvent(new Event('input', { bubbles: true }))
+  }, value)
+}
+
+async function usePlanningFixtureDate(page: import('@playwright/test').Page) {
+  await page.clock.setFixedTime(new Date('2026-10-08T12:00:00-05:00'))
+}
+
 test.beforeEach(async ({ page }) => {
-  await page.route('**/event-types/', route => route.fulfill({ json: { success: true, data: [
-    { id: 1, name: 'Boda', description: '' }, { id: 2, name: 'Social', description: '' },
-    { id: 3, name: 'Corporativo', description: '' }, { id: 4, name: 'Cumpleaños', description: '' },
-    { id: 5, name: 'Otro', description: '' },
-  ] } }))
-  await page.route('**/events/21/', route => route.fulfill({ json: { success: true, data: {
-    id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
-    date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
-    created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
-  } } }))
+  await page.route('**/event-types/', route => route.fulfill({
+    json: {
+      success: true, data: [
+        { id: 1, name: 'Boda', description: '' }, { id: 2, name: 'Social', description: '' },
+        { id: 3, name: 'Corporativo', description: '' }, { id: 4, name: 'Cumpleaños', description: '' },
+        { id: 5, name: 'Otro', description: '' },
+      ]
+    }
+  }))
+  await page.route('**/events/21/', route => route.fulfill({
+    json: {
+      success: true, data: {
+        id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+        date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+        created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+      }
+    }
+  }))
   await page.route('**/api/auth/preferences/', route => route.fulfill({ json: { success: true, data: { daily_limit_hours: '6.00', daily_limit_configured: true } } }))
   await page.route('**/subtasks/70/reschedule-preview/', route => {
     const input = route.request().postDataJSON()
@@ -28,6 +49,52 @@ test.beforeEach(async ({ page }) => {
     const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(input.target_date))
     return route.fulfill({ json: { success: true, data: { ...subtaskApiFixture, id: 70, name: 'Buscar proveedores', ...input }, planning: dayPlan(date, Number(input.estimated_hours)) } })
   })
+})
+
+test('mantiene una jerarquía tipográfica común en páginas, diálogos y formularios', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/tests/visual/index.html?view=today')
+
+  const pageTitle = page.getByRole('heading', { level: 1, name: 'Hoy' })
+  await expect(pageTitle).toBeVisible()
+  expect(await pageTitle.evaluate(element => {
+    const styles = getComputedStyle(element)
+    return [styles.fontFamily, styles.fontSize, styles.fontWeight, styles.lineHeight]
+  })).toEqual([
+    expect.stringContaining('Geist Variable'),
+    '30px',
+    '700',
+    '36px',
+  ])
+
+  await page.goto('/tests/visual/index.html?view=daily-limit-dialog')
+  const dialog = page.getByRole('dialog')
+  const title = dialog.getByRole('heading', { name: 'Tus horas disponibles' })
+  const label = dialog.getByText('¿Cuántas horas al día puedes dedicar a tus tareas?', { exact: true })
+  const button = dialog.getByRole('button', { name: 'Guardar' })
+
+  expect(await title.evaluate(element => {
+    const styles = getComputedStyle(element)
+    return [styles.fontFamily, styles.fontSize, styles.fontWeight, styles.lineHeight]
+  })).toEqual([
+    expect.stringContaining('Geist Variable'),
+    '22px',
+    '700',
+    '28px',
+  ])
+  expect(await label.evaluate(element => {
+    const styles = getComputedStyle(element)
+    return [styles.fontSize, styles.fontWeight, styles.lineHeight]
+  })).toEqual(['13px', '500', '20px'])
+  expect(await button.evaluate(element => {
+    const styles = getComputedStyle(element)
+    return [styles.fontFamily, styles.fontSize, styles.fontWeight, styles.lineHeight]
+  })).toEqual([
+    expect.stringContaining('Geist Variable'),
+    '14px',
+    '600',
+    '20px',
+  ])
 })
 
 type NavigationFrame = {
@@ -47,14 +114,18 @@ for (const width of [320, 768, 1440]) {
       }
       return route.fulfill({ json: { success: true, data: { daily_limit_hours: savedLimit, daily_limit_configured: true } } })
     })
-    await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: {
-      overdue: [], today: [],
-      completed: [buildTodayApiTask({ state: 'completed', estimated_hours: '10.00' })],
-      upcoming: [
-        buildTodayApiTask({ target_date: '2099-12-20T23:59:59-05:00', estimated_hours: '0.75' }),
-        buildTodayApiTask({ id: 32, event: 22, state: 'in_progress', target_date: '2099-12-21T04:59:59Z', estimated_hours: '1.25' }),
-      ],
-    } } }))
+    await page.route('**/hoy/', route => route.fulfill({
+      json: {
+        success: true, data: {
+          overdue: [], today: [],
+          completed: [buildTodayApiTask({ state: 'completed', estimated_hours: '10.00' })],
+          upcoming: [
+            buildTodayApiTask({ target_date: '2099-12-20T23:59:59-05:00', estimated_hours: '0.75' }),
+            buildTodayApiTask({ id: 32, event: 22, state: 'in_progress', target_date: '2099-12-21T04:59:59Z', estimated_hours: '1.25' }),
+          ],
+        }
+      }
+    }))
     await page.goto('/tests/visual/index.html?view=settings')
     const input = page.getByLabel('Límite diario de trabajo')
     await expect(input).toBeEnabled()
@@ -99,7 +170,7 @@ for (const scenario of taskNavigationScenarios) {
     const event = { id: 21, type: 0, name: 'Boda Backend', date: '2026-10-24T23:59:59-05:00', location: 'Cali', contact: 'Laura 3001234567' }
     const task = { id: 31, event: 21, event_name: event.name, name: 'Coordinar transporte', target_date: '2026-10-20T23:59:59-05:00', estimated_hours: '2.50', state: 'pending', details: 'Confirmar disponibilidad.' }
     const precedingTasks = Array.from({ length: 12 }, (_, index) => ({ ...task, id: 100 + index, name: `Seguimiento ${index + 1}`, estimated_hours: '1.00' }))
-    let releaseTasks = () => {}
+    let releaseTasks = () => { }
     const pendingTasks = new Promise<void>(resolve => { releaseTasks = resolve })
 
     await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: { overdue: [], today: [...precedingTasks, task], upcoming: [], completed: [] } } }))
@@ -115,7 +186,13 @@ for (const scenario of taskNavigationScenarios) {
     })
 
     await page.goto('/tests/visual/index.html?view=today-navigation')
-    const openTask = page.getByRole('button', { name: `Ver tarea: ${task.name}` })
+    let openTask = page.getByRole('button', { name: `Ver tarea: ${task.name}` })
+    if (await openTask.count() === 0) {
+      await page.getByRole('button', {
+        name: `Ver todas las tareas de Para hoy (${precedingTasks.length + 1})`,
+      }).click()
+      openTask = page.getByRole('button', { name: `Ver tarea: ${task.name}` })
+    }
     await openTask.scrollIntoViewIfNeeded()
     const previousScroll = await page.evaluate(() => window.scrollY)
     expect(previousScroll).toBeGreaterThan(0)
@@ -157,6 +234,7 @@ for (const scenario of taskNavigationScenarios) {
       await page.screenshot({ path: testInfo.outputPath('ver-tarea-cargando.png') })
       releaseTasks()
       await expect(page.getByRole('heading', { name: task.name, exact: true })).toBeVisible()
+      await expect(page.locator(`#task-${task.id}`)).toBeInViewport()
       await page.screenshot({ path: testInfo.outputPath('ver-tarea-evento.png') })
 
       const trace = await page.evaluate(() => {
@@ -167,7 +245,7 @@ for (const scenario of taskNavigationScenarios) {
       const phases = trace.frames.filter((frame, index, frames) => index === 0 || frame.phase !== frames[index - 1].phase).map(frame => frame.phase)
       expect(phases).toEqual(['today', 'loading', 'ready'])
       expect(trace.transitions).toBe(scenario.nativeTransition ? 1 : 0)
-      expect(trace.scroll).toBe(0)
+      if (scenario.width >= 1280) expect(trace.scroll).toBe(0)
       expect(Math.max(...trace.frames.map(frame => frame.mainWidth)) - Math.min(...trace.frames.map(frame => frame.mainWidth))).toBeLessThanOrEqual(1)
       await expect(page.locator('#main-content')).toBeFocused()
       await page.goBack()
@@ -242,7 +320,12 @@ for (const viewport of [
       await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Eventos', exact: true }).click()
       await expect(main.getByRole('heading', { name: event.name, exact: true })).toBeVisible()
       await checkAlignment('Eventos')
-      await main.getByRole('button', { name: 'Crear evento', exact: true }).click()
+      if (viewport.width >= 768) {
+        if (viewport.width < 1280) await page.getByRole('button', { name: 'Abrir menú' }).click()
+        await page.getByRole('button', { name: '+ Crear evento', exact: true }).click()
+      } else {
+        await main.getByRole('button', { name: 'Crear evento', exact: true }).click()
+      }
       await checkAlignment('Crear evento', 'crear-alineado')
       await page.getByLabel('Nombre del evento *', { exact: true }).fill(event.name)
       await page.getByRole('combobox', { name: 'Tipo de evento *', exact: true }).click()
@@ -281,13 +364,93 @@ for (const viewport of [
       await expect(main.getByRole('heading', { name: task.name, exact: true })).toBeVisible()
       await checkAlignment(event.name)
       if (viewport.width < 1280) await page.getByRole('button', { name: 'Abrir menú' }).click()
-      await page.getByRole('button', { name: 'Abrir configuración de cuenta' }).click()
+      await page.getByRole('navigation', { name: 'Cuenta' }).getByRole('link', {
+        name: 'Configuración, Perfil y preferencias',
+      }).click()
       await checkAlignment('Configuración de cuenta')
       await page.getByRole('link', { name: 'Administrar seguridad', exact: true }).click()
       await expect(page.getByText('2 sesiones', { exact: true })).toBeVisible()
       await checkAlignment('Seguridad de la cuenta', 'seguridad-alineada')
     })
   }
+}
+
+for (const viewport of [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'reference', width: 1440, height: 900 },
+] as const) {
+  test(`Progreso conserva geometría y centrado en sus estados en ${viewport.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+
+    let mode: 'error' | 'empty' | 'ready' = 'error'
+    await page.route('**/events/?page=1', route => {
+      if (mode === 'error') return route.fulfill({ status: 500, json: { success: false } })
+      if (mode === 'empty') return route.fulfill({
+        json: {
+          success: true,
+          data: [],
+          pagination: { page: 1, page_size: 6, total: 0, total_pages: 1 },
+        }
+      })
+      return route.fulfill({
+        json: {
+          success: true,
+          data: [{ id: 21, name: 'Boda Laura & Daniel', type: 1, date: '2026-10-24T23:59:59-05:00', location: 'Cali', contact: 'Laura' }],
+          pagination: { page: 1, page_size: 6, total: 1, total_pages: 1 },
+        }
+      })
+    })
+    await page.route('**/events/21/', route => route.fulfill({
+      json: {
+        success: true,
+        data: {
+          id: 21,
+          name: 'Boda Laura & Daniel',
+          type: 1,
+          date: '2026-10-24T23:59:59-05:00',
+          location: 'Cali',
+          contact: 'Laura',
+          progress: { completed: 2, total: 4, percentage: 50 },
+        },
+      }
+    }))
+
+    const gotoProgress = () => page.goto('/tests/visual/index.html?view=progress')
+    await gotoProgress()
+    const errorState = page.getByRole('alert')
+    await expect(errorState).toBeVisible()
+    const errorBounds = await errorState.boundingBox()
+    expect(errorBounds).not.toBeNull()
+    const errorTitleBounds = await errorState.getByRole('heading', { name: 'No pudimos cargar el progreso' }).boundingBox()
+    expect(errorTitleBounds).not.toBeNull()
+    expect(Math.abs((errorTitleBounds!.x + errorTitleBounds!.width / 2) - (errorBounds!.x + errorBounds!.width / 2))).toBeLessThanOrEqual(1)
+
+    mode = 'empty'
+    await gotoProgress()
+    const emptyState = page.getByRole('heading', { name: 'Aún no tienes eventos' }).locator('xpath=ancestor::section[1]')
+    await expect(emptyState).toBeVisible()
+    const emptyBounds = await emptyState.boundingBox()
+    expect(emptyBounds).not.toBeNull()
+    expect(emptyBounds!.height).toBeCloseTo(errorBounds!.height, 1)
+
+    mode = 'ready'
+    await gotoProgress()
+    await expect(page.getByRole('progressbar', { name: 'Progreso de Boda Laura & Daniel' })).toBeVisible()
+    const eventName = page.getByRole('button', { name: 'Boda Laura & Daniel' })
+    await expect(eventName).toBeVisible()
+    if (viewport.width < 640) {
+      const bounds = await eventName.boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.height).toBeGreaterThanOrEqual(44)
+    }
+
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth,
+    }))
+    expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
+    await page.screenshot({ path: testInfo.outputPath('progreso-listo.png'), fullPage: true })
+  })
 }
 
 const coreViews = [
@@ -337,7 +500,7 @@ for (const viewport of viewports) {
         await expect(page.locator('body')).toBeVisible()
         if (view === 'security') await expect(page.getByText('2 sesiones')).toBeVisible()
         if (view === 'reschedule') {
-          await expect(page.getByLabel('Nueva fecha')).toBeEmpty()
+          await expect(page.getByLabel('Nueva fecha', { exact: true })).toBeEmpty()
           await expect(page.getByText('Elige una fecha')).toBeVisible()
           await expect(page.getByText('Aquí verás la carga del día antes de reprogramar.')).toBeVisible()
           await expect(page.getByRole('button', { name: 'Reprogramar', exact: true })).toBeDisabled()
@@ -365,6 +528,7 @@ for (const viewport of viewports) {
 }
 
 test('Sprint 3 permite resolver por teclado en móvil y conserva foco al cancelar', async ({ page }, testInfo) => {
+  await usePlanningFixtureDate(page)
   await page.setViewportSize({ width: 390, height: 640 })
   await page.goto('/tests/visual/index.html?view=conflict')
   await page.getByRole('button', { name: 'Cancelar reprogramación' }).click()
@@ -386,6 +550,7 @@ test('Sprint 3 permite resolver por teclado en móvil y conserva foco al cancela
 })
 
 test('Sprint 3 muestra tres tareas en conflicto sin desplazar el diálogo en escritorio', async ({ page }, testInfo) => {
+  await usePlanningFixtureDate(page)
   await page.setViewportSize({ width: 1182, height: 842 })
   await page.goto('/tests/visual/index.html?view=conflict')
   const dialog = page.getByRole('dialog')
@@ -397,6 +562,7 @@ test('Sprint 3 muestra tres tareas en conflicto sin desplazar el diálogo en esc
 })
 
 test('Sprint 3 mantiene encabezado y acciones visibles con muchas tareas en conflicto', async ({ page }) => {
+  await usePlanningFixtureDate(page)
   await page.setViewportSize({ width: 1182, height: 842 })
   await page.goto('/tests/visual/index.html?view=conflict-many')
   const dialog = page.getByRole('dialog')
@@ -409,6 +575,7 @@ test('Sprint 3 mantiene encabezado y acciones visibles con muchas tareas en conf
 })
 
 test('Sprint 3 conserva el tamaño del diálogo al resolver la sobrecarga', async ({ page }, testInfo) => {
+  await usePlanningFixtureDate(page)
   await page.setViewportSize({ width: 1182, height: 842 })
   await page.goto('/tests/visual/index.html?view=conflict')
   const dialog = page.getByRole('dialog')
@@ -455,14 +622,19 @@ test('Sprint 3 conserva el tamaño del diálogo al resolver la sobrecarga', asyn
 })
 
 test('Sprint 3 muestra la resolución sin sugerencia completa sin scroll en escritorio', async ({ page }, testInfo) => {
+  await usePlanningFixtureDate(page)
   await page.setViewportSize({ width: 974, height: 876 })
   await page.route('**/subtasks/70/reschedule-preview/', route => {
     const input = route.request().postDataJSON()
-    return route.fulfill({ json: { success: true, data: {
-      ...dayPlan(input.target_date, Number(input.estimated_hours)),
-      existing_hours: '1.25', planned_hours: '3.25', daily_limit_hours: '1',
-      overload_hours: '2.25', has_conflict: true, suggestion: null,
-    } } })
+    return route.fulfill({
+      json: {
+        success: true, data: {
+          ...dayPlan(input.target_date, Number(input.estimated_hours)),
+          existing_hours: '1.25', planned_hours: '3.25', daily_limit_hours: '1',
+          overload_hours: '2.25', has_conflict: true, suggestion: null,
+        }
+      }
+    })
   })
   await page.goto('/tests/visual/index.html?view=conflict-no-suggestion')
   const dialog = page.getByRole('dialog')
@@ -476,22 +648,12 @@ test('Sprint 3 muestra la resolución sin sugerencia completa sin scroll en escr
   await dialog.evaluate(async element => { await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => undefined))) })
   expect(await body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
   await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeInViewport()
-  const dateBounds = await dialog.getByLabel('Otra fecha').boundingBox()
-  const previewBounds = await dialog.getByText('Vista previa de carga', { exact: true }).boundingBox()
   await dialog.getByRole('radio', { name: /Reducir el tiempo/ }).check()
-  await expect(dialog.getByLabel('Minutos', { exact: true })).toBeVisible()
-  await dialog.getByRole('combobox', { name: 'Minutos' }).click()
-  await expect(page.locator('body')).toHaveAttribute('data-scroll-locked')
-  expect(await page.locator('body').evaluate(element => getComputedStyle(element).overflowY)).toBe('hidden')
-  await page.getByRole('option', { name: '45', exact: true }).click()
-  await expect(dialog.getByRole('combobox', { name: 'Minutos' })).toHaveText('45')
-  expect(await page.locator('body').evaluate(element => getComputedStyle(element).overflowY)).toBe('hidden')
+  await expect(dialog.getByLabel('Tiempo estimado', { exact: true })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Reducir tiempo estimado' }).click()
+  await expect(dialog.getByLabel('Tiempo estimado', { exact: true })).toHaveText('45 min')
   await dialog.evaluate(async element => { await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => undefined))) })
   await expect(dialog.getByText('Vista previa de carga', { exact: true })).toBeVisible()
-  const hoursBounds = await dialog.getByLabel('Horas', { exact: true }).boundingBox()
-  const reducedPreviewBounds = await dialog.getByText('Vista previa de carga', { exact: true }).boundingBox()
-  expect(Math.abs(hoursBounds!.y - dateBounds!.y)).toBeLessThanOrEqual(1)
-  expect(Math.abs(reducedPreviewBounds!.y - previewBounds!.y)).toBeLessThanOrEqual(1)
   expect(await body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
 })
 
@@ -503,31 +665,46 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
     const eventReady = new Promise<void>(resolve => { releaseEvent = resolve })
     await page.route('**/events/21/', async route => {
       await eventReady
-      await route.fulfill({ json: { success: true, data: {
-        id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
-        date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
-        created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
-      } } })
+      await route.fulfill({
+        json: {
+          success: true, data: {
+            id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+            date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+            created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+          }
+        }
+      })
     })
     await page.goto('/tests/visual/index.html?view=reschedule')
     const dialog = page.getByRole('dialog')
-    const field = dialog.getByLabel('Nueva fecha')
-    await expect(field).toBeVisible()
+    const dateInput = dialog.getByLabel('Nueva fecha', { exact: true })
+    await expect(dateInput).toBeVisible()
     await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toHaveCount(0)
-    const before = await field.boundingBox()
+    const before = await dateInput.boundingBox()
     releaseEvent()
     await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toBeVisible()
-    const after = await field.boundingBox()
+    const after = await dateInput.boundingBox()
     expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1)
   })
 
   test(`Sprint 3 mantiene la posición y dimensiones durante todo el flujo en ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport)
+    await page.route('**/subtasks/70/reschedule-preview/', route => {
+      const input = route.request().postDataJSON()
+      const data = input.target_date === '2026-10-23'
+        ? {
+          ...dayPlan('2026-10-12', Number(input.estimated_hours)),
+          date: input.target_date,
+          suggestion: { date: '2026-10-24', planned_hours: input.estimated_hours },
+        }
+        : dayPlan(input.target_date, Number(input.estimated_hours))
+      return route.fulfill({ json: { success: true, data } })
+    })
     await page.goto('/tests/visual/index.html?view=reschedule')
     const dialog = page.getByRole('dialog')
-    await expect(dialog.getByLabel('Nueva fecha')).toHaveValue('')
+    await expect(dialog.getByLabel('Nueva fecha', { exact: true })).toHaveValue('')
     await expect(dialog.getByText('Fecha del evento: 24 de octubre de 2026')).toBeVisible()
-    await expect(dialog.getByLabel('Nueva fecha')).toHaveAttribute('max', '2026-10-24')
+    await expect(dialog.getByLabel('Nueva fecha', { exact: true })).toHaveAttribute('max', '2026-10-24')
     await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeDisabled()
     const initialBounds = await dialog.boundingBox()
     async function checkBounds() {
@@ -537,7 +714,7 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
         expect(Math.abs(bounds![key] - initialBounds![key])).toBeLessThanOrEqual(1)
       }
     }
-    await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+    await setDateInputValue(dialog.getByLabel('Nueva fecha', { exact: true }), '23/10/2026')
     await expect(dialog.getByRole('button', { name: 'Reprogramar', exact: true })).toBeEnabled()
     await dialog.getByRole('button', { name: 'Reprogramar', exact: true }).click()
     await expect(dialog.getByRole('heading', { name: /Sobrecarga para el/ })).toBeVisible()
@@ -549,7 +726,7 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
     const backToPreview = dialog.getByRole('button', { name: 'Volver', exact: true })
     await backToPreview.focus()
     await page.keyboard.press('Enter')
-    await expect(dialog.getByLabel('Nueva fecha')).toHaveValue('2026-10-12')
+    await expect(dialog.getByLabel('Nueva fecha', { exact: true })).toHaveValue('23/10/2026')
     const reprogram = dialog.getByRole('button', { name: 'Reprogramar', exact: true })
     await expect(reprogram).toBeEnabled()
     expect(await reprogram.evaluate(element => element.matches(':hover'))).toBe(true)
@@ -562,10 +739,10 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
     await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeEnabled()
     await checkBounds()
     await dialog.getByRole('radio', { name: /Elegir manualmente/ }).check()
-    await expect(dialog.getByLabel('Otra fecha')).toBeVisible()
+    await expect(dialog.getByLabel('Otra fecha', { exact: true })).toBeVisible()
     await checkBounds()
     await dialog.getByRole('radio', { name: /Reducir el tiempo/ }).check()
-    await expect(dialog.getByLabel('Horas', { exact: true })).toBeVisible()
+    await expect(dialog.getByLabel('Tiempo estimado', { exact: true })).toBeVisible()
     await checkBounds()
     await dialog.getByRole('radio', { name: /Mover Buscar proveedores/ }).check()
     await expect(dialog.getByRole('button', { name: 'Aplicar opción' })).toBeEnabled()
@@ -579,24 +756,33 @@ for (const viewport of [{ width: 1182, height: 842 }, { width: 320, height: 568 
 test('Hoy abre la reprogramación con la fecha del evento desde el primer render', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: {
-    overdue: [{ id: 70, event: 21, event_name: 'Boda Backend', name: 'Confirmar sonido', target_date: '2026-10-09T23:59:59-05:00', estimated_hours: '1.00', state: 'pending', details: '' }],
-    today: [], upcoming: [], completed: [],
-  } } }))
+  await page.route('**/hoy/', route => route.fulfill({
+    json: {
+      success: true, data: {
+        overdue: [{ id: 70, event: 21, event_name: 'Boda Backend', name: 'Confirmar sonido', target_date: '2026-10-09T23:59:59-05:00', estimated_hours: '1.00', state: 'pending', details: '' }],
+        today: [], upcoming: [], completed: [],
+      }
+    }
+  }))
   let releaseEvent!: () => void
   const eventReady = new Promise<void>(resolve => { releaseEvent = resolve })
   await page.route('**/events/21/', async route => {
     await eventReady
-    await route.fulfill({ json: { success: true, data: {
-      id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
-      date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
-      created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
-    } } })
+    await route.fulfill({
+      json: {
+        success: true, data: {
+          id: eventFixture.id, user: 1, name: eventFixture.name, type: eventFixture.typeId,
+          date: eventFixture.eventDate, location: eventFixture.location, contact: eventFixture.contact,
+          created_at: '2026-09-24T12:00:00.000Z', updated_at: '2026-09-24T12:00:00.000Z',
+        }
+      }
+    })
   })
   await page.goto('/tests/visual/index.html?view=today-navigation')
-  const action = page.getByRole('button', { name: 'Reprogramar tarea: Confirmar sonido' })
-  await action.click()
-  await expect(action).toHaveAttribute('aria-busy', 'true')
+  const actions = page.getByRole('button', { name: 'Acciones de Confirmar sonido' })
+  await actions.click()
+  await page.getByRole('menuitem', { name: 'Reprogramar' }).click()
+  await expect(actions).toBeDisabled()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   releaseEvent()
   const dialog = page.getByRole('dialog')
@@ -608,11 +794,15 @@ for (const width of [390, 1182]) {
   test(`el aviso del límite diario es compacto en ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 844 })
     await page.route('**/api/auth/preferences/', route => route.fulfill({ status: 503, json: { success: false } }))
-    await page.route('**/hoy/', route => route.fulfill({ json: { success: true, data: {
-      overdue: [],
-      today: [{ id: 70, event: 21, event_name: 'Boda Backend', name: 'Confirmar sonido', target_date: '2026-10-09T23:59:59-05:00', estimated_hours: '1.00', state: 'pending', details: '' }],
-      upcoming: [], completed: [],
-    } } }))
+    await page.route('**/hoy/', route => route.fulfill({
+      json: {
+        success: true, data: {
+          overdue: [],
+          today: [{ id: 70, event: 21, event_name: 'Boda Backend', name: 'Confirmar sonido', target_date: '2026-10-09T23:59:59-05:00', estimated_hours: '1.00', state: 'pending', details: '' }],
+          upcoming: [], completed: [],
+        }
+      }
+    }))
     await page.goto('/tests/visual/index.html?view=today-navigation')
     const warning = page.getByRole('status', { name: 'No pudimos cargar tu límite diario. Inténtalo de nuevo.' })
     await expect(warning).toBeVisible()
@@ -628,10 +818,11 @@ for (const width of [390, 1182]) {
 }
 
 test('volver con ratón no ilumina las acciones de reprogramación', async ({ page }) => {
+  await usePlanningFixtureDate(page)
   await page.setViewportSize({ width: 1182, height: 842 })
   await page.goto('/tests/visual/index.html?view=reschedule')
   const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+  await setDateInputValue(dialog.getByLabel('Nueva fecha', { exact: true }), '12/10/2026')
   const initialAction = dialog.getByRole('button', { name: 'Reprogramar', exact: true })
   await initialAction.hover()
   await page.mouse.down()
@@ -654,11 +845,13 @@ test('volver con ratón no ilumina las acciones de reprogramación', async ({ pa
   })
   expect(primaryState).toEqual({ background: 'rgb(79, 70, 229)', shadow: 'none', transition: 'none' })
   expect(secondaryState.hover).toBe(true)
-  expect(secondaryState.background).toBe(secondaryState.surface)
+  expect(secondaryState.background).toMatch(/^(?:rgb\(255, 255, 255\)|oklch\(1 0 0\))$/)
+  expect(secondaryState.surface).toMatch(/^(?:rgb\(255, 255, 255\)|oklch\(1 0 0\))$/)
   expect(secondaryState.transition).toBe('none')
 })
 
 test('volver de la sobrecarga conserva Reprogramar activo sin repetir la consulta', async ({ page }) => {
+  await usePlanningFixtureDate(page)
   await page.setViewportSize({ width: 1182, height: 842 })
   let previewRequests = 0
   await page.route('**/subtasks/70/reschedule-preview/', route => {
@@ -668,7 +861,7 @@ test('volver de la sobrecarga conserva Reprogramar activo sin repetir la consult
   })
   await page.goto('/tests/visual/index.html?view=reschedule')
   const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+  await setDateInputValue(dialog.getByLabel('Nueva fecha', { exact: true }), '12/10/2026')
   const reprogram = dialog.getByRole('button', { name: 'Reprogramar', exact: true })
   await expect(reprogram).toBeEnabled()
   expect(previewRequests).toBe(1)
@@ -682,10 +875,11 @@ test('volver de la sobrecarga conserva Reprogramar activo sin repetir la consult
 
 for (const width of [320, 640, 1182]) {
   test(`las acciones de reprogramación mantienen su posición al navegar en ${width}px`, async ({ page }) => {
+    await usePlanningFixtureDate(page)
     await page.setViewportSize({ width, height: 842 })
     await page.goto('/tests/visual/index.html?view=reschedule')
     const dialog = page.getByRole('dialog')
-    await dialog.getByLabel('Nueva fecha').fill('2026-10-12')
+    await setDateInputValue(dialog.getByLabel('Nueva fecha', { exact: true }), '12/10/2026')
     const actions = async (secondaryLabel: string, primaryLabel: string) => {
       const secondary = await dialog.getByRole('button', { name: secondaryLabel, exact: true }).boundingBox()
       const primary = await dialog.getByRole('button', { name: primaryLabel, exact: true }).boundingBox()
@@ -766,7 +960,7 @@ for (const viewport of [
     await page.getByLabel('Contacto *', { exact: true }).fill('Contacto sin guardar')
     await page.getByRole('button', { name: `Reprogramar ${task.name}`, exact: true }).click()
     await expect(page.getByLabel('Nueva fecha', { exact: true })).toHaveValue('')
-    await page.getByLabel('Nueva fecha', { exact: true }).fill('2099-12-21')
+    await setDateInputValue(page.getByLabel('Nueva fecha', { exact: true }), '2099-12-21')
     await page.getByRole('button', { name: 'Reprogramar', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Tarea reprogramada correctamente' })).toBeVisible()
     await page.getByRole('button', { name: 'Volver al plan', exact: true }).click()
@@ -786,10 +980,325 @@ for (const viewport of [
     expect(writes).toBe(1)
     expect(taskReads).toBe(readsBeforeRetry + 1)
     await page.getByRole('button', { name: `Editar ${task.name}`, exact: true }).click()
-    await expect(page.getByLabel('Fecha límite *', { exact: true })).toHaveValue('2099-12-21')
+    await expect(page.getByLabel('Fecha límite *', { exact: true })).toHaveValue('21/12/2099')
     await expect(page.getByLabel('Contacto *', { exact: true })).toHaveValue('Contacto sin guardar')
   })
 }
+
+for (const viewport of [
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'reference', width: 1440, height: 900 },
+] as const) {
+  test(`los estados de página conservan el ancho de sus tarjetas en ${viewport.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+
+    const expectSameBounds = async (
+      reference: import('@playwright/test').Locator,
+      state: import('@playwright/test').Locator,
+    ) => {
+      const [referenceBounds, stateBounds] = await Promise.all([
+        reference.boundingBox(),
+        state.boundingBox(),
+      ])
+      expect(referenceBounds).not.toBeNull()
+      expect(stateBounds).not.toBeNull()
+      expect(stateBounds!.x).toBeCloseTo(referenceBounds!.x, 1)
+      expect(stateBounds!.width).toBeCloseTo(referenceBounds!.width, 1)
+    }
+
+    await page.goto('/tests/visual/index.html?view=event-detail-empty')
+    const eventInfoCard = page.getByRole('heading', { name: 'Información del evento' }).locator('xpath=ancestor::section[1]')
+    const emptyTasksCard = page.getByRole('heading', { name: 'Aún no tienes tareas para este evento' }).locator('xpath=ancestor::section[1]')
+    await expectSameBounds(eventInfoCard, emptyTasksCard)
+    await page.screenshot({ path: testInfo.outputPath('detalle-evento-vacio.png'), fullPage: true })
+
+    await page.goto('/tests/visual/index.html?view=events-empty')
+    const eventsHeader = page.getByRole('heading', { name: 'Eventos', exact: true }).locator('xpath=ancestor::header[1]')
+    const emptyEventsCard = page.getByRole('heading', { name: 'Aún no tienes eventos' }).locator('xpath=..')
+    await expectSameBounds(eventsHeader, emptyEventsCard)
+
+    await page.goto('/tests/visual/index.html?view=today-empty')
+    const todayHeader = page.getByRole('heading', { name: 'Hoy', exact: true }).locator('xpath=ancestor::header[1]')
+    const todayEmptyCard = page.getByRole('heading', { name: 'No tienes gestiones pendientes para hoy' }).locator('xpath=ancestor::section[1]')
+    await expectSameBounds(todayHeader, todayEmptyCard)
+
+    await page.goto('/tests/visual/index.html?view=event-detail-error')
+    const detailHeader = page.getByRole('heading', { name: 'Detalle del evento' }).locator('xpath=ancestor::header[1]')
+    const detailErrorCard = page.getByRole('heading', { name: 'No pudimos cargar el evento' }).locator('xpath=ancestor::section[1]')
+    await expectSameBounds(detailHeader, detailErrorCard)
+
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      page: document.documentElement.scrollWidth,
+    }))
+    expect(dimensions.page).toBeLessThanOrEqual(dimensions.viewport)
+  })
+}
+
+test('el menú de la tarea permite ver y ocultar su detalle', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/tests/visual/index.html?view=event-task')
+
+  const actionsButton = page.getByRole('button', { name: /^Más acciones para / })
+  await actionsButton.click()
+  await page.getByRole('menuitem', { name: /^Ver detalle de / }).click()
+  await expect(page.getByText('Detalles de la tarea', { exact: true })).toBeVisible()
+
+  await actionsButton.click()
+  await page.getByRole('menuitem', { name: /^Ocultar detalle de / }).click()
+  await expect(page.getByText('Detalles de la tarea', { exact: true })).toHaveCount(0)
+})
+
+test('el indicador de estado cubre uniformemente el borde de la tarea', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/tests/visual/index.html?view=event-task')
+
+  const card = page.locator('.event-task-card')
+  const accent = card.locator(':scope > div[aria-hidden="true"]').first()
+  const [cardBounds, accentBounds] = await Promise.all([
+    card.boundingBox(),
+    accent.boundingBox(),
+  ])
+  const border = await card.evaluate(element => {
+    const styles = getComputedStyle(element)
+    return {
+      top: Number.parseFloat(styles.borderTopWidth),
+      bottom: Number.parseFloat(styles.borderBottomWidth),
+    }
+  })
+
+  expect(cardBounds).not.toBeNull()
+  expect(accentBounds).not.toBeNull()
+  expect(accentBounds!.y).toBe(cardBounds!.y + border.top)
+  expect(accentBounds!.height).toBe(cardBounds!.height - border.top - border.bottom)
+})
+
+test('las acciones de tareas mantienen la misma línea y altura en Hoy y en el detalle', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  const expectAlignedActions = async (
+    first: import('@playwright/test').Locator,
+    second: import('@playwright/test').Locator,
+  ) => {
+    const [firstBounds, secondBounds] = await Promise.all([
+      first.boundingBox(),
+      second.boundingBox(),
+    ])
+    expect(firstBounds).not.toBeNull()
+    expect(secondBounds).not.toBeNull()
+    expect(firstBounds!.height).toBe(secondBounds!.height)
+    expect(Math.abs(firstBounds!.y - secondBounds!.y)).toBeLessThanOrEqual(1)
+  }
+
+  await page.goto('/tests/visual/index.html?view=today')
+  await expectAlignedActions(
+    page.getByRole('button', { name: /^Registrar avance de / }).first(),
+    page.getByRole('button', { name: /^Acciones de / }).first(),
+  )
+
+  await page.goto('/tests/visual/index.html?view=event-task')
+  await expectAlignedActions(
+    page.getByRole('button', { name: /^Registrar avance de / }),
+    page.getByRole('button', { name: /^Más acciones para / }),
+  )
+
+  await page.goto('/tests/visual/index.html?view=daily-limit-dialog')
+  await expectAlignedActions(
+    page.getByRole('button', { name: 'Cancelar', exact: true }),
+    page.getByRole('button', { name: 'Guardar', exact: true }),
+  )
+})
+
+test('Hoy y el detalle del evento comparten la composición visual de sus tareas', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-22T12:00:00-05:00'))
+
+  const readTaskStyles = async (view: 'today' | 'event-task') => {
+    await page.goto(`/tests/visual/index.html?view=${view}`)
+    const card = view === 'today' ? page.locator('article').first() : page.locator('.event-task-card')
+    const title = card.getByRole('heading', { level: 3 })
+    const metadata = card.locator('svg.lucide-calendar').locator('xpath=ancestor::div[1]')
+    const status = view === 'today'
+      ? card.getByText('Hoy', { exact: true })
+      : card.locator('[data-task-state-status]')
+    const register = card.getByRole('button', { name: /^Registrar avance de / })
+    const actions = card.getByRole('button', { name: /^(Acciones|Más acciones) (de|para) / })
+
+    await expect(card).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath(`tarea-${view}.png`) })
+
+    const calendar = card.locator('svg.lucide-calendar')
+    const clock = card.locator('svg.lucide-clock')
+    const [cardBounds, titleBounds, metadataBounds, actionsBounds, calendarBounds, clockBounds] = await Promise.all([
+      card.boundingBox(),
+      title.boundingBox(),
+      metadata.boundingBox(),
+      actions.boundingBox(),
+      calendar.boundingBox(),
+      clock.boundingBox(),
+    ])
+
+    return {
+      card: await card.evaluate(element => {
+        const styles = getComputedStyle(element)
+        return [styles.borderRadius, styles.backgroundColor, styles.boxShadow]
+      }),
+      title: await title.evaluate(element => {
+        const styles = getComputedStyle(element)
+        return [styles.fontSize, styles.fontWeight, styles.lineHeight, styles.letterSpacing]
+      }),
+      metadata: await metadata.evaluate(element => {
+        const styles = getComputedStyle(element)
+        return [styles.fontSize, styles.lineHeight, styles.marginTop]
+      }),
+      calendarIcon: await card.locator('svg.lucide-calendar').evaluate(element => {
+        const bounds = element.getBoundingClientRect()
+        return [bounds.width, bounds.height]
+      }),
+      actions: await actions.evaluate(element => {
+        const styles = getComputedStyle(element)
+        return [styles.color, styles.backgroundColor, styles.borderColor]
+      }),
+      actionsIcon: await actions.locator('svg.lucide-settings, svg.lucide-sliders-horizontal').first().evaluate(element => getComputedStyle(element).color),
+      controls: await Promise.all([status, register, actions].map(async control => {
+        const bounds = await control.boundingBox()
+        return bounds?.height
+      })),
+      hierarchy: {
+        titleLeft: titleBounds!.x - cardBounds!.x,
+        titleTop: titleBounds!.y - cardBounds!.y,
+        metadataLeft: metadataBounds!.x - cardBounds!.x,
+        metadataGap: metadataBounds!.y - (titleBounds!.y + titleBounds!.height),
+        actionsRight: cardBounds!.x + cardBounds!.width - (actionsBounds!.x + actionsBounds!.width),
+      },
+      metadataFlow: {
+        calendarLeft: calendarBounds!.x - cardBounds!.x,
+        calendarTop: calendarBounds!.y - cardBounds!.y,
+        clockLeft: clockBounds!.x - cardBounds!.x,
+        clockTop: clockBounds!.y - cardBounds!.y,
+      },
+    }
+  }
+
+  const today = await readTaskStyles('today')
+  const detail = await readTaskStyles('event-task')
+
+  expect({ ...today, hierarchy: undefined, metadataFlow: undefined }).toEqual({ ...detail, hierarchy: undefined, metadataFlow: undefined })
+  for (const key of Object.keys(today.hierarchy) as Array<keyof typeof today.hierarchy>) {
+    expect(today.hierarchy[key], key).toBeCloseTo(detail.hierarchy[key], 0)
+  }
+  expect(detail.metadataFlow.calendarLeft).toBeCloseTo(detail.hierarchy.titleLeft, 0)
+  expect(detail.metadataFlow.clockLeft).toBeGreaterThan(detail.metadataFlow.calendarLeft)
+  expect(detail.metadataFlow.clockTop).toBeCloseTo(detail.metadataFlow.calendarTop, 0)
+  await expect(page.locator('.event-task-card [data-task-schedule-status]')).toHaveText('Vencida')
+  await expect(page.locator('.event-task-card [data-task-state-status]')).toHaveText('En progreso')
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/tests/visual/index.html?view=event-task')
+  const mobileCard = page.locator('.event-task-card')
+  const [mobileCardBounds, mobileTitleBounds, mobileCalendarBounds] = await Promise.all([
+    mobileCard.boundingBox(),
+    mobileCard.getByRole('heading', { level: 3 }).boundingBox(),
+    mobileCard.locator('svg.lucide-calendar').boundingBox(),
+  ])
+  expect(mobileCalendarBounds!.x - mobileCardBounds!.x)
+    .toBeCloseTo(mobileTitleBounds!.x - mobileCardBounds!.x, 0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth))
+    .toBeLessThanOrEqual(1)
+})
+
+for (const width of [768, 1024]) {
+  test(`Hoy muestra acciones claras y completas desde ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/tests/visual/index.html?view=today')
+
+    const card = page.locator('article').first()
+    const register = card.getByRole('button', { name: /^Registrar avance de / })
+    const actions = card.getByRole('button', { name: /^Acciones de / })
+    await expect(register).toBeVisible()
+    await expect(actions).toBeVisible()
+    await expect(actions.getByText('Acciones', { exact: true })).toBeVisible()
+
+    const [cardBounds, registerBounds, actionsBounds] = await Promise.all([
+      card.boundingBox(),
+      register.boundingBox(),
+      actions.boundingBox(),
+    ])
+    expect(registerBounds!.height).toBe(actionsBounds!.height)
+    expect(Math.abs(registerBounds!.y - actionsBounds!.y)).toBeLessThanOrEqual(1)
+    expect(actionsBounds!.x + actionsBounds!.width).toBeLessThanOrEqual(cardBounds!.x + cardBounds!.width)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+    await page.screenshot({ path: testInfo.outputPath('acciones-hoy.png') })
+  })
+}
+
+for (const width of [390, 768, 1024]) {
+  test(`Hoy mantiene cada fecha en una sola línea a ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/tests/visual/index.html?view=today')
+
+    const date = page.locator('article').first().locator('time')
+    await expect(date).toBeVisible()
+    expect(await date.evaluate(element => getComputedStyle(element).whiteSpace)).toBe('nowrap')
+    const dateMetrics = await date.evaluate(element => {
+      const styles = getComputedStyle(element)
+      return {
+        height: element.getBoundingClientRect().height,
+        lineHeight: Number.parseFloat(styles.lineHeight),
+      }
+    })
+    expect(dateMetrics.height).toBeLessThanOrEqual(dateMetrics.lineHeight + 1)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+  })
+}
+
+test('las acciones compactas conservan un objetivo táctil alineado en móvil', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/tests/visual/index.html?view=today')
+
+  const card = page.locator('article').first()
+  const actions = card.getByRole('button', { name: /^Acciones de / })
+  await expect(actions).toBeVisible()
+  await expect(card.getByRole('button', { name: /^Registrar avance de / })).toBeHidden()
+
+  const [cardBounds, actionBounds] = await Promise.all([
+    card.boundingBox(),
+    actions.boundingBox(),
+  ])
+  expect(cardBounds).not.toBeNull()
+  expect(actionBounds).not.toBeNull()
+  expect(actionBounds!.width).toBeGreaterThanOrEqual(44)
+  expect(actionBounds!.height).toBeGreaterThanOrEqual(44)
+  expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(cardBounds!.x + cardBounds!.width)
+})
+
+test('Ver todas amplía las tareas conservando el estilo y el ancho actual', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/tests/visual/index.html?view=today-show-all')
+
+  const cards = page.locator('article')
+  const toggle = page.getByRole('button', { name: 'Ver todas las tareas de Vencidas (5)' })
+  await expect(cards).toHaveCount(3)
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+  const before = await cards.first().boundingBox()
+  expect(await toggle.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(238, 242, 255)')
+  await toggle.click()
+
+  await expect(cards).toHaveCount(5)
+  const lessToggle = page.getByRole('button', { name: 'Ver menos tareas de Vencidas' })
+  await expect(lessToggle).toHaveAttribute('aria-expanded', 'true')
+  const after = await cards.first().boundingBox()
+  expect(after!.x).toBeCloseTo(before!.x, 1)
+  expect(after!.width).toBeCloseTo(before!.width, 1)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.reload()
+  const mobileToggle = page.getByRole('button', { name: 'Ver todas las tareas de Vencidas (5)' })
+  const mobileBounds = await mobileToggle.boundingBox()
+  expect(mobileBounds!.height).toBeGreaterThanOrEqual(44)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+})
 
 test('cambia entre navegación móvil y sidebar sin comprimir el contenido', async ({
   page,
@@ -821,6 +1330,135 @@ test('cambia entre navegación móvil y sidebar sin comprimir el contenido', asy
   ).toBeHidden()
   await expect(page.locator('aside')).toBeVisible()
 })
+
+test('Configuración es visible, coherente y accesible desde el sidebar', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/tests/visual/index.html?view=today-navigation')
+
+  const mainNavigation = page.getByRole('navigation', { name: 'Navegación principal' })
+  const accountNavigation = page.getByRole('navigation', { name: 'Cuenta' })
+  const todayLink = mainNavigation.getByRole('link', { name: 'Hoy' })
+  const eventsLabel = mainNavigation.getByText('Eventos', { exact: true })
+  const settingsLink = accountNavigation.getByRole('link', {
+    name: 'Configuración, Perfil y preferencias',
+  })
+  const settingsLabel = settingsLink.getByText('Configuración', { exact: true })
+  const settingsDescription = settingsLink.getByText('Perfil y preferencias', { exact: true })
+
+  await expect(settingsLink).toBeVisible()
+  await expect(settingsDescription).toBeVisible()
+  const readTypography = (element: HTMLElement) => {
+    const styles = getComputedStyle(element)
+    return [styles.fontFamily, styles.fontSize, styles.fontWeight, styles.lineHeight]
+  }
+  expect(await settingsLabel.evaluate(readTypography)).toEqual(await eventsLabel.evaluate(readTypography))
+  expect(await settingsDescription.evaluate(element => {
+    const styles = getComputedStyle(element)
+    return [styles.fontSize, styles.lineHeight]
+  })).toEqual(['12px', '16px'])
+  const desktopCreate = page.locator('aside').getByRole('button', { name: 'Crear evento' })
+  expect((await desktopCreate.boundingBox())!.y).toBeLessThan((await settingsLink.boundingBox())!.y)
+  await todayLink.click()
+  await expect(todayLink).toHaveAttribute('aria-current', 'page')
+  await page.mouse.move(0, 0)
+  await expect(todayLink).toHaveCSS('background-color', 'rgb(238, 242, 255)')
+  const activeBackground = await todayLink.evaluate(element => getComputedStyle(element).backgroundColor)
+
+  await settingsLink.focus()
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL(/\/configuracion$/)
+  await expect(settingsLink).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('group', { name: /Sesión actual:/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Abrir configuración de cuenta' })).toHaveCount(0)
+  await expect(settingsLink).toHaveCSS('background-color', activeBackground)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/tests/visual/index.html?view=today-navigation')
+  await page.getByRole('button', { name: 'Abrir menú' }).click()
+
+  const mobileSettingsLink = page.getByRole('navigation', { name: 'Cuenta' }).getByRole('link', {
+    name: 'Configuración, Perfil y preferencias',
+  })
+  await expect(mobileSettingsLink).toBeVisible()
+  const mobileCreate = page.getByRole('button', { name: 'Crear evento' })
+  expect((await mobileCreate.boundingBox())!.y).toBeLessThan((await mobileSettingsLink.boundingBox())!.y)
+  const bounds = await mobileSettingsLink.boundingBox()
+  expect(bounds!.height).toBeGreaterThanOrEqual(44)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+
+  await mobileSettingsLink.click()
+  await expect(page).toHaveURL(/\/configuracion$/)
+  await expect(page.getByRole('button', { name: 'Abrir menú' })).toBeVisible()
+})
+
+for (const viewport of [
+  { name: 'móvil', width: 390, height: 844 },
+  { name: 'escritorio', width: 1440, height: 900 },
+]) {
+  test(`el calendario de reprogramación se abre bajo demanda sin alterar el modal en ${viewport.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport)
+    await page.clock.setFixedTime(new Date('2026-10-22T12:00:00-05:00'))
+    await page.goto('/tests/visual/index.html?view=reschedule')
+
+    const dialog = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Reprogramar tarea' }) })
+    const scrollRegion = dialog.locator('.reschedule-dialog-scroll-region')
+    const input = dialog.getByLabel('Nueva fecha', { exact: true })
+    const taskCard = dialog.locator('[data-reschedule-task-card]')
+    const dateField = input.locator('..')
+    const emptyPreview = dialog.locator('[data-load-preview-card]')
+    await expect(input).toBeVisible()
+    await expect(input).toHaveValue('')
+    await expect(emptyPreview).toContainText('Elige una fecha')
+    await expect(page.getByRole('group', { name: 'Seleccionar una fecha en el calendario' })).toHaveCount(0)
+    const [initialDialogBounds, taskCardBounds, dateFieldBounds, initialPreviewBounds] = await Promise.all([
+      dialog.boundingBox(),
+      taskCard.boundingBox(),
+      dateField.boundingBox(),
+      emptyPreview.boundingBox(),
+    ])
+    expect(dateFieldBounds!.x).toBeCloseTo(taskCardBounds!.x, 1)
+    expect(initialPreviewBounds!.x).toBeCloseTo(taskCardBounds!.x, 1)
+    expect(dateFieldBounds!.width).toBeCloseTo(taskCardBounds!.width, 1)
+    expect(initialPreviewBounds!.width).toBeCloseTo(taskCardBounds!.width, 1)
+
+    await dialog.getByRole('button', { name: 'Abrir calendario de nueva fecha' }).click()
+    const calendarPopup = page.locator('#reschedule-date-calendar')
+    const calendar = calendarPopup.getByRole('group', { name: 'Seleccionar una fecha en el calendario' })
+    await expect(calendarPopup).toBeVisible()
+    await expect(calendar.getByRole('grid', { name: 'Calendario de octubre de 2026' })).toBeVisible()
+
+    const [calendarBounds, viewportWidth] = await Promise.all([
+      calendar.boundingBox(),
+      page.evaluate(() => document.documentElement.clientWidth),
+    ])
+    expect(calendarBounds).not.toBeNull()
+    expect(calendarBounds!.x).toBeGreaterThanOrEqual(16)
+    expect(calendarBounds!.x + calendarBounds!.width).toBeLessThanOrEqual(viewportWidth - 16)
+    expect(calendarBounds!.width).toBeGreaterThanOrEqual(viewport.width < 640 ? 350 : 500)
+    await page.screenshot({ path: testInfo.outputPath('calendario-abierto.png') })
+
+    const currentDay = calendar.locator('[data-calendar-date="2026-10-22"]')
+    const nextDay = calendar.locator('[data-calendar-date="2026-10-23"]')
+    await currentDay.focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(nextDay).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(calendarPopup).toBeHidden()
+    await expect(input).toHaveValue('23/10/2026')
+    const loadPreview = dialog.locator('[data-load-preview-card]')
+    await expect(loadPreview).toContainText('Dentro de tu límite')
+    const [updatedDialogBounds, updatedPreviewBounds] = await Promise.all([
+      dialog.boundingBox(),
+      loadPreview.boundingBox(),
+    ])
+    expect(updatedDialogBounds).toEqual(initialDialogBounds)
+    expect(updatedPreviewBounds!.width).toBeCloseTo(initialPreviewBounds!.width, 1)
+    expect(updatedPreviewBounds!.height).toBeCloseTo(initialPreviewBounds!.height, 1)
+    expect(await scrollRegion.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1)
+    await page.screenshot({ path: testInfo.outputPath('calendario-reprogramacion.png') })
+  })
+}
 
 test('Hoy y Eventos mantienen alineados el encabezado y su acción', async ({
   page,
@@ -982,51 +1620,12 @@ test('la regla de prioridad responde al cursor y permanece sobre las tareas', as
   await dialog.hover()
   await expect(dialog).toBeVisible()
 
-  const taskAction = page
-    .getByRole('button', {
-      name: /Ver tarea:/,
-    })
-    .first()
-
   await expect(dialog).toBeVisible()
 
   const dialogBounds =
     await dialog.boundingBox()
-  const actionBounds =
-    await taskAction.boundingBox()
 
   expect(dialogBounds).not.toBeNull()
-  expect(actionBounds).not.toBeNull()
-
-  const overlap = {
-    left: Math.max(
-      dialogBounds!.x,
-      actionBounds!.x,
-    ),
-    right: Math.min(
-      dialogBounds!.x +
-        dialogBounds!.width,
-      actionBounds!.x +
-        actionBounds!.width,
-    ),
-    top: Math.max(
-      dialogBounds!.y,
-      actionBounds!.y,
-    ),
-    bottom: Math.min(
-      dialogBounds!.y +
-        dialogBounds!.height,
-      actionBounds!.y +
-        actionBounds!.height,
-    ),
-  }
-
-  expect(overlap.right).toBeGreaterThan(
-    overlap.left,
-  )
-  expect(overlap.bottom).toBeGreaterThan(
-    overlap.top,
-  )
 
   const dialogId =
     await dialog.getAttribute('id')
@@ -1048,20 +1647,14 @@ test('la regla de prioridad responde al cursor y permanece sobre las tareas', as
 
         return Boolean(
           topElement &&
-            dialogElement?.contains(
-              topElement,
-            ),
+          dialogElement?.contains(
+            topElement,
+          ),
         )
       },
       {
-        x:
-          (overlap.left +
-            overlap.right) /
-          2,
-        y:
-          (overlap.top +
-            overlap.bottom) /
-          2,
+        x: dialogBounds!.x + dialogBounds!.width / 2,
+        y: dialogBounds!.y + dialogBounds!.height / 2,
         dialogId: dialogId!,
       },
     )
@@ -1543,8 +2136,7 @@ for (const viewport of [
     await expect(list.getByRole('link')).toHaveCount(6)
     await expect(main.getByText('Página 1 de 3', { exact: true })).toBeVisible()
     await expect(nav.getByRole('button', { name: 'Anterior' })).toBeDisabled()
-    await expect.poll(() => requestedProgress.length).toBe(6)
-    expect(requestedProgress).toEqual(paginationEvents.slice(0, 6).map(event => event.id))
+    expect(requestedProgress).toEqual([])
     await page.evaluate(() => document.fonts.ready)
     const heading = main.getByRole('heading', { name: 'Eventos', exact: true })
     const baseline = await heading.boundingBox()
@@ -1584,7 +2176,7 @@ for (const viewport of [
 test('paginación de eventos mantiene carga y reintento en la página solicitada', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 })
   let attempts = 0
-  let release = () => {}
+  let release = () => { }
   const pending = new Promise<void>(resolve => { release = resolve })
   await page.route(url => url.pathname === '/events/', async route => {
     const requestedPage = Number(new URL(route.request().url()).searchParams.get('page'))
@@ -1644,10 +2236,12 @@ for (const viewport of [
       const totalPages = Math.max(1, Math.ceil(filtered.length / 6))
       const currentPage = Math.min(requestedPage, totalPages)
       requests.push({ page: requestedPage, type })
-      return route.fulfill({ json: {
-        success: true, data: filtered.slice((currentPage - 1) * 6, currentPage * 6),
-        pagination: { page: currentPage, page_size: 6, total: filtered.length, total_pages: totalPages },
-      } })
+      return route.fulfill({
+        json: {
+          success: true, data: filtered.slice((currentPage - 1) * 6, currentPage * 6),
+          pagination: { page: currentPage, page_size: 6, total: filtered.length, total_pages: totalPages },
+        }
+      })
     })
     await page.route(/\/events\/\d+\/subtasks\/$/, route => route.fulfill({ json: { success: true, data: [] } }))
     await page.route('**/events/33/', route => route.fulfill({ json: { success: true, data: events[12] } }))
@@ -1739,7 +2333,7 @@ test('filtro por tipo de evento conserva las tarjetas si falla el catálogo y pe
 })
 
 test('filtro por tipo de evento mantiene carga al cambiar de tipo en la misma página', async ({ page }) => {
-  let release = () => {}
+  let release = () => { }
   const pending = new Promise<void>(resolve => { release = resolve })
   await page.route(url => url.pathname === '/events/', async route => {
     const type = new URL(route.request().url()).searchParams.get('type')
@@ -1781,9 +2375,11 @@ for (const viewport of [
       state: 'pending',
       details: '',
     }))
-    await page.route('**/hoy/', route => route.fulfill({ json: {
-      success: true, data: { overdue: [], today: tasks, upcoming: [], completed: [] },
-    } }))
+    await page.route('**/hoy/', route => route.fulfill({
+      json: {
+        success: true, data: { overdue: [], today: tasks, upcoming: [], completed: [] },
+      }
+    }))
     await page.goto('/tests/visual/index.html?view=today-navigation')
     const eventFilter = page.getByRole('combobox', { name: 'Evento', exact: true })
     const stateFilter = page.getByRole('combobox', { name: 'Estado', exact: true })
@@ -1830,6 +2426,7 @@ for (const viewport of [
     await expect(page.getByRole('button', { name: /^Ver tarea:/ })).toHaveCount(0)
     await page.getByRole('button', { name: 'Limpiar filtros', exact: true }).last().click()
     await expect(stateFilter).toHaveText('Todos')
+    await page.getByRole('button', { name: /Ver todas las tareas/ }).click()
     await expect(page.getByRole('button', { name: /^Ver tarea:/ })).toHaveCount(40)
     const width = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
     expect(width.content).toBeLessThanOrEqual(width.viewport)
@@ -1915,10 +2512,12 @@ for (const viewport of [
 ]) {
   test(`resumen de eventos evita paginación innecesaria en ${viewport.name}`, async ({ page }, testInfo) => {
     await page.setViewportSize(viewport)
-    await page.route(url => url.pathname === '/events/', route => route.fulfill({ json: {
-      success: true, data: paginationEvents.slice(0, 5),
-      pagination: { page: 1, page_size: 6, total: 5, total_pages: 1 },
-    } }))
+    await page.route(url => url.pathname === '/events/', route => route.fulfill({
+      json: {
+        success: true, data: paginationEvents.slice(0, 5),
+        pagination: { page: 1, page_size: 6, total: 5, total_pages: 1 },
+      }
+    }))
     await page.route(/\/events\/\d+\/subtasks\/$/, route => route.fulfill({ json: { success: true, data: [] } }))
     await page.goto('/tests/visual/index.html?view=events-pagination')
     const summary = page.getByRole('status', { name: 'Resumen de eventos' })

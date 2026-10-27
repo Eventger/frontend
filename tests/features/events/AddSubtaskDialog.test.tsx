@@ -10,6 +10,7 @@ import {
 } from 'vitest'
 
 import { AddSubtaskDialog } from '@/features/events/components/detail/AddSubtaskDialog'
+import { formatDateInput } from '@/lib/calendar'
 import { eventFixture } from './subtask.fixtures'
 
 function renderDialog(onSubmit = vi.fn()) {
@@ -39,7 +40,7 @@ async function fillRequiredFields({
   )
   await user.type(
     screen.getByLabelText('Fecha límite *'),
-    targetDate,
+    formatDateInput(targetDate),
   )
   await user.type(
     screen.getByLabelText('Tiempo estimado *'),
@@ -153,5 +154,27 @@ describe('AddSubtaskDialog', () => {
       details: '',
     })
     expect(typeof onSubmit.mock.calls[0][0].estimatedHours).toBe('number')
+  })
+
+  it('rechaza un tiempo estimado que supera el límite diario', async () => {
+    const onSubmit = vi.fn()
+    render(
+      <AddSubtaskDialog
+        open
+        eventName={eventFixture.name}
+        eventDate={eventFixture.eventDate}
+        dailyLimitHours={4}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    )
+    const user = await fillRequiredFields({ hours: '5' })
+
+    await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
+
+    expect(
+      screen.getByText('El tiempo estimado no puede superar tu límite diario de 4 h.'),
+    ).toBeTruthy()
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })

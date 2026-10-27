@@ -97,6 +97,65 @@ describe('SignUpPage', () => {
     mockSignUp()
   })
 
+  it('muestra las reglas de contraseña al comenzar a escribir', async () => {
+    const user = userEvent.setup()
+    renderSignUp()
+
+    expect(screen.queryByText(/Fuerza de la contraseña:/)).toBeNull()
+    expect(screen.queryByText('Mínimo 8 caracteres')).toBeNull()
+
+    await user.type(screen.getByLabelText('Contraseña'), 'a')
+
+    expect(screen.getByText(/Fuerza de la contraseña:/)).toBeTruthy()
+    expect(screen.getByText('Mínimo 8 caracteres')).toBeTruthy()
+
+    await user.click(screen.getByLabelText('Nombre'))
+
+    expect(screen.queryByText(/Fuerza de la contraseña:/)).toBeNull()
+  })
+
+  it('acepta una contraseña de exactamente 8 caracteres al crear la cuenta', async () => {
+    const user = userEvent.setup()
+    const signUp = mockSignUp()
+    password.mockImplementation(async () => {
+      signUp.status = 'complete'
+      return { error: null }
+    })
+    renderSignUp()
+
+    await user.type(screen.getByLabelText('Nombre'), 'Ana')
+    await user.type(screen.getByLabelText('Apellido'), 'Rojas')
+    await user.type(screen.getByLabelText('Correo electrónico'), 'ana@example.com')
+    await user.type(screen.getByLabelText('Contraseña'), 'Clave-12')
+    await user.click(screen.getByRole('checkbox'))
+    await user.click(screen.getByRole('button', { name: 'Crear cuenta' }))
+
+    expect(password).toHaveBeenCalledWith(expect.objectContaining({ password: 'Clave-12' }))
+  })
+
+  it('valida la confirmación mientras el usuario repite o modifica la contraseña', async () => {
+    const user = userEvent.setup()
+    renderSignUp()
+
+    const passwordInput = screen.getByLabelText('Contraseña')
+    const confirmPasswordInput = screen.getByLabelText('Confirmar contraseña')
+
+    await user.type(passwordInput, 'Clave-segura-123')
+    await user.type(confirmPasswordInput, 'Clave-segura-12')
+
+    expect(screen.getByText('Las contraseñas no coinciden.')).toBeTruthy()
+    expect(confirmPasswordInput.getAttribute('aria-invalid')).toBe('true')
+
+    await user.type(confirmPasswordInput, '3')
+
+    expect(screen.queryByText('Las contraseñas no coinciden.')).toBeNull()
+    expect(confirmPasswordInput.getAttribute('aria-invalid')).toBe('false')
+
+    await user.type(passwordInput, '!')
+
+    expect(screen.getByText('Las contraseñas no coinciden.')).toBeTruthy()
+  })
+
   it('valida el formulario y enfoca el primer campo inválido', async () => {
     const user = userEvent.setup()
     renderSignUp()
@@ -140,7 +199,7 @@ describe('SignUpPage', () => {
 
     expect(
       screen.getByText(
-        'Usa al menos 15 caracteres.',
+        'Usa al menos 8 caracteres.',
       ),
     ).toBeTruthy()
     expect(document.activeElement).toBe(
@@ -305,7 +364,7 @@ describe('SignUpPage', () => {
       screen.getByLabelText('Contraseña')
     expect(
       await screen.findByText(
-        'Usa al menos 15 caracteres.',
+        'Usa al menos 8 caracteres.',
       ),
     ).toBeTruthy()
     expect(document.activeElement).toBe(
@@ -319,7 +378,7 @@ describe('SignUpPage', () => {
   })
 
   it.each([
-    ['form_password_length_too_short', 'Usa al menos 15 caracteres.'],
+    ['form_password_length_too_short', 'Usa al menos 8 caracteres.'],
     ['form_password_pwned', 'Esta contraseña apareció en una filtración de datos. Usa otra.'],
     ['form_password_validation_failed', 'La contraseña no cumple los requisitos de seguridad. Usa otra.'],
   ])('explica el rechazo %s dentro de la respuesta real de Clerk', async (code, message) => {

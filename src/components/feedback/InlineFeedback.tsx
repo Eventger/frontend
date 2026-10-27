@@ -60,7 +60,7 @@ export function InlineFeedback({
       }
       aria-atomic="true"
       className={cn(
-        'flex items-start gap-2 rounded-[8px] border px-3 py-2.5 text-[12px] leading-[18px]',
+        'type-caption flex items-start gap-2 rounded-lg border px-3 py-2.5',
         variantStyles[
           variant
         ],

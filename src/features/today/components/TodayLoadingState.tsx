@@ -12,7 +12,7 @@ export function TodayLoadingState() {
     >
       <div className="mt-6 hidden grid-cols-4 gap-5 md:grid">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-[112px] rounded-xl" />
+          <Skeleton key={index} className="h-[148px] rounded-xl" />
         ))}
       </div>
 
@@ -21,15 +21,15 @@ export function TodayLoadingState() {
       </div>
 
       <div className="mt-4">
-        <Skeleton className="h-[44px] w-full max-w-[500px] rounded-[8px]" />
+        <Skeleton className="h-[44px] w-full max-w-[500px] rounded-lg" />
       </div>
 
       <div className="mt-6 space-y-8">
         {Array.from({ length: 3 }).map((_, section) => (
           <div key={section} className="space-y-4">
             <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-[60px] w-full rounded-xl" />
-            {section === 1 && <Skeleton className="h-[60px] w-full rounded-xl" />}
+            <Skeleton className="h-[104px] w-full rounded-xl sm:h-[60px]" />
+            {section === 1 && <Skeleton className="h-[104px] w-full rounded-xl sm:h-[60px]" />}
           </div>
         ))}
       </div>

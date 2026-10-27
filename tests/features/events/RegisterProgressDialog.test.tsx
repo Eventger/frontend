@@ -45,7 +45,7 @@ describe('RegisterProgressDialog', () => {
     vi.mocked(registerSubtaskProgress).mockReset()
   })
 
-  it('renderiza la información de la tarea y el estado por defecto como Hecha cuando la tarea está pendiente', () => {
+  it('renderiza los cuatro estados y selecciona el estado actual de la tarea', () => {
     render(
       <RegisterProgressDialog
         task={pendingTask}
@@ -56,14 +56,26 @@ describe('RegisterProgressDialog', () => {
 
     expect(screen.getByRole('heading', { name: 'Registrar avance' })).toBeDefined()
     expect(screen.getByText('Actualiza el estado de esta tarea.')).toBeDefined()
+    expect(screen.getByText('Reservar salón')).toBeDefined()
+    expect(screen.getByText('2,5 h')).toBeDefined()
+    expect(screen.getByText('¿Qué pasó con esta tarea?')).toBeDefined()
+    expect(screen.getByText('Aún falta por realizar')).toBeDefined()
+    expect(screen.getByText('La tarea se está realizando')).toBeDefined()
+    expect(screen.getByText('La tarea se completó')).toBeDefined()
+    expect(screen.getByText('No se puede realizar por ahora')).toBeDefined()
+    expect(screen.getByText('Puedes actualizar el estado nuevamente cuando sea necesario.')).toBeDefined()
     expect(screen.getByText(/Reservar salón · 20 de oct/i)).toBeDefined()
 
-    const hechaBtn = screen.getByRole('button', { name: 'Hecha' })
+    const completadaBtn = screen.getByRole('button', { name: 'Completada' })
     const pospuestaBtn = screen.getByRole('button', { name: 'Pospuesta' })
+    const pendienteBtn = screen.getByRole('button', { name: 'Pendiente' })
+    const enProgresoBtn = screen.getByRole('button', { name: 'En progreso' })
 
-    expect(hechaBtn.getAttribute('aria-pressed')).toBe('true')
+    expect(pendienteBtn.getAttribute('aria-pressed')).toBe('true')
+    expect(enProgresoBtn.getAttribute('aria-pressed')).toBe('false')
+    expect(completadaBtn.getAttribute('aria-pressed')).toBe('false')
     expect(pospuestaBtn.getAttribute('aria-pressed')).toBe('false')
-    expect(screen.queryByLabelText(/Nota \(opcional\)/i)).toBeNull()
+    expect(screen.getByLabelText(/Nota \(opcional\)/i)).toBeTruthy()
   })
 
   it('muestra el campo de nota al seleccionar Pospuesta y permite editarla', async () => {
@@ -87,9 +99,9 @@ describe('RegisterProgressDialog', () => {
     await user.type(noteTextarea, 'Nota actualizada')
     expect((noteTextarea as HTMLTextAreaElement).value).toBe('Nota actualizada')
 
-    const hechaBtn = screen.getByRole('button', { name: 'Hecha' })
-    await user.click(hechaBtn)
-    expect(screen.queryByLabelText(/Nota \(opcional\)/i)).toBeNull()
+    const completadaBtn = screen.getByRole('button', { name: 'Completada' })
+    await user.click(completadaBtn)
+    expect(screen.getByLabelText(/Nota \(opcional\)/i)).toBeTruthy()
   })
 
   it('inicializa el estado en Pospuesta si la tarea ya estaba pospuesta', () => {
@@ -149,7 +161,7 @@ describe('RegisterProgressDialog', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('guarda el avance como Hecha exitosamente y muestra pantalla de confirmación', async () => {
+  it('guarda el avance como Completada exitosamente y muestra pantalla de confirmación', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
     const onSaved = vi.fn().mockResolvedValue(undefined)
@@ -165,6 +177,7 @@ describe('RegisterProgressDialog', () => {
       />,
     )
 
+    await user.click(screen.getByRole('button', { name: 'Completada' }))
     await user.click(screen.getByRole('button', { name: 'Guardar cambio' }))
 
     expect(registerSubtaskProgress).toHaveBeenCalledOnce()
@@ -179,7 +192,7 @@ describe('RegisterProgressDialog', () => {
       expect(screen.getByRole('heading', { name: 'Avance registrado' })).toBeDefined()
     })
     expect(
-      screen.getByText(/La tarea se actualizó correctamente\. “Reservar salón” fue marcada como hecha\./i),
+      screen.getByText(/La tarea se actualizó correctamente\. “Reservar salón” fue marcada como completada\./i),
     ).toBeDefined()
     expect(onSaved).toHaveBeenCalledWith(updatedTask)
 
@@ -213,6 +226,31 @@ describe('RegisterProgressDialog', () => {
     ).toBeDefined()
   })
 
+  it('permite actualizar una tarea a En progreso', async () => {
+    const user = userEvent.setup()
+    const updatedTask: Subtask = { ...pendingTask, state: 'in_progress' }
+    vi.mocked(registerSubtaskProgress).mockResolvedValueOnce(updatedTask)
+
+    render(
+      <RegisterProgressDialog
+        task={pendingTask}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'En progreso' }))
+    await user.click(screen.getByRole('button', { name: 'Guardar cambio' }))
+
+    expect(registerSubtaskProgress).toHaveBeenCalledWith(
+      pendingTask.id,
+      'in_progress',
+      pendingTask.details,
+      expect.any(Function),
+    )
+    expect(await screen.findByText(/“Reservar salón” fue marcada como en progreso\./i)).toBeTruthy()
+  })
+
   it('maneja el fallo de guardado mostrando la pantalla de error y permite volver al formulario conservando datos', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
@@ -238,7 +276,7 @@ describe('RegisterProgressDialog', () => {
     ).toBeDefined()
     expect(onSaved).not.toHaveBeenCalled()
 
-    await user.click(screen.getByRole('button', { name: 'Volver al evento' }))
+    await user.click(screen.getByRole('button', { name: 'Volver a intentar' }))
 
     expect(screen.getByRole('heading', { name: 'Registrar avance' })).toBeDefined()
     expect(screen.getByRole('button', { name: 'Pospuesta' }).getAttribute('aria-pressed')).toBe('true')
@@ -287,5 +325,37 @@ describe('RegisterProgressDialog', () => {
 
     await user.keyboard('{Escape}')
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('garantiza consistencia dimensional idéntica entre las tarjetas de opción en ambos estados', async () => {
+    const user = userEvent.setup()
+    render(
+      <RegisterProgressDialog
+        task={pendingTask}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    )
+
+    const completadaBtn = screen.getByRole('button', { name: 'Completada' })
+    const pospuestaBtn = screen.getByRole('button', { name: 'Pospuesta' })
+
+    const pendienteBtn = screen.getByRole('button', { name: 'Pendiente' })
+
+    // Estado inicial: Pendiente seleccionado
+    expect(pendienteBtn.className).toContain('border-2 border-[#4f46e5]')
+    expect(pendienteBtn.className).toContain('h-[78px]')
+    expect(completadaBtn.className).toContain('border-2 border-[#eaecf0]')
+    expect(completadaBtn.className).toContain('h-[78px]')
+    expect(pospuestaBtn.className).toContain('border-2 border-[#eaecf0]')
+    expect(pospuestaBtn.className).toContain('h-[78px]')
+
+    // Alternar a Pospuesta seleccionada
+    await user.click(pospuestaBtn)
+    expect(pendienteBtn.className).toContain('border-2 border-[#eaecf0]')
+    expect(completadaBtn.className).toContain('border-2 border-[#eaecf0]')
+    expect(completadaBtn.className).toContain('h-[78px]')
+    expect(pospuestaBtn.className).toContain('border-2 border-[#4f46e5]')
+    expect(pospuestaBtn.className).toContain('h-[78px]')
   })
 })

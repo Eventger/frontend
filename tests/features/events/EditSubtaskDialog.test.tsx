@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EditSubtaskDialog } from '@/features/events/components/detail/EditSubtaskDialog'
 import type { CreateSubtaskInput } from '@/features/events/types/subtask.types'
+import { formatDateInput } from '@/lib/calendar'
 import {
   eventFixture,
   subtaskFixture,
@@ -11,6 +12,7 @@ import {
 
 type RenderOptions = {
   isSubmitting?: boolean
+  dailyLimitHours?: number
   onClose?: () => void
   onSubmit?: (
     data: CreateSubtaskInput,
@@ -19,6 +21,7 @@ type RenderOptions = {
 
 function renderDialog({
   isSubmitting = false,
+  dailyLimitHours,
   onClose = vi.fn(),
   onSubmit = vi.fn(),
 }: RenderOptions = {}) {
@@ -27,6 +30,7 @@ function renderDialog({
       subtask={subtaskFixture}
       eventDate={eventFixture.eventDate}
       isSubmitting={isSubmitting}
+      dailyLimitHours={dailyLimitHours}
       onClose={onClose}
       onSubmit={onSubmit}
     />,
@@ -36,11 +40,20 @@ function renderDialog({
 }
 
 describe('EditSubtaskDialog', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-08T12:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('conserva la fecha de Bogotá al guardar una tarea recibida en UTC sin cambios', async () => {
     const onSubmit = vi.fn()
     render(<EditSubtaskDialog subtask={{ ...subtaskFixture, targetDate: '2026-10-03T04:59:59Z' }} eventDate="2026-10-25T04:59:59Z" onClose={vi.fn()} onSubmit={onSubmit} />)
     const date = screen.getByLabelText('Fecha límite *') as HTMLInputElement
-    expect(date.value).toBe('2026-10-02')
+    expect(date.value).toBe('02/10/2026')
     expect(date.max).toBe('2026-10-24')
     expect(screen.getByText('Debe completarse antes del 24 de octubre de 2026.')).toBeTruthy()
     await userEvent.setup().click(screen.getByRole('button', { name: 'Guardar cambios' }))
@@ -66,7 +79,7 @@ describe('EditSubtaskDialog', () => {
     ).toBe(subtaskFixture.name)
     expect(
       (screen.getByLabelText('Fecha límite *') as HTMLInputElement).value,
-    ).toBe(subtaskFixture.targetDate)
+    ).toBe(formatDateInput(subtaskFixture.targetDate))
     expect(
       (screen.getByLabelText('Tiempo estimado *') as HTMLInputElement).value,
     ).toBe(String(subtaskFixture.estimatedHours))
@@ -101,7 +114,7 @@ describe('EditSubtaskDialog', () => {
 
     const dateInput = screen.getByLabelText('Fecha límite *')
     await user.clear(dateInput)
-    await user.type(dateInput, '2026-10-25')
+    await user.type(dateInput, '25/10/2026')
 
     const hoursInput = screen.getByLabelText('Tiempo estimado *')
     await user.clear(hoursInput)
@@ -135,7 +148,7 @@ describe('EditSubtaskDialog', () => {
     await user.clear(nameInput)
     await user.type(nameInput, '  Confirmar proveedores  ')
     await user.clear(dateInput)
-    await user.type(dateInput, '2026-10-21')
+    await user.type(dateInput, '23/10/2026')
     await user.clear(hoursInput)
     await user.type(hoursInput, '3.5')
     await user.clear(detailsInput)
@@ -147,7 +160,7 @@ describe('EditSubtaskDialog', () => {
     expect(onSubmit).toHaveBeenCalledOnce()
     expect(onSubmit).toHaveBeenCalledWith({
       name: 'Confirmar proveedores',
-      targetDate: '2026-10-21',
+      targetDate: '2026-10-23',
       estimatedHours: 3.5,
       details: 'Llamar por la mañana.',
     })
@@ -195,6 +208,22 @@ describe('EditSubtaskDialog', () => {
     await user.keyboard('{Escape}')
 
     expect(onClose).not.toHaveBeenCalled()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('rechaza un tiempo estimado que supera el límite diario', async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderDialog({ dailyLimitHours: 4 })
+
+    const hoursInput = screen.getByLabelText('Tiempo estimado *')
+    await user.clear(hoursInput)
+    await user.type(hoursInput, '5')
+
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(
+      screen.getByText('El tiempo estimado no puede superar tu límite diario de 4 h.'),
+    ).toBeTruthy()
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })

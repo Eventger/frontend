@@ -18,7 +18,7 @@ export function FieldError({
       id={id}
       role="alert"
       className={cn(
-        'text-[12px] leading-4 text-[#b42318]',
+        'type-caption text-[#b42318]',
         className,
       )}
     >

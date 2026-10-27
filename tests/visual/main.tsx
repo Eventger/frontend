@@ -25,10 +25,15 @@ import { EmptyEventsState } from '@/features/events/components/EmptyEventsState'
 import { EventsErrorState } from '@/features/events/components/EventsErrorState'
 import { DeleteEventDialog } from '@/features/events/components/detail/DeleteEventDialog'
 import { EmptyTasksState } from '@/features/events/components/detail/EmptyTasksState'
+import { EventDetailContent } from '@/features/events/components/detail/EventDetailContent'
+import { EventDetailErrorState } from '@/features/events/components/detail/EventDetailErrorState'
 import { EventTaskCard } from '@/features/events/components/detail/EventTaskCard'
+import { TodayEmptyState } from '@/features/today/components/TodayEmptyState'
 import { TodaySummary } from '@/features/today/components/TodaySummary'
 import { TodayPriorityGuide } from '@/features/today/components/TodayPriorityGuide'
 import { TodayTaskCard } from '@/features/today/components/TodayTaskCard'
+import { TodayTaskSection } from '@/features/today/components/TodayTaskSection'
+import { DailyLimitDialog } from '@/features/today/components/DailyLimitDialog'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
 import { EventsPage } from '@/features/events/pages/EventsPage'
@@ -36,7 +41,9 @@ import { CreateEventPage } from '@/features/events/pages/CreateEventPage'
 import { SettingsPage } from '@/features/settings/pages/SettingsPage'
 import { SecurityPage } from '@/features/settings/pages/SecurityPage'
 import { RescheduleTaskDialog } from '@/features/events/components/detail/RescheduleTaskDialog'
+import { ProgressPage } from '@/features/progress/pages/ProgressPage'
 import { dayPlan, schedulingTask } from '../features/events/planning.fixtures'
+import { eventFixture } from '../features/events/subtask.fixtures'
 
 const eventBreadcrumbs: BreadcrumbItem[] = [
   { label: 'Hoy', to: '/hoy' },
@@ -355,6 +362,54 @@ function EmptyTasksFixture() {
   )
 }
 
+function EventDetailEmptyFixture() {
+  return (
+    <AppShell fullPage>
+      <PageContainer breadcrumbs={eventBreadcrumbs}>
+        <EventDetailContent
+          event={eventFixture}
+          subtasks={[]}
+          eventTypeName="Boda"
+          onAddTask={() => undefined}
+          onEditEvent={() => undefined}
+        />
+      </PageContainer>
+    </AppShell>
+  )
+}
+
+function TodayEmptyFixture() {
+  return (
+    <AppShell breadcrumbs={[{ label: 'Hoy' }]}>
+      <PageHeader
+        title="Hoy"
+        description="No hay tareas programadas para hoy"
+        action={<PageHeaderCreateButton onClick={() => undefined} />}
+      />
+      <div className="mt-10">
+        <TodayEmptyState
+          onViewUpcoming={() => undefined}
+          onCreateEvent={() => undefined}
+        />
+      </div>
+    </AppShell>
+  )
+}
+
+function EventDetailErrorFixture() {
+  return (
+    <AppShell fullPage>
+      <PageContainer breadcrumbs={eventBreadcrumbs}>
+        <PageHeader
+          title="Detalle del evento"
+          description="Estado de error del detalle"
+        />
+        <EventDetailErrorState onRetry={() => undefined} />
+      </PageContainer>
+    </AppShell>
+  )
+}
+
 function EventTaskFixture() {
   return (
     <AppShell breadcrumbs={eventBreadcrumbs}>
@@ -387,6 +442,8 @@ function TodayFixture() {
     name: 'Confirmar disponibilidad definitiva de proveedores internacionales',
     targetDate: '2026-10-21',
     estimatedHours: 4.5,
+    state: 'pending' as const,
+    details: '',
   }
 
   return (
@@ -417,12 +474,47 @@ function TodayFixture() {
           task={task}
           group="today"
           onOpenTask={() => undefined}
+          onRegisterProgress={() => undefined}
           onRescheduleTask={() => undefined}
         />
         <TodayTaskCard
           task={{ ...task, id: 2 }}
           group="upcoming"
           onOpenTask={() => undefined}
+          onRegisterProgress={() => undefined}
+          onRescheduleTask={() => undefined}
+        />
+      </div>
+    </AppShell>
+  )
+}
+
+function TodayShowAllFixture() {
+  const tasks = Array.from({ length: 5 }, (_, index) => ({
+    id: index + 1,
+    eventId: 1,
+    eventName: 'Boda Laura & Daniel',
+    name: `Tarea vencida ${index + 1}`,
+    targetDate: `2026-10-${String(9 + index).padStart(2, '0')}`,
+    estimatedHours: index + 1,
+    state: 'pending' as const,
+    details: '',
+  }))
+
+  return (
+    <AppShell breadcrumbs={[{ label: 'Hoy' }]}>
+      <PageHeader
+        title="Hoy"
+        description="Jueves, 22 de octubre · Organiza primero lo que requiere atención"
+        action={<PageHeaderCreateButton onClick={() => undefined} />}
+      />
+      <div className="mt-6">
+        <TodayTaskSection
+          title="Vencidas"
+          tasks={tasks}
+          group="overdue"
+          onOpenTask={() => undefined}
+          onRegisterProgress={() => undefined}
           onRescheduleTask={() => undefined}
         />
       </div>
@@ -443,6 +535,28 @@ function DeleteDialogFixture() {
         onOpenChange={() => undefined}
         onConfirm={() => undefined}
       />
+    </AppShell>
+  )
+}
+
+function DailyLimitFixture() {
+  const [open, setOpen] = useState(true)
+  return (
+    <AppShell breadcrumbs={[{ label: 'Hoy' }]}>
+      <DailyLimitDialog
+        open={open}
+        onOpenChange={setOpen}
+        currentHours={6}
+        onSave={async () => undefined}
+      />
+    </AppShell>
+  )
+}
+
+function ProgressFixture() {
+  return (
+    <AppShell fullPage>
+      <ProgressPage />
     </AppShell>
   )
 }
@@ -490,9 +604,15 @@ const fixtures: Record<string, ReactNode> = {
   ),
   'auth-feedback-review': <AuthFeedbackReviewFixture />,
   'empty-tasks': <EmptyTasksFixture />,
+  'event-detail-empty': <EventDetailEmptyFixture />,
+  'event-detail-error': <EventDetailErrorFixture />,
   'event-task': <EventTaskFixture />,
   today: <TodayFixture />,
+  'today-show-all': <TodayShowAllFixture />,
+  'today-empty': <TodayEmptyFixture />,
   'delete-dialog': <DeleteDialogFixture />,
+  'daily-limit-dialog': <DailyLimitFixture />,
+  progress: <ProgressFixture />,
   settings: <AppShell fullPage><SettingsPage /></AppShell>,
   security: <AppShell fullPage><SecurityPage /></AppShell>,
   reschedule: <RescheduleFixture />,

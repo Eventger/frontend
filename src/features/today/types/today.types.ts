@@ -1,5 +1,6 @@
 import type {
   SubtaskApiData,
+  SubtaskState,
 } from '@/features/events/types/subtask.types'
 
 export type TodayTaskGroup =
@@ -30,6 +31,8 @@ export interface TodayTaskItem {
   name: string
   targetDate: string
   estimatedHours: number
+  state: SubtaskState
+  details: string
 }
 
 export interface TodayData {

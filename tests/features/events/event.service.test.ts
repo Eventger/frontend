@@ -6,6 +6,7 @@ import {
   getEventById,
   getEventTypes,
   getEvents,
+  mapEventResponse,
   updateEvent,
 } from '@/features/events/services/event.service'
 import type {
@@ -180,6 +181,15 @@ describe('getEvents', () => {
     expect(apiRequest).not.toHaveBeenCalled()
   })
 
+  it('envía el parámetro de búsqueda textual al backend', async () => {
+    const request = vi.fn().mockResolvedValue({ success: true, data: [], pagination: { page: 1, page_size: 6, total: 0, total_pages: 1 } })
+    await getEvents(1, request, null, 'boda gala')
+    expect(request).toHaveBeenCalledWith('/events/?page=1&search=boda+gala')
+
+    await getEvents(2, request, 5, 'aniversario')
+    expect(request).toHaveBeenCalledWith('/events/?page=2&type=5&search=aniversario')
+  })
+
   it('acepta una lista vacía exitosa sin metadatos de paginación', async () => {
     vi.mocked(apiRequest).mockResolvedValue({ success: true, data: [] })
 
@@ -219,6 +229,21 @@ describe('getEvents', () => {
       events: [],
       pagination: { page: 1, pageSize: 6, total: 0, totalPages: 1 },
     })
+  })
+
+  it('filtra la lista sin metadatos por búsqueda textual insensible a mayúsculas', async () => {
+    const request = vi.fn().mockResolvedValue({
+      success: true,
+      data: [
+        { ...legacyEvents[0], id: 101, name: 'Boda de Gala Primavera' },
+        { ...legacyEvents[0], id: 102, name: 'Conferencia Tech' },
+        { ...legacyEvents[0], id: 103, name: 'Gala Benéfica' },
+      ],
+    })
+
+    const result = await getEvents(1, request, null, 'gala')
+    expect(result.events.map(event => event.id)).toEqual([101, 103])
+    expect(result.pagination).toEqual({ page: 1, pageSize: 6, total: 2, totalPages: 1 })
   })
 
   it.each([
@@ -420,5 +445,12 @@ describe('service error handling', () => {
     await expect(updateEvent(21, { ...input, typeId: 1 })).rejects.toThrow(
       'No se pudo actualizar',
     )
+  })
+
+  it('valida la respuesta en tiempo de ejecución', () => {
+    // @ts-expect-error validación runtime de tipos inválidos
+    expect(() => mapEventResponse(null)).toThrow('Respuesta inválida de evento: datos incompletos')
+    // @ts-expect-error validación runtime de tipos inválidos
+    expect(() => mapEventResponse({})).toThrow('Respuesta inválida de evento: datos incompletos')
   })
 })

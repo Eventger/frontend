@@ -10,7 +10,7 @@ import { TodayTaskSection } from '@/features/today/components/TodayTaskSection'
 import { buildTodayTask } from './today.fixtures'
 
 describe('TodaySummary', () => {
-  it('muestra horas y capacidad sin un límite diario configurado', () => {
+  it('muestra tus horas disponibles y estado pendiente si no está configurado', () => {
     render(
       <TodaySummary
         overdueCount={1}
@@ -21,13 +21,15 @@ describe('TodaySummary', () => {
     )
 
     expect(screen.getAllByText('3 h planificadas').length).toBeGreaterThan(0)
-    expect(
-      screen.getByText('Capacidad diaria pendiente de configuración'),
-    ).toBeTruthy()
-    expect(screen.getByText('horas planificadas hoy')).toBeTruthy()
+    expect(screen.getAllByText('Tus horas disponibles').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Para organizar las tareas de tus eventos').length).toBeGreaterThan(0)
   })
 
-  it('calcula la capacidad disponible y conserva decimales significativos', () => {
+  it('muestra las horas configuradas y ejecuta onEditDailyLimit al pulsar Cambiar horas', async () => {
+    const user = userEvent.setup()
+    const onEdit = vi.fn()
+
     render(
       <TodaySummary
         overdueCount={0}
@@ -35,29 +37,39 @@ describe('TodaySummary', () => {
         upcomingCount={0}
         plannedHours={2.2}
         dailyLimitHours={6.5}
+        onEditDailyLimit={onEdit}
       />,
     )
 
-    expect(screen.getByText('2.2 h / 6.5 h')).toBeTruthy()
-    expect(screen.getByText('2.2 h de 6.5 h planificadas')).toBeTruthy()
-    expect(screen.getAllByText('4.3 h disponibles')).toHaveLength(2)
+    expect(screen.getAllByText('6.5 h/día')).toHaveLength(2)
+    const changeButtons = screen.getAllByRole('button', { name: 'Cambiar horas' })
+    expect(changeButtons.length).toBeGreaterThan(0)
+    await user.click(changeButtons[0])
+    expect(onEdit).toHaveBeenCalledTimes(1)
   })
 
-  it('nunca muestra capacidad disponible negativa', () => {
+  it('muestra el icono de ayuda accesible con la explicación secundaria', async () => {
+    const user = userEvent.setup()
+
     render(
       <TodaySummary
         overdueCount={0}
         todayCount={1}
         upcomingCount={0}
-        plannedHours={3}
-        dailyLimitHours={2}
+        plannedHours={2}
+        dailyLimitHours={6}
       />,
     )
 
-    expect(screen.getAllByText('0 h disponibles')).toHaveLength(2)
+    const helpButtons = screen.getAllByRole('button', { name: 'Más información sobre horas disponibles' })
+    expect(helpButtons.length).toBeGreaterThan(0)
+    await user.click(helpButtons[0])
+    expect(
+      await screen.findByText('Estas horas nos ayudan a identificar cuándo tienes más trabajo programado del que puedes realizar.'),
+    ).toBeTruthy()
   })
 
-  it('muestra el resumen definido en Figma cuando los filtros no coinciden', () => {
+  it('muestra el resumen cuando los filtros no coinciden', () => {
     render(
       <TodaySummary
         overdueCount={0}
@@ -70,15 +82,8 @@ describe('TodaySummary', () => {
     )
 
     expect(
-      screen.getAllByText(
-        'Sin coincidencias',
-      ),
+      screen.getAllByText('Sin coincidencias'),
     ).toHaveLength(3)
-    expect(
-      screen.getAllByText(
-        '0 h con estos filtros',
-      ),
-    ).toHaveLength(2)
   })
 })
 
@@ -104,15 +109,14 @@ describe('TodayTaskCard', () => {
     expect(screen.getByRole('button', { name: /Ver tarea: Confirmar proveedores/i })).toBeTruthy()
     expect(screen.getByText(/1.2 h/)).toBeTruthy()
 
-    const taskButtons =
-      screen.getAllByRole('button', {
+    const taskButton =
+      screen.getByRole('button', {
         name: `Ver tarea: ${task.name}`,
       })
 
-    await user.click(taskButtons[0])
-    await user.click(taskButtons[1])
+    await user.click(taskButton)
 
-    expect(onOpen).toHaveBeenCalledTimes(2)
+    expect(onOpen).toHaveBeenCalledTimes(1)
     expect(onOpen).toHaveBeenCalledWith(task)
   })
 
@@ -206,6 +210,22 @@ describe('TodayPriorityGuide', () => {
     expect(
       screen.queryByRole('dialog'),
     ).toBeNull()
+
+    // También puede cerrarse con el botón de cerrar dedicado
+    await user.click(trigger)
+    expect(
+      screen.getByRole('dialog', {
+        name: 'Regla de prioridad',
+      }),
+    ).toBeTruthy()
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Cerrar regla de prioridad',
+      }),
+    )
+    expect(
+      screen.queryByRole('dialog'),
+    ).toBeNull()
   })
 })
 
@@ -235,5 +255,27 @@ describe('TodayEmptyState', () => {
 
     expect(onViewUpcoming).toHaveBeenCalledOnce()
     expect(onCreateEvent).toHaveBeenCalledOnce()
+  })
+
+  it('muestra mensaje de bienvenida de onboarding para usuarios nuevos', () => {
+    render(
+      <TodayEmptyState
+        onViewUpcoming={vi.fn()}
+        onCreateEvent={vi.fn()}
+        isFirstTime={true}
+      />,
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'No tienes gestiones pendientes para hoy',
+      }),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(/Te damos la bienvenida a Eventger/),
+    ).toBeTruthy()
+    expect(
+      screen.queryByText(/Buen trabajo/),
+    ).toBeNull()
   })
 })

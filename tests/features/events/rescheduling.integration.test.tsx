@@ -131,7 +131,7 @@ describe('reprogramación con hooks, servicios y respuestas HTTP', () => {
     expect(writes).toHaveLength(1)
     expect(fetchMock.mock.calls.filter(([url]) => url.endsWith(`/events/${eventFixture.id}/subtasks/`))).toHaveLength(3)
     await user.click(screen.getByRole('button', { name: `Editar ${savedTask.name}` }))
-    expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('2026-10-13')
+    expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('13/10/2026')
     expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto sin guardar')
   })
 })

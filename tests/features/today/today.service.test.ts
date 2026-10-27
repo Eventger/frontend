@@ -71,6 +71,8 @@ describe('getToday', () => {
           name: 'Tarea vencida',
           targetDate: response.data.overdue[0].target_date,
           estimatedHours: 2.5,
+          state: 'pending',
+          details: 'Llamar por la mañana.',
         },
       ],
       today: [
@@ -81,6 +83,8 @@ describe('getToday', () => {
           name: 'Tarea para hoy',
           targetDate: response.data.today[0].target_date,
           estimatedHours: 1.25,
+          state: 'pending',
+          details: 'Llamar por la mañana.',
         },
       ],
       upcoming: [
@@ -91,6 +95,8 @@ describe('getToday', () => {
           name: 'Tarea próxima',
           targetDate: response.data.upcoming[0].target_date,
           estimatedHours: 3,
+          state: 'pending',
+          details: 'Llamar por la mañana.',
         },
       ],
       completed: [
@@ -101,6 +107,8 @@ describe('getToday', () => {
           name: 'Tarea completada',
           targetDate: response.data.completed[0].target_date,
           estimatedHours: 4.75,
+          state: 'completed',
+          details: 'Llamar por la mañana.',
         },
       ],
     })

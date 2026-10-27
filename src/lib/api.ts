@@ -38,22 +38,54 @@ export function getApiFieldError(error: unknown, field: string): string | null {
 
 export type ApiRequestOptions = RequestInit & { expectedStatus?: number }
 
+const DEFAULT_TIMEOUT_MS = 35000
+
+type TokenGetter = () => Promise<string | null>
+let globalTokenGetter: TokenGetter | null = null
+
+export function setApiAuthTokenGetter(getter: TokenGetter | null): void {
+  globalTokenGetter = getter
+}
+
+export function getApiAuthTokenGetter(): TokenGetter | null {
+  return globalTokenGetter
+}
+
 export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const { expectedStatus, ...requestOptions } = options
+  const { expectedStatus, signal, ...requestOptions } = options
   const headers = new Headers(requestOptions.headers)
 
   headers.set('Accept', 'application/json')
+
+  if (globalTokenGetter && !headers.has('Authorization')) {
+    const token = await globalTokenGetter()
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`)
+    }
+  }
 
   if (options.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
 
+  const timeoutSignal =
+    typeof AbortSignal.timeout === 'function'
+      ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS)
+      : undefined
+
+  const finalSignal = signal
+    ? typeof AbortSignal.any === 'function' && timeoutSignal
+      ? AbortSignal.any([signal, timeoutSignal])
+      : signal
+    : timeoutSignal
+
   const response = await fetch(`${getApiUrl()}${path}`, {
     ...requestOptions,
     headers,
+    signal: finalSignal,
   })
 
   const body =

@@ -81,4 +81,36 @@ describe('useToday', () => {
     expect(result.current.error).toBeNull()
     expect(result.current.isLoading).toBe(false)
   })
+
+  it('no activa isLoading sino isRefetching cuando ya existen datos en memoria', async () => {
+    const nextDeferred = deferred<typeof todayDataFixture>()
+    vi.mocked(getToday)
+      .mockResolvedValueOnce(todayDataFixture)
+      .mockReturnValueOnce(nextDeferred.promise)
+
+    const { result } = renderHook(() => useToday())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+      expect(result.current.data).toEqual(todayDataFixture)
+    })
+
+    const refetching = result.current.retry()
+
+    await waitFor(() => {
+      expect(result.current.isRefetching).toBe(true)
+    })
+
+    // Crucial: isLoading must stay false so the UI does not unmount or jump
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.data).toEqual(todayDataFixture)
+
+    nextDeferred.resolve(todayDataFixture)
+    await refetching
+
+    await waitFor(() => {
+      expect(result.current.isRefetching).toBe(false)
+    })
+    expect(result.current.isLoading).toBe(false)
+  })
 })
