@@ -9,7 +9,7 @@ const projectRoot = path.resolve(
 
 export default defineConfig({
   testDir: import.meta.dirname,
-  testMatch: 'responsive.spec.ts',
+  testMatch: ['responsive.spec.ts', 'event_tasks_order.spec.ts'],
   outputDir: '../../reports/responsive-artifacts',
   reporter: [['list'], ['html', {
     outputFolder: '../../reports/responsive-report',

@@ -134,4 +134,65 @@ describe('useProgress', () => {
     expect(result.current.error).toBe(false)
     expect(result.current.data?.events[0].percentage).toBe(100)
   })
+
+  it('debe utilizar directamente el progress incluido en getEvents sin llamar a getEventById', async () => {
+    vi.mocked(getEvents).mockResolvedValue({
+      events: [
+        {
+          id: 4,
+          name: 'Evento con progreso directo',
+          typeId: 1,
+          eventDate: '',
+          location: '',
+          contact: '',
+          progress: { completed: 4, total: 8, percentage: 50 },
+        },
+      ],
+      pagination: { page: 1, pageSize: 6, total: 1, totalPages: 1 },
+    })
+
+    const { result } = renderHook(() => useProgress())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    expect(result.current.error).toBe(false)
+    expect(vi.mocked(getEventById)).not.toHaveBeenCalled()
+    expect(result.current.data?.events[0].percentage).toBe(50)
+  })
+
+  it('debe tolerar el fallo individual de getEventById sin tumbar toda la página de progreso', async () => {
+    vi.mocked(getEvents).mockResolvedValue({
+      events: [
+        { id: 5, name: 'Evento A', typeId: 1, eventDate: '', location: '', contact: '' },
+        { id: 6, name: 'Evento B (falla)', typeId: 1, eventDate: '', location: '', contact: '' },
+      ],
+      pagination: { page: 1, pageSize: 6, total: 2, totalPages: 1 },
+    })
+
+    vi.mocked(getEventById)
+      .mockResolvedValueOnce({
+        id: 5,
+        name: 'Evento A',
+        typeId: 1,
+        eventDate: '',
+        location: '',
+        contact: '',
+        progress: { completed: 2, total: 2, percentage: 100 },
+      })
+      .mockRejectedValueOnce(new Error('500 Internal Server Error'))
+
+    const { result } = renderHook(() => useProgress())
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false)
+    })
+
+    expect(result.current.error).toBe(false)
+    expect(result.current.data?.events).toHaveLength(2)
+    expect(result.current.data?.events[0].percentage).toBe(100)
+    expect(result.current.data?.events[1].percentage).toBe(0)
+    expect(result.current.data?.events[1].event.id).toBe(6)
+  })
 })

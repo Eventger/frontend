@@ -21,6 +21,7 @@ import { useEventSubtasks } from '@/features/events/hooks/useEventSubtasks'
 import { useEventTypes } from '@/features/events/hooks/useEventTypes'
 import { EventDetailPage } from '@/features/events/pages/EventDetailPage'
 import { EventDetailContent } from '@/features/events/components/detail/EventDetailContent'
+import { formatDateInput } from '@/lib/calendar'
 import {
   deleteEvent,
   updateEvent,
@@ -118,6 +119,9 @@ vi.mock('@/features/events/components/detail/RescheduleTaskDialog', () => ({
         Simular Guardar Reprogramar
       </button>
       <button type="button" onClick={onClose}>
+        Volver al plan
+      </button>
+      <button type="button" onClick={onClose}>
         Simular Cerrar Reprogramar
       </button>
     </div>
@@ -140,6 +144,7 @@ function renderPage() {
       <Routes>
         <Route path="/evento/:id" element={<EventDetailPage />} />
         <Route path="/eventos" element={<h1>Listado de eventos</h1>} />
+        <Route path="/progreso" element={<h1>Progreso de eventos</h1>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -157,7 +162,7 @@ async function openAndSubmitForm() {
   )
   await user.type(
     within(dialog).getByLabelText('Fecha límite *'),
-    createSubtaskInputFixture.targetDate,
+    formatDateInput(createSubtaskInputFixture.targetDate),
   )
   await user.type(
     within(dialog).getByLabelText('Tiempo estimado *'),
@@ -365,6 +370,7 @@ describe('EventDetailPage', () => {
     const breadcrumbs = within(screen.getByRole('navigation', { name: 'Miga de pan' }))
     expect(breadcrumbs.getByText('Editar evento').getAttribute('aria-current')).toBe('page')
     await user.click(breadcrumbs.getByRole('link', { name: eventFixture.name }))
+    await user.click(screen.getByRole('button', { name: 'Descartar cambios' }))
 
     expect(screen.getByRole('heading', { name: eventFixture.name })).toBeTruthy()
     expect(updateEvent).not.toHaveBeenCalled()
@@ -603,13 +609,45 @@ describe('EventDetailPage', () => {
     )
   })
 
+  it('trata un 404 al eliminar como éxito idempotente si el evento ya fue borrado en el servidor', async () => {
+    const user = userEvent.setup()
+    vi.mocked(deleteEvent).mockRejectedValue(
+      new ApiError(404, { detail: 'Not found' }),
+    )
+    renderPage()
+
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }))
+    const dialog = await screen.findByRole('alertdialog')
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Eliminar evento' }),
+    )
+
+    expect(
+      await screen.findByRole('heading', { name: 'Evento eliminado' }),
+    ).toBeTruthy()
+  })
+
+  it('abre directamente en modo edición si la URL contiene ?modo=editar', async () => {
+    render(
+      <MemoryRouter initialEntries={[`/evento/${eventFixture.id}?modo=editar`]}>
+        <Routes>
+          <Route path="/evento/:id" element={<EventDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', { name: 'Editar evento' }),
+    ).toBeTruthy()
+  })
+
   it('mantiene la gestión de subtareas fuera de las tarjetas del detalle', () => {
     showSubtasks()
     renderPage()
 
     expect(
       screen.getByText(
-        'Las tareas se gestionan desde Editar evento.',
+        'Actividades y tareas programadas para este evento.',
       ),
     ).toBeTruthy()
     expect(
@@ -772,13 +810,10 @@ describe('EventDetailContent', () => {
 
     expect(screen.getByText('En progreso')).toBeDefined()
 
-    const actionsButton = screen.getByRole('button', {
-      name: /Más acciones para Tarea Test/i,
+    const registerButton = screen.getByRole('button', {
+      name: /Registrar avance de Tarea Test/i,
     })
-    await user.click(actionsButton)
-
-    const registerOption = screen.getByRole('menuitem', { name: /Registrar avance/i })
-    await user.click(registerOption)
+    await user.click(registerButton)
 
     expect(screen.getByTestId('mock-register-dialog')).toBeDefined()
 
@@ -786,7 +821,7 @@ describe('EventDetailContent', () => {
     await user.click(saveButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Completada')).toBeDefined()
+      expect(screen.getAllByText('Completada')).toHaveLength(1)
     })
 
     expect(defaultProps.onSubtaskUpdated).toHaveBeenCalledWith(
@@ -811,8 +846,9 @@ describe('EventDetailContent', () => {
 
     expect(screen.getByTestId('mock-reschedule-dialog')).toBeDefined()
 
-    // 1. Simular Guardar reprogramación (cubre onSaved)
+    // 1. Simular Guardar reprogramación (cubre onSaved y cierre posterior)
     await user.click(screen.getByRole('button', { name: /Simular Guardar Reprogramar/i }))
+    await user.click(screen.getByRole('button', { name: /Volver al plan/i }))
     await waitFor(() => {
       expect(screen.queryByTestId('mock-reschedule-dialog')).toBeNull()
     })
@@ -849,19 +885,16 @@ describe('EventDetailContent', () => {
 
     render(<EventDetailContent {...propsWithoutCallback} />)
 
-    const actionsButton = screen.getByRole('button', {
-      name: /Más acciones para Tarea Test/i,
+    const registerButton = screen.getByRole('button', {
+      name: /Registrar avance de Tarea Test/i,
     })
-    await user.click(actionsButton)
-
-    const registerOption = screen.getByRole('menuitem', { name: /Registrar avance/i })
-    await user.click(registerOption)
+    await user.click(registerButton)
 
     const saveButton = screen.getByRole('button', { name: /Simular Guardar Avance/i })
     await user.click(saveButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Completada')).toBeDefined()
+      expect(screen.getAllByText('Completada')).toHaveLength(1)
     })
   })
 
@@ -879,7 +912,7 @@ describe('EventDetailContent', () => {
 
     rerender(<EventDetailContent {...defaultProps} subtasks={updatedSubtasks} />)
 
-    expect(screen.getByText('Completada')).toBeDefined()
+    expect(screen.getAllByText('Completada')).toHaveLength(1)
   })
 })
 
@@ -896,22 +929,23 @@ describe('EventTaskCard - Cobertura de interacciones', () => {
     state: 'in_progress',
   }
 
-  it('debe abrir y cerrar la nota de la tarea al presionar el botón de nota', async () => {
+  it('debe abrir y cerrar los detalles de la tarea al presionar el nombre y no renderizar el botón de nota', async () => {
     const user = userEvent.setup()
     render(<EventTaskCard subtask={mockSubtaskWithNote} />)
 
-    // 1. Selecciona exactamente el botón "Nota"
-    const noteButton = screen.getByRole('button', { name: /^Nota$/i })
-    await user.click(noteButton)
+    expect(screen.queryByRole('button', { name: /^Nota$/i })).toBeNull()
+
+    // 1. Abre detalles desde el nombre
+    const titleButton = screen.getByRole('button', { name: /^Subtarea con nota$/i })
+    await user.click(titleButton)
     expect(screen.getByText('Esta es una nota explicativa de la tarea')).toBeDefined()
 
-    // 2. Oculta la nota
-    const hideNoteButton = screen.getByRole('button', { name: /Ocultar/i })
-    await user.click(hideNoteButton)
+    // 2. Oculta detalles al volver a presionar
+    await user.click(titleButton)
     expect(screen.queryByText('Esta es una nota explicativa de la tarea')).toBeNull()
   })
 
-  it('debe desplegar el menú de acciones con posicionamiento y permitir ver/ocultar detalles', async () => {
+  it('debe desplegar el menú de acciones con posicionamiento', async () => {
     const user = userEvent.setup()
     render(<EventTaskCard subtask={mockSubtaskWithNote} />)
 
@@ -919,16 +953,9 @@ describe('EventTaskCard - Cobertura de interacciones', () => {
     const moreButton = screen.getByRole('button', { name: /Más acciones para Subtarea con nota/i })
     await user.click(moreButton)
 
-    // Opción Ver detalles
-    const detailsOption = screen.getByRole('menuitem', { name: /Ver detalles/i })
-    await user.click(detailsOption)
-
-    expect(screen.getByText('Detalles de la tarea')).toBeDefined()
-
-    // Volver a abrir menú para presionar Ocultar detalles
-    await user.click(moreButton)
-    const hideDetailsOption = screen.getByRole('menuitem', { name: /Ocultar detalles/i })
-    await user.click(hideDetailsOption)
+    // Opción Reprogramar
+    const rescheduleOption = screen.getByRole('menuitem', { name: /Reprogramar/i })
+    expect(rescheduleOption).toBeDefined()
   })
 
   it('debe cerrar el menú de acciones haciendo clic en el backdrop invisible', async () => {
@@ -942,5 +969,16 @@ describe('EventTaskCard - Cobertura de interacciones', () => {
     await user.click(backdrop)
 
     expect(screen.queryByRole('menuitem', { name: /Registrar avance/i })).toBeNull()
+  })
+
+  it('navega a /progreso al pulsar Ver progreso detallado', async () => {
+    const user = userEvent.setup()
+    showSubtasks()
+    renderPage()
+
+    const viewProgressBtn = await screen.findByRole('button', { name: /Ver progreso detallado/i })
+    await user.click(viewProgressBtn)
+
+    expect(screen.getByTestId('location').textContent).toBe('/progreso')
   })
 })

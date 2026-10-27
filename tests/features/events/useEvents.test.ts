@@ -131,4 +131,23 @@ describe('useEvents', () => {
     expect(result.current.events[0].typeId).toBe(2)
     expect(getEvents).toHaveBeenLastCalledWith(1, expect.any(Function), 2)
   })
+
+  it('pasa el término de búsqueda al servicio y descarta resultados anteriores al cambiar la búsqueda', async () => {
+    const previous = deferred<EventsPageData>()
+    vi.mocked(getEvents)
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce(pageData([{ ...event, id: 30, name: 'Gala Anual' }]))
+
+    const { result, rerender } = renderHook(({ search }) => useEvents(1, null, search), { initialProps: { search: 'Boda' } })
+    await waitFor(() => expect(getEvents).toHaveBeenCalledOnce())
+    expect(getEvents).toHaveBeenLastCalledWith(1, expect.any(Function), null, 'Boda')
+
+    rerender({ search: 'Gala' })
+    expect(result.current.isLoading).toBe(true)
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await act(async () => { previous.resolve(pageData([event])) })
+
+    expect(result.current.events[0].name).toBe('Gala Anual')
+    expect(getEvents).toHaveBeenLastCalledWith(1, expect.any(Function), null, 'Gala')
+  })
 })

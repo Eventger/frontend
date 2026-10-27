@@ -124,6 +124,13 @@ describe('LoginPage', () => {
     sessionStorage.clear()
   })
 
+  it('no muestra asteriscos en las etiquetas de inicio de sesión', () => {
+    renderLogin()
+
+    expect(screen.getByLabelText('Correo electrónico').parentElement?.previousElementSibling?.textContent).toBe('Correo electrónico')
+    expect(screen.getByLabelText('Contraseña').parentElement?.previousElementSibling?.textContent).toBe('Contraseña')
+  })
+
   it('muestra errores accesibles sin enviar campos vacíos', async () => {
     const user = userEvent.setup()
     renderLogin()
@@ -298,10 +305,9 @@ describe('LoginPage', () => {
     )
 
     expect(
-      await screen.findByRole('alertdialog', {
-        name: 'No pudimos iniciar sesión',
-      }),
+      await screen.findByText(/Ocurrió un problema al iniciar sesión/),
     ).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   it.each(['needs_client_trust', 'needs_second_factor'])('permite verificar el correo cuando Clerk devuelve %s', async (status) => {
@@ -440,9 +446,9 @@ describe('LoginPage', () => {
     await fillLoginForm(user)
     await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
     expect(screen.queryByRole('heading', { name: 'Eventos privados' })).toBeNull()
-    expect(screen.queryByText('Sesión iniciada correctamente')).toBeNull()
     await act(async () => { finish({ error: new Error('activación') }) })
-    expect(await screen.findByRole('alertdialog', { name: 'No pudimos iniciar sesión' })).toBeTruthy()
+    expect(await screen.findByText(/Ocurrió un problema al iniciar sesión/)).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
     finalize.mockImplementationOnce(async ({ navigate }) => {
       navigate({ session: null, decorateUrl })
       return { error: null }
@@ -479,10 +485,9 @@ describe('LoginPage', () => {
       }),
     )
     expect(
-      await screen.findByRole('alertdialog', {
-        name: 'Sin conexión',
-      }),
+      await screen.findByText('Revisa tu conexión a internet e inténtalo nuevamente.'),
     ).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   it.each(['form_password_incorrect', 'form_identifier_not_found'])('permite corregir %s sin afirmar que la cuenta no existe', async code => {
@@ -503,7 +508,8 @@ describe('LoginPage', () => {
     renderLogin()
     await fillLoginForm(user)
     await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
-    expect(await screen.findByRole('alertdialog', { name: 'No pudimos iniciar sesión' })).toBeTruthy()
+    expect(await screen.findByText(/Ocurrió un problema al iniciar sesión/)).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
     expect(screen.queryByText('No encontramos tu cuenta')).toBeNull()
   })
 
@@ -541,10 +547,9 @@ describe('LoginPage', () => {
       }),
     )
     expect(
-      await screen.findByRole('alertdialog', {
-        name: 'No pudimos iniciar sesión',
-      }),
+      await screen.findByText(/Ocurrió un problema al iniciar sesión/),
     ).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   it('muestra errores del flujo de Google', async () => {
@@ -561,10 +566,9 @@ describe('LoginPage', () => {
     )
     await user.click(googleButton)
     expect(
-      await screen.findByRole('alertdialog', {
-        name: 'No pudimos iniciar sesión',
-      }),
+      await screen.findByText(/Ocurrió un problema al iniciar sesión/),
     ).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
 
     await user.click(
       screen.getByRole('button', {
@@ -579,19 +583,14 @@ describe('LoginPage', () => {
       error: new Error('oauth'),
     })
     await user.click(googleButton)
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Cerrar',
-      }),
-    )
+    expect(await screen.findByText(/Ocurrió un problema al iniciar sesión/)).toBeTruthy()
 
     sso.mockRejectedValueOnce(new Error('red'))
     await user.click(googleButton)
     expect(
-      await screen.findByRole('alertdialog', {
-        name: 'Sin conexión',
-      }),
+      await screen.findByText('Revisa tu conexión a internet e inténtalo nuevamente.'),
     ).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   it('inicia la recuperación de contraseña con el correo escrito', async () => {
@@ -765,7 +764,7 @@ describe('LoginPage', () => {
       )
     expect(
       newPassword.getAttribute('minlength'),
-    ).toBe('15')
+    ).toBe('8')
     await user.type(newPassword, 'corta')
     await user.click(
       screen.getByRole('button', {
@@ -774,7 +773,7 @@ describe('LoginPage', () => {
     )
     expect(
       screen.getByText(
-        'La nueva contraseña debe tener al menos 15 caracteres.',
+        'La nueva contraseña debe tener al menos 8 caracteres.',
       ),
     ).toBeTruthy()
 
@@ -891,8 +890,9 @@ describe('LoginPage', () => {
 
     await user.click(updateButton)
     expect(
-      await screen.findByRole('alertdialog', { name: 'No pudimos iniciar sesión' }),
+      await screen.findByText(/Ocurrió un problema al iniciar sesión/),
     ).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
   it('espera la activación tras recuperar y reintenta solo la sesión si falla', async () => {
     const user = userEvent.setup()
@@ -914,7 +914,8 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Actualizar contraseña' }))
     expect(screen.queryByRole('heading', { name: 'Eventos privados' })).toBeNull()
     await act(async () => finish({ error: new Error('sesión') }))
-    expect(await screen.findByRole('alertdialog', { name: 'No pudimos iniciar sesión' })).toBeTruthy()
+    expect(await screen.findByText(/Ocurrió un problema al iniciar sesión/)).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull()
     finalize.mockImplementationOnce(async ({ navigate }) => {
       navigate({ session: null, decorateUrl })
       return { error: null }
@@ -946,4 +947,51 @@ describe('LoginPage', () => {
     expect(screen.queryByRole('heading', { name: 'Eventos privados' })).toBeNull()
   })
 
+  it('permite reenviar el código de recuperación', async () => {
+    const user = userEvent.setup()
+    create.mockResolvedValue({ error: null })
+    sendRecoveryCode.mockResolvedValue({ error: null })
+    renderLogin()
+
+    await user.type(screen.getByLabelText('Correo electrónico'), 'ana@example.com')
+    await user.click(screen.getByRole('button', { name: '¿Olvidaste tu contraseña?' }))
+    await screen.findByLabelText('Código de verificación')
+
+    const resendButton = screen.getByRole('button', { name: /Reenviar código/ })
+    expect(resendButton).toBeTruthy()
+    await user.click(resendButton)
+    expect(sendRecoveryCode).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('Código reenviado con éxito.')).toBeTruthy()
+  })
+
+  it('muestra la confirmación de cierre de sesión si se cerró sesión recientemente y se borra al interactuar', async () => {
+    sessionStorage.setItem('eventger_signed_out', 'true')
+    const user = userEvent.setup()
+    renderLogin()
+
+    expect(screen.getByText('Has cerrado sesión correctamente.')).toBeTruthy()
+    expect(sessionStorage.getItem('eventger_signed_out')).toBeNull()
+
+    await user.type(screen.getByLabelText('Correo electrónico'), 'a')
+    expect(screen.queryByText('Has cerrado sesión correctamente.')).toBeNull()
+  })
+
+  it('muestra el spinner LoaderCircle dentro del botón y preserva el texto durante la carga', async () => {
+    const user = userEvent.setup()
+    let resolveLogin!: (value: unknown) => void
+    password.mockImplementation(() => new Promise(resolve => { resolveLogin = resolve }))
+    renderLogin()
+
+    await fillLoginForm(user)
+    const submitBtn = screen.getByRole('button', { name: 'Iniciar sesión' })
+    await user.click(submitBtn)
+
+    const loadingBtn = screen.getByRole('button', { name: /Iniciando sesión…/i })
+    expect(loadingBtn).toBeTruthy()
+    expect(loadingBtn.querySelector('svg.lucide-loader-circle')).toBeTruthy()
+    expect(loadingBtn.className).toContain('bg-[#4338ca]')
+    expect(loadingBtn.className).toContain('disabled:cursor-wait')
+
+    await act(async () => resolveLogin({ error: null }))
+  })
 })

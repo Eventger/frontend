@@ -23,6 +23,19 @@ describe('búsqueda de direcciones', () => {
     expect(new Headers(options.headers).has('Authorization')).toBe(false)
   })
 
+  it('limita la búsqueda a cercanías cuando recibe la ubicación actual', async () => {
+    const fetch = vi.fn().mockResolvedValue(json(addressApiFixture))
+    vi.stubGlobal('fetch', fetch)
+
+    await searchAddresses('Salón', { coordinates: { latitude: 3.4516, longitude: -76.532 } })
+
+    const [url] = fetch.mock.calls[0]
+    expect(url.searchParams.get('lat')).toBe('3.4516')
+    expect(url.searchParams.get('lon')).toBe('-76.532')
+    expect(url.searchParams.get('zoom')).toBe('12')
+    expect(url.searchParams.get('bbox')).toBeTruthy()
+  })
+
   it.each(['', '  ', 'Ca'])('no consulta la API con un término demasiado corto: %j', async query => {
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)

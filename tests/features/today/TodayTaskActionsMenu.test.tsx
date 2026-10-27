@@ -11,6 +11,8 @@ const mockTask: TodayTaskItem = {
   name: 'Tarea Test Menu',
   targetDate: '2026-10-20',
   estimatedHours: 3,
+  state: 'pending',
+  details: '',
 }
 
 describe('TodayTaskActionsMenu', () => {
@@ -87,5 +89,24 @@ describe('TodayTaskActionsMenu', () => {
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('menu')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('no debe mostrar la opción de editar detalles en el menú', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <TodayTaskActionsMenu
+        task={mockTask}
+        onRegisterProgress={vi.fn()}
+        onReschedule={vi.fn()}
+        onViewDetails={vi.fn()}
+      />
+    )
+
+    const trigger = screen.getByRole('button', { name: /Acciones de Tarea Test Menu/i })
+    await user.click(trigger)
+
+    expect(screen.queryByRole('menuitem', { name: /Editar detalles/i })).toBeNull()
   })
 })

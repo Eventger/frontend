@@ -132,7 +132,7 @@ describe('SecurityPage', () => {
     renderPage()
     await user.click(screen.getByRole('button', { name: 'Eliminar cuenta' }))
     const dialog = within(screen.getByRole('dialog', { name: '¿Eliminar tu cuenta?' }))
-    expect(dialog.getByText('Se eliminarán tu perfil y acceso en Clerk, además de tus eventos, tareas y preferencias de Eventger.')).toBeTruthy()
+    expect(dialog.getByText('Se eliminarán tu perfil y acceso, además de tus eventos, tareas y preferencias de Eventger.')).toBeTruthy()
     await user.click(dialog.getByRole('button', { name: 'Eliminar definitivamente' }))
     expect(fixture.user.delete).not.toHaveBeenCalled()
     expect(fetch).not.toHaveBeenCalled()

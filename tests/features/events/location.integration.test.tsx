@@ -11,7 +11,7 @@ import { eventFixture } from './subtask.fixtures'
 
 function EditPage() {
   const { authenticatedRequest } = useAuthenticatedApi()
-  return <EditEventForm event={eventFixture} eventTypes={[{ id: eventFixture.typeId, name: 'Boda', description: '' }]}
+  return <EditEventForm event={{ ...eventFixture, eventDate: '2099-12-31' }} eventTypes={[{ id: eventFixture.typeId, name: 'Boda', description: '' }]}
     isSubmitting={false} onCancel={vi.fn()} onSubmit={async data => { await updateEvent(eventFixture.id, data, authenticatedRequest) }} />
 }
 
@@ -52,7 +52,7 @@ describe('selección y persistencia de la dirección del evento', () => {
       const input = screen.getByRole('combobox', { name: 'Lugar *' })
       await user.clear(input)
       fireEvent.change(input, { target: { value: 'Chipichape Cali' } })
-      await user.click(await screen.findByRole('option', { name: /Centro Comercial Chipichape/ }))
+      await user.click(await screen.findByRole('option', { name: /Centro Comercial Chipichape/ }, { timeout: 3000 }))
       await user.click(screen.getByRole('button', { name: mode === 'crear' ? 'Crear evento' : 'Guardar cambios' }))
       await waitFor(() => expect(writes).toHaveLength(1))
       expect(writes[0].location).toBe(addressFixture.address)

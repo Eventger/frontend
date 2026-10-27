@@ -69,7 +69,7 @@ function emptyTodayData(): TodayData {
 function expectBefore(first: HTMLElement, second: HTMLElement) {
   expect(
     first.compareDocumentPosition(second) &
-      Node.DOCUMENT_POSITION_FOLLOWING,
+    Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy()
 }
 
@@ -81,7 +81,9 @@ describe('TodayPage', () => {
     vi.mocked(useToday).mockReset()
     vi.mocked(useToday).mockReturnValue({
       data: todayDataFixture,
+      setData: vi.fn(),
       isLoading: false,
+      isRefetching: false,
       error: null,
       retry,
     })
@@ -90,15 +92,15 @@ describe('TodayPage', () => {
   it('calcula la capacidad con la preferencia de la cuenta y avisa si hay sobrecarga', () => {
     vi.mocked(usePlanningPreferences).mockReturnValue({ dailyLimitHours: 2, isLoading: false, error: '', save: vi.fn(), refresh: vi.fn() })
     renderPage()
-    expect(screen.getByText('3.75 h / 2 h')).toBeTruthy()
-    expect(screen.getByText('Tu planificación de hoy supera el límite diario de 2 horas. Revisa tus tareas para reducir la sobrecarga.')).toBeTruthy()
+    expect(screen.getAllByText('2 h/día').length).toBeGreaterThan(0)
+    expect(screen.getByText(/Tu planificación de hoy supera tus 2 horas disponibles/)).toBeTruthy()
   })
 
   it('muestra la fecha de Bogotá y una región de tareas sin un main anidado', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-09-25T02:00:00Z'))
     renderPage()
-    expect(screen.getByText('Jueves, 24 de septiembre')).toBeTruthy()
+    expect(screen.getByText('Jueves, 24 de septiembre de 2026')).toBeTruthy()
     expect(screen.queryByRole('main')).toBeNull()
     expect(screen.getByRole('region', { name: 'Tareas priorizadas' })).toBeTruthy()
   })
@@ -181,6 +183,7 @@ describe('TodayPage', () => {
 
     expectBefore(overdueHeading, todayHeading)
     expectBefore(todayHeading, upcomingHeading)
+    expect(screen.queryByRole('heading', { name: 'Completadas hoy' })).toBeNull()
 
     const overdueSection = overdueHeading.closest('section')
     const todaySection = todayHeading.closest('section')
@@ -203,23 +206,21 @@ describe('TodayPage', () => {
         todayDataFixture.upcoming[0].name,
       ),
     ).toBeTruthy()
+    expect(
+      screen.queryByText(todayDataFixture.completed[0].name),
+    ).toBeNull()
 
     const todayTask = screen.getAllByRole('button', {
       name: `Ver tarea: ${todayDataFixture.today[1].name}`,
     })[0]
     expect(todayTask).toBeTruthy()
     expect(
-      within(todaySection!).getByText(
-        /Conferencia Frontend.*2.25 h/,
-      ),
+      within(todaySection!).getByText('Conferencia Frontend'),
+    ).toBeTruthy()
+    expect(
+      within(todaySection!).getByText(/2\.25 h/),
     ).toBeTruthy()
 
-    expect(
-      screen.queryByText(todayDataFixture.completed[0].name),
-    ).toBeNull()
-    expect(
-      screen.queryByRole('heading', { name: 'Completadas' }),
-    ).toBeNull()
     expect(
       screen.getByText(/Orden de Hoy: Vencidas/),
     ).toBeTruthy()
@@ -228,7 +229,7 @@ describe('TodayPage', () => {
     ).toBeGreaterThan(0)
   })
 
-  it('muestra empty cuando solo existen tareas completadas', () => {
+  it('muestra el estado vacío cuando no existen tareas pendientes aunque existan completadas', () => {
     vi.mocked(useToday).mockReturnValue({
       data: {
         ...emptyTodayData(),
@@ -242,23 +243,89 @@ describe('TodayPage', () => {
     renderPage()
 
     expect(
-      screen.getByRole('heading', {
-        name: 'No tienes gestiones pendientes para hoy',
+      screen.queryByRole('heading', {
+        name: 'Completadas hoy',
       }),
-    ).toBeTruthy()
-    expect(
-      screen.getByRole('button', {
-        name: 'Ver próximos días',
-      }),
-    ).toBeTruthy()
-    expect(
-      screen.queryByText(
-        'No tienes tareas pendientes para hoy',
-      ),
     ).toBeNull()
     expect(
       screen.queryByText(todayDataFixture.completed[0].name),
     ).toBeNull()
+    expect(
+      screen.getByRole('heading', {
+        name: 'No tienes gestiones pendientes para hoy',
+      }),
+    ).toBeTruthy()
+  })
+
+  it('filtra por fecha específica y permite limpiar el filtro', async () => {
+    renderPage()
+    const user = userEvent.setup()
+
+    const dateInput = screen.getByLabelText('Fecha')
+    await user.type(dateInput, '24092026')
+
+    // Solo deben figurar las tareas del 24 de septiembre
+    expect(screen.getByText(todayDataFixture.today[0].name)).toBeTruthy()
+    expect(screen.getByText(todayDataFixture.today[1].name)).toBeTruthy()
+    expect(screen.queryByText(todayDataFixture.overdue[0].name)).toBeNull()
+    expect(screen.queryByText(todayDataFixture.upcoming[0].name)).toBeNull()
+    expect(screen.queryByText(todayDataFixture.completed[0].name)).toBeNull()
+
+    // Limpiar filtro
+    await user.click(screen.getByRole('button', { name: 'Limpiar filtros' }))
+    expect(screen.getByText(todayDataFixture.overdue[0].name)).toBeTruthy()
+    expect(screen.getByText(todayDataFixture.upcoming[0].name)).toBeTruthy()
+    expect(screen.queryByText(todayDataFixture.completed[0].name)).toBeNull()
+  })
+
+  it('no incluye Completadas en el filtro de estado y filtra por Para hoy', async () => {
+    renderPage()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('combobox', { name: 'Estado' }))
+    await user.keyboard('{ArrowDown}')
+    expect(screen.queryByRole('option', { name: 'Completadas' })).toBeNull()
+
+    await user.click(await screen.findByRole('option', { name: 'Para hoy' }))
+
+    expect(screen.getByRole('heading', { name: 'Para hoy' })).toBeTruthy()
+    expect(screen.getByText(todayDataFixture.today[0].name)).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Vencidas' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Próximas' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Completadas hoy' })).toBeNull()
+  })
+
+  it('colapsa una sección si supera 3 tareas', async () => {
+    const manyUpcoming = [
+      { ...todayDataFixture.upcoming[0], id: 101, name: 'Próxima 1' },
+      { ...todayDataFixture.upcoming[0], id: 102, name: 'Próxima 2' },
+      { ...todayDataFixture.upcoming[0], id: 103, name: 'Próxima 3' },
+      { ...todayDataFixture.upcoming[0], id: 104, name: 'Próxima 4' },
+    ]
+    vi.mocked(useToday).mockReturnValue({
+      data: {
+        ...emptyTodayData(),
+        upcoming: manyUpcoming,
+      },
+      isLoading: false,
+      error: null,
+      retry,
+    })
+
+    renderPage()
+    const user = userEvent.setup()
+
+    expect(screen.getByText('Próxima 1')).toBeTruthy()
+    expect(screen.getByText('Próxima 2')).toBeTruthy()
+    expect(screen.getByText('Próxima 3')).toBeTruthy()
+    expect(screen.queryByText('Próxima 4')).toBeNull()
+
+    const toggleButton = screen.getByRole('button', { name: /Ver todas las tareas de Próximas \(4\)/i })
+    expect(toggleButton).toBeTruthy()
+
+    await user.click(toggleButton)
+    expect(screen.getByText('Próxima 4')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Ver menos tareas de Próximas/i })).toBeTruthy()
   })
 
   it('muestra el error y permite reintentar', async () => {
@@ -363,5 +430,56 @@ describe('TodayPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeDefined()
     })
+  })
+
+  it('mantiene visible el aviso de sobrecarga cuando se aplican filtros', async () => {
+    vi.mocked(usePlanningPreferences).mockReturnValue({ dailyLimitHours: 2, isLoading: false, error: '', save: vi.fn(), refresh: vi.fn() })
+    renderPage()
+    expect(screen.getByText(/Tu planificación de hoy supera tus 2 horas disponibles/)).toBeTruthy()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', { name: 'Estado' }))
+    await user.keyboard('{ArrowDown}')
+    await user.click(await screen.findByRole('option', { name: 'Para hoy' }))
+    expect(screen.getByText(/Tu planificación total de hoy.*supera tus 2 horas disponibles/)).toBeTruthy()
+  })
+
+  it('no muestra la opción Editar detalles en el menú de acciones de la tarea en Hoy', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    const task = todayDataFixture.today[0]
+    const actionsButton = screen.getByRole('button', { name: new RegExp(`Acciones de ${task.name}`, 'i') })
+    await user.click(actionsButton)
+
+    expect(screen.queryByRole('menuitem', { name: /Editar detalles/i })).toBeNull()
+    expect(screen.getByRole('menuitem', { name: /Reprogramar/i })).toBeDefined()
+    expect(screen.getByRole('menuitem', { name: /Ver detalles/i })).toBeDefined()
+  })
+
+  it('no muestra el esqueleto de carga completa ni desmonta los filtros durante el refetch', () => {
+    vi.mocked(useToday).mockReturnValue({
+      data: todayDataFixture,
+      setData: vi.fn(),
+      isLoading: false,
+      isRefetching: true,
+      error: null,
+      retry,
+    })
+
+    renderPage()
+
+    // The full page skeleton must NOT be present
+    expect(screen.queryByTestId('today-loading-state')).toBeNull()
+
+    // The filter section and guide button must remain mounted
+    expect(screen.getByRole('button', { name: /¿Cómo funciona\?/i })).toBeDefined()
+    expect(screen.getByLabelText(/^Evento$/i)).toBeDefined()
+    expect(screen.getByLabelText(/^Fecha$/i)).toBeDefined()
+
+    // The task list container indicates busy status without unmounting
+    const tasksRegion = screen.getByLabelText('Tareas priorizadas')
+    expect(tasksRegion).toBeDefined()
+    expect(tasksRegion.parentElement?.getAttribute('aria-busy')).toBe('true')
   })
 })

@@ -16,7 +16,13 @@ vi.mock('@/features/today/services/today.service', () => ({ getToday: vi.fn() })
 let fixture: ReturnType<typeof settingsUserFixture>
 
 function PageRoutes() {
-  return <Routes><Route path="/" element={<SettingsPage />} /><Route path="/configuracion/seguridad" element={<h1>Destino de seguridad</h1>} /></Routes>
+  return (
+    <Routes>
+      <Route path="/" element={<SettingsPage />} />
+      <Route path="/configuracion/seguridad" element={<h1>Destino de seguridad</h1>} />
+      <Route path="/hoy" element={<h1>Destino Hoy</h1>} />
+    </Routes>
+  )
 }
 
 function renderPage() {
@@ -119,6 +125,23 @@ describe('SettingsPage', () => {
     expect(savePlanningPreferences).toHaveBeenCalledWith(2, expect.any(Function))
   })
 
+  it('permite navegar a Hoy desde el mensaje de conflicto de límite diario', async () => {
+    vi.mocked(getToday).mockResolvedValue({
+      overdue: [], today: [], completed: [],
+      upcoming: [buildTodayTask({ id: 1, estimatedHours: 5, targetDate: '2026-10-11T04:59:59Z' })],
+    })
+    const user = userEvent.setup()
+    renderPage()
+    await readyPreferences()
+    const input = screen.getByLabelText('Límite diario de trabajo')
+    await user.clear(input)
+    await user.type(input, '2')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    const navButton = await screen.findByRole('button', { name: 'Ver tareas en Hoy' })
+    await user.click(navButton)
+    expect(screen.getByRole('heading', { name: 'Destino Hoy' })).toBeTruthy()
+  })
+
   it('conserva el borrador tras un fallo y bloquea envíos simultáneos', async () => {
     const pending = deferred<never>()
     vi.mocked(savePlanningPreferences).mockReturnValueOnce(pending.promise)
@@ -195,5 +218,96 @@ describe('SettingsPage', () => {
     await user.click(dialog.getByRole('button', { name: 'Guardar perfil' }))
     expect(fixture.user.update).toHaveBeenCalledWith({ firstName: 'Carlos', lastName: 'Cruz' })
     expect(await screen.findByText('Tu perfil se actualizó correctamente.')).toBeTruthy()
+  })
+
+  it('permite cambiar la foto de perfil subiendo un archivo a Clerk', async () => {
+    // Mock global URL methods for jsdom
+    const originalCreate = URL.createObjectURL
+    const originalRevoke = URL.revokeObjectURL
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:http://localhost/mock-preview')
+    URL.revokeObjectURL = vi.fn()
+
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('button', { name: 'Actualizar perfil' }))
+    const dialog = within(screen.getByRole('dialog', { name: 'Actualizar perfil' }))
+
+    const fileInput = screen.getByLabelText('Cargar nueva foto de perfil') as HTMLInputElement
+    const file = new File(['mock-image-bytes'], 'avatar.png', { type: 'image/png' })
+    await user.upload(fileInput, file)
+
+    expect(dialog.getByAltText('Vista previa de foto de perfil')).toBeTruthy()
+    expect(dialog.getByText('Nueva foto lista para guardar.')).toBeTruthy()
+
+    await user.click(dialog.getByRole('button', { name: 'Guardar perfil' }))
+    expect(fixture.user.setProfileImage).toHaveBeenCalledWith({ file })
+    expect(await screen.findByText('Tu perfil se actualizó correctamente.')).toBeTruthy()
+
+    URL.createObjectURL = originalCreate
+    URL.revokeObjectURL = originalRevoke
+  })
+
+  it('permite eliminar la foto de perfil existente a través de Clerk', async () => {
+    fixture.user.hasImage = true
+    fixture.user.imageUrl = 'https://example.com/existing-photo.jpg'
+
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('button', { name: 'Actualizar perfil' }))
+    const dialog = within(screen.getByRole('dialog', { name: 'Actualizar perfil' }))
+
+    expect(dialog.getByAltText('Foto de perfil actual')).toBeTruthy()
+    const removeButton = dialog.getByRole('button', { name: 'Eliminar foto' })
+    await user.click(removeButton)
+
+    expect(dialog.getByText('La foto se eliminará al guardar los cambios.')).toBeTruthy()
+    expect(dialog.getByRole('button', { name: 'Deshacer' })).toBeTruthy()
+
+    await user.click(dialog.getByRole('button', { name: 'Guardar perfil' }))
+    expect(fixture.user.setProfileImage).toHaveBeenCalledWith({ file: null })
+    expect(await screen.findByText('Tu perfil se actualizó correctamente.')).toBeTruthy()
+  })
+
+  it('permite abrir el diálogo de perfil al hacer clic sobre el avatar de la cuenta', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(screen.getByRole('button', { name: 'Cambiar foto de perfil' }))
+    expect(screen.getByRole('dialog', { name: 'Actualizar perfil' })).toBeTruthy()
+  })
+
+  it('permite aumentar y disminuir el límite con los botones del stepper', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await readyPreferences()
+    const input = screen.getByLabelText('Límite diario de trabajo') as HTMLInputElement
+    const incButton = screen.getByRole('button', { name: 'Aumentar horas' })
+    const decButton = screen.getByRole('button', { name: 'Disminuir horas' })
+
+    expect(input.value).toBe('6')
+    await user.click(incButton)
+    expect(input.value).toBe('7')
+    await user.click(decButton)
+    expect(input.value).toBe('6')
+    await user.click(decButton)
+    expect(input.value).toBe('5')
+  })
+
+  it('deshabilita los botones de incremento y decremento en los extremos 1 y 16', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await readyPreferences()
+    const input = screen.getByLabelText('Límite diario de trabajo')
+    const incButton = screen.getByRole('button', { name: 'Aumentar horas' }) as HTMLButtonElement
+    const decButton = screen.getByRole('button', { name: 'Disminuir horas' }) as HTMLButtonElement
+
+    await user.clear(input)
+    await user.type(input, '1')
+    expect(decButton.disabled).toBe(true)
+    expect(incButton.disabled).toBe(false)
+
+    await user.clear(input)
+    await user.type(input, '16')
+    expect(incButton.disabled).toBe(true)
+    expect(decButton.disabled).toBe(false)
   })
 })

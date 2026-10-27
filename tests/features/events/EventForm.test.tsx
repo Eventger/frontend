@@ -6,6 +6,7 @@ import { EventForm } from '@/features/events/components/EventForm'
 import { useEventTypes } from '@/features/events/hooks/useEventTypes'
 import type { CreateEventInput } from '@/features/events/types/event.types'
 import type { CreateSubtaskInput } from '@/features/events/types/subtask.types'
+import { formatDateInput } from '@/lib/calendar'
 
 vi.mock('@/features/events/hooks/useEventTypes', () => ({
   useEventTypes: vi.fn(),
@@ -87,7 +88,7 @@ describe('EventForm', () => {
     expect(screen.getByLabelText('Fecha límite *').getAttribute('min')).toBe('2026-09-24')
     const user = userEvent.setup()
     await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Preparar logística')
-    await user.type(screen.getByLabelText('Fecha límite *'), '2026-09-24')
+    await user.type(screen.getByLabelText('Fecha límite *'), '24/09/2026')
     await user.type(screen.getByLabelText('Tiempo estimado *'), '1')
     await user.click(screen.getByRole('button', { name: 'Agregar tarea' }))
     await user.click(screen.getByRole('button', { name: 'Crear evento' }))
@@ -117,7 +118,7 @@ describe('EventForm', () => {
     )
     await user.type(
       screen.getByLabelText('Fecha del evento *'),
-      validInput.eventDate,
+      formatDateInput(validInput.eventDate),
     )
     await user.type(
       screen.getByLabelText('Lugar *'),
@@ -182,7 +183,7 @@ describe('EventForm', () => {
     ).toBeTruthy()
 
     await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Decoración')
-    await user.type(screen.getByLabelText('Fecha límite *'), '2000-01-01')
+    await user.type(screen.getByLabelText('Fecha límite *'), '01/01/2000')
     await user.type(screen.getByLabelText('Tiempo estimado *'), '0')
     await user.click(
       screen.getByRole('button', { name: 'Agregar tarea' }),
@@ -196,7 +197,7 @@ describe('EventForm', () => {
     ).toBeTruthy()
 
     await user.clear(screen.getByLabelText('Fecha límite *'))
-    await user.type(screen.getByLabelText('Fecha límite *'), '2100-01-01')
+    await user.type(screen.getByLabelText('Fecha límite *'), '01/01/2100')
     await user.clear(screen.getByLabelText('Tiempo estimado *'))
     await user.type(screen.getByLabelText('Tiempo estimado *'), '1.5')
     await user.click(
@@ -226,7 +227,7 @@ describe('EventForm', () => {
       screen.getByLabelText('Nombre de la tarea *'),
       '  Reservar decoración  ',
     )
-    await user.type(screen.getByLabelText('Fecha límite *'), '2099-10-20')
+    await user.type(screen.getByLabelText('Fecha límite *'), '20/10/2099')
     await user.type(screen.getByLabelText('Tiempo estimado *'), '2.5')
     await user.type(
       screen.getByLabelText('Nota opcional'),
@@ -271,7 +272,7 @@ describe('EventForm', () => {
     const [editFirstTask] = within(firstTask!).getAllByRole('button')
     await user.click(editFirstTask)
 
-    expect(screen.getByText('Editar tarea')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Editar tarea' })).toBeTruthy()
     expect(
       (screen.getByLabelText('Nombre de la tarea *') as HTMLInputElement).value,
     ).toBe('Reservar salón')

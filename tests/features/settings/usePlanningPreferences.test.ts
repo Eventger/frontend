@@ -44,13 +44,15 @@ describe('preferencias de planificación por API', () => {
   })
 
   it('consulta la carga con la sesión, rechaza el conflicto sin PUT y permite el límite exacto', async () => {
-    const tasks = new Response(JSON.stringify({ success: true, data: {
-      overdue: [], today: [], completed: [buildTodayApiTask({ state: 'completed', estimated_hours: '9.00' })],
-      upcoming: [
-        buildTodayApiTask({ estimated_hours: '0.75' }),
-        buildTodayApiTask({ id: 32, event: 22, state: 'in_progress', estimated_hours: '1.25' }),
-      ],
-    } }), { headers: { 'Content-Type': 'application/json' } })
+    const tasks = new Response(JSON.stringify({
+      success: true, data: {
+        overdue: [], today: [], completed: [buildTodayApiTask({ state: 'completed', estimated_hours: '9.00' })],
+        upcoming: [
+          buildTodayApiTask({ estimated_hours: '0.75' }),
+          buildTodayApiTask({ id: 32, event: 22, state: 'in_progress', estimated_hours: '1.25' }),
+        ],
+      }
+    }), { headers: { 'Content-Type': 'application/json' } })
     const fetch = vi.fn().mockResolvedValueOnce(response('6', true))
       .mockResolvedValueOnce(tasks.clone()).mockResolvedValueOnce(tasks.clone()).mockResolvedValueOnce(response('2', true))
     vi.stubGlobal('fetch', fetch)
@@ -79,5 +81,43 @@ describe('preferencias de planificación por API', () => {
     pending.resolve(new Response(JSON.stringify({ success: true, data: { overdue: [], today: [], upcoming: [], completed: [] } })))
     await saving
     expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('no aborta un guardado si ocurre un refresh en paralelo mientras consulta tareas', async () => {
+    const pendingToday = deferred<Response>()
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(response('6', true)) // initial getPlanningPreferences
+      .mockReturnValueOnce(pendingToday.promise) // getToday during save(3)
+      .mockResolvedValueOnce(response('6', true)) // getPlanningPreferences during refresh()
+      .mockResolvedValueOnce(response('3', true)) // savePlanningPreferences during save(3)
+    vi.stubGlobal('fetch', fetch)
+    const { result } = renderHook(() => usePlanningPreferences())
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    // Start saving 3h (less than 6h, triggers getToday)
+    let savePromise: Promise<void>
+    act(() => {
+      savePromise = result.current.save(3)
+    })
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+
+    // Trigger a parallel refresh while getToday is still in flight
+    act(() => {
+      void result.current.refresh()
+    })
+
+    // Now resolve getToday with empty tasks
+    pendingToday.resolve(new Response(JSON.stringify({ success: true, data: { overdue: [], today: [], upcoming: [], completed: [] } })))
+
+    // Await saving - it must NOT abort silently
+    await act(async () => {
+      await savePromise
+    })
+
+    // savePlanningPreferences must have been called with 3.00
+    expect(result.current.dailyLimitHours).toBe(3)
+    const putCall = fetch.mock.calls.find(call => call[1]?.method === 'PUT')
+    expect(putCall).toBeDefined()
+    expect(JSON.parse(putCall![1].body)).toEqual({ daily_limit_hours: '3.00' })
   })
 })

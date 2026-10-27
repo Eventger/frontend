@@ -34,6 +34,16 @@ export function settingsUserFixture() {
     externalAccounts: [{ id: 'google-1', provider: 'google', emailAddress: 'juan@eventger.test' }],
     unsafeMetadata: { otherApp: { theme: 'dark' }, eventger: { dailyLimitHours: 6, calendar: 'week' } },
     update: vi.fn(), updateMetadata: vi.fn(), updatePassword: vi.fn(), delete: vi.fn(),
+    setProfileImage: vi.fn().mockImplementation(async ({ file }: { file: File | Blob | null }) => {
+      if (file) {
+        user.hasImage = true
+        user.imageUrl = 'https://example.com/avatar.jpg'
+      } else {
+        user.hasImage = false
+        user.imageUrl = ''
+      }
+      return {}
+    }),
     getSessions: vi.fn().mockResolvedValue([current.resource, other.resource]),
     createEmailAddress: vi.fn().mockImplementation(async () => { user.emailAddresses.push(added.resource); return added.resource }),
   }

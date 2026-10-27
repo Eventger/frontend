@@ -49,6 +49,25 @@ describe('campo de lugar con sugerencias', () => {
     expect(searchAddresses).toHaveBeenCalledWith('Cali', expect.objectContaining({ signal: expect.any(AbortSignal) }))
   })
 
+  it('prioriza sugerencias cercanas después de conceder la ubicación actual', async () => {
+    vi.useFakeTimers()
+    const getCurrentPosition = vi.fn((success: PositionCallback) => {
+      success({ coords: { latitude: 3.4516, longitude: -76.532 } } as GeolocationPosition)
+    })
+    Object.defineProperty(navigator, 'geolocation', { configurable: true, value: { getCurrentPosition } })
+    render(<Controlled />)
+
+    const input = screen.getByRole('combobox')
+    fireEvent.focus(input)
+    fireEvent.change(input, { target: { value: 'Cali' } })
+    await act(() => vi.advanceTimersByTimeAsync(500))
+
+    expect(getCurrentPosition).toHaveBeenCalledOnce()
+    expect(searchAddresses).toHaveBeenCalledWith('Cali', expect.objectContaining({
+      coordinates: { latitude: 3.4516, longitude: -76.532 },
+    }))
+  })
+
   it('selecciona la dirección completa con clic y la envía como texto', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()

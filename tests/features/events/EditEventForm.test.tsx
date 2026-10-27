@@ -5,6 +5,7 @@ import type { ComponentProps } from 'react'
 
 import { EditEventForm } from '@/features/events/components/edit/EditEventForm'
 import { ApiError } from '@/lib/api'
+import { formatDateInput } from '@/lib/calendar'
 import { dayPlan } from './planning.fixtures'
 import {
   createSubtaskInputFixture,
@@ -86,6 +87,15 @@ describe('EditEventForm', () => {
     await waitFor(() => expect(onUpdateSubtask).toHaveBeenCalledWith(task, expect.objectContaining({ targetDate: '2026-10-05', details: 'Nota corregida' })))
   })
 
+  it('muestra por separado la prioridad de fecha y el estado de la tarea', () => {
+    renderForm(undefined, {
+      subtasks: [{ ...subtaskFixture, targetDate: '2026-10-05', state: 'completed' }],
+    })
+
+    expect(screen.getByLabelText('Prioridad de fecha: Vencida')).toBeTruthy()
+    expect(screen.getByLabelText('Estado: Completada')).toBeTruthy()
+  })
+
   it.each(['2026-10-21T04:59:59.000Z', '2026-10-20T23:59:59-05:00', '2026-10-20'])('mantiene la fecha de Bogotá en la lista y al editar o reprogramar %s', async (targetDate) => {
     const user = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
@@ -96,7 +106,7 @@ describe('EditEventForm', () => {
     expect(within(tasks).getByText('20/10/2026').getAttribute('datetime')).toBe('2026-10-20')
 
     await user.click(screen.getByRole('button', { name: `Editar ${subtaskFixture.name}` }))
-    expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('2026-10-20')
+    expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('20/10/2026')
     await user.click(screen.getByRole('button', { name: `Reprogramar ${subtaskFixture.name}` }))
     expect((screen.getByLabelText('Nueva fecha') as HTMLInputElement).value).toBe('')
     expect(screen.getByText(/Actualmente: martes, 20 de octubre/)).toBeTruthy()
@@ -137,10 +147,6 @@ describe('EditEventForm', () => {
     if (resolve) {
       await user.click(screen.getByRole('button', { name: 'Resolver conflicto' }))
       await user.click(screen.getByRole('radio', { name: /Reducir el tiempo estimado/ }))
-      await user.click(screen.getByRole('combobox', { name: 'Horas' }))
-      await user.click(screen.getByRole('option', { name: '1' }))
-      await user.click(screen.getByRole('combobox', { name: 'Minutos' }))
-      await user.click(screen.getByRole('option', { name: '0' }))
       await screen.findByText('La carga está dentro de tu límite diario de 6 h.')
       await user.click(screen.getByRole('button', { name: 'Aplicar opción' }))
       await user.click(await screen.findByRole('button', { name: 'Aceptar' }))
@@ -158,7 +164,7 @@ describe('EditEventForm', () => {
       expect(onSubtasksChanged).not.toHaveBeenCalled()
       expect((screen.getByLabelText('Nombre de la tarea *') as HTMLInputElement).value).toBe('Transporte actualizado')
       expect((screen.getByLabelText('Nota opcional') as HTMLTextAreaElement).value).toBe('Nota sin perder')
-      expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('2026-10-12')
+      expect((screen.getByLabelText('Fecha límite *') as HTMLInputElement).value).toBe('12/10/2026')
     }
     expect((screen.getByLabelText('Contacto *') as HTMLInputElement).value).toBe('Contacto sin guardar')
   }, 15000)
@@ -215,9 +221,9 @@ describe('EditEventForm', () => {
     expect(screen.getByText('Selecciona una fecha válida.')).toBeTruthy()
     expect(onSubmit).not.toHaveBeenCalled()
 
-    await user.type(screen.getByLabelText('Fecha del evento *'), '2026-10-24')
+    await user.type(screen.getByLabelText('Fecha del evento *'), '24/10/2026')
     await user.type(screen.getByLabelText('Nombre de la tarea *'), 'Transporte')
-    await user.type(screen.getByLabelText('Fecha límite *'), '2026-10-25')
+    await user.type(screen.getByLabelText('Fecha límite *'), '25/10/2026')
     await user.type(screen.getByLabelText('Tiempo estimado *'), '1')
     await user.click(
       screen.getByRole('button', { name: 'Agregar tarea' }),
@@ -249,7 +255,7 @@ describe('EditEventForm', () => {
     )
     await user.type(
       screen.getByLabelText('Fecha límite *'),
-      createSubtaskInputFixture.targetDate,
+      formatDateInput(createSubtaskInputFixture.targetDate),
     )
     await user.type(
       screen.getByLabelText('Tiempo estimado *'),
@@ -347,7 +353,7 @@ describe('EditEventForm', () => {
     )
     await user.type(
       screen.getByLabelText('Fecha límite *'),
-      createSubtaskInputFixture.targetDate,
+      formatDateInput(createSubtaskInputFixture.targetDate),
     )
     await user.type(
       screen.getByLabelText('Tiempo estimado *'),
@@ -410,4 +416,28 @@ describe('EditEventForm', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
+  it('limita la fecha del evento a hoy o posterior e impide elegir fechas en el pasado', async () => {
+    const user = userEvent.setup()
+    const onSubmit = renderForm()
+    const eventDate = screen.getByLabelText('Fecha del evento *') as HTMLInputElement
+    expect(eventDate.min).toBe('2026-10-07')
+
+    fireEvent.change(eventDate, { target: { value: '2026-10-06' } })
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    expect(screen.getByText('La fecha del evento no puede estar en el pasado.')).toBeTruthy()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('rechaza una tarea cuyo tiempo estimado supera el límite diario', async () => {
+    const onCreateSubtask = vi.fn().mockResolvedValue(undefined)
+    renderForm(undefined, { onCreateSubtask, dailyLimitHours: 4 })
+    fireEvent.change(screen.getByLabelText('Nombre de la tarea *'), { target: { value: 'Tarea larga' } })
+    fireEvent.change(screen.getByLabelText('Fecha límite *'), { target: { value: '2026-10-15' } })
+    fireEvent.change(screen.getByLabelText('Tiempo estimado *'), { target: { value: '5' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar tarea' }))
+
+    expect(screen.getByText('El tiempo estimado no puede superar tu límite diario de 4 h.')).toBeTruthy()
+    expect(onCreateSubtask).not.toHaveBeenCalled()
+  })
 })

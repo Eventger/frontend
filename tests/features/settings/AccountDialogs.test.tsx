@@ -55,6 +55,16 @@ describe('EmailDialog', () => {
     expect(screen.getByLabelText('Código de verificación')).toBeTruthy()
   })
 
+  it('permite cambiar el correo volviendo al formulario inicial desde el paso de verificación', async () => {
+    fixture.user.emailAddresses.push(fixture.added.resource)
+    const user = userEvent.setup()
+    renderDialog()
+    await user.click(screen.getByRole('button', { name: 'Verificar' }))
+    expect(screen.getByLabelText('Código de verificación')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Cambiar correo' }))
+    expect(screen.getByLabelText('Nuevo correo electrónico')).toBeTruthy()
+  })
+
   it('valida correos y códigos antes de contactar Clerk', async () => {
     const user = userEvent.setup()
     renderDialog()
@@ -94,7 +104,7 @@ describe('PasswordDialog', () => {
     expect(fixture.user.updatePassword).toHaveBeenCalledWith({ currentPassword: 'Anterior clave segura', newPassword: 'Mi nueva clave segura 2026', signOutOfOtherSessions: false })
   })
 
-  it('aplica el mínimo de 15 caracteres y confirma la contraseña', async () => {
+  it('aplica el mínimo de 8 caracteres y confirma la contraseña', async () => {
     const user = userEvent.setup()
     renderDialog()
     await user.type(screen.getByLabelText('Nueva contraseña'), 'corta')

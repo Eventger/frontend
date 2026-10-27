@@ -52,6 +52,8 @@ export function buildTodayTask(
     name: 'Confirmar proveedores',
     targetDate: '2026-10-20T23:59:59.000Z',
     estimatedHours: 2.5,
+    state: 'pending',
+    details: '',
     ...overrides,
   }
 }
