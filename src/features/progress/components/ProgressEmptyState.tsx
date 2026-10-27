@@ -23,7 +23,7 @@ export function ProgressEmptyState({ eventId, eventName }: ProgressEmptyStatePro
           </p>
         </div>
       </div>
-      <Button asChild variant="outline" className="shrink-0 border-[#d0d5dd] text-[#3730a3]">
+      <Button asChild variant="outline" className="h-11 shrink-0 rounded-lg border-[#d0d5dd] px-4 text-[#3730a3]">
         <Link to={`/evento/${eventId}`} viewTransition>
           Agregar subtarea <span aria-hidden="true" className="ml-1">→</span>
         </Link>

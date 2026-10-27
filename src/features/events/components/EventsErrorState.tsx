@@ -13,7 +13,7 @@ export function EventsErrorState({
       description="Ocurrió un problema al cargar tus eventos. Intenta nuevamente."
       iconLabel="Error al cargar eventos"
       onRetry={onRetry}
-      variant="events"
+      variant="embedded"
     />
   )
 }

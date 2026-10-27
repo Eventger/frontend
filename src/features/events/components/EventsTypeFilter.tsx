@@ -15,7 +15,7 @@ export function EventsTypeFilter({ typeId, onChange }: EventsTypeFilterProps) {
     <div>
       <div className="flex min-h-14 items-end gap-3">
         <div className="min-w-0 flex-1 sm:max-w-[360px]">
-          <label htmlFor="events-type-filter" className="block text-[12px] font-semibold text-[#17212b]">
+          <label htmlFor="events-type-filter" className="type-label block font-semibold text-[#17212b]">
             Tipo de evento
           </label>
           <FilterSelect
@@ -36,7 +36,7 @@ export function EventsTypeFilter({ typeId, onChange }: EventsTypeFilterProps) {
           type="button"
           onClick={() => onChange('all')}
           disabled={typeId === null}
-          className="min-h-11 shrink-0 rounded-[8px] px-2 text-[12px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#eef2ff] hover:text-[#3730a3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent"
+          className="min-h-11 shrink-0 rounded-lg px-2 text-[12px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#eef2ff] hover:text-[#3730a3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent"
         >
           Limpiar filtro
         </button>

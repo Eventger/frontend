@@ -5,7 +5,7 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from 'react'
-import { Info } from 'lucide-react'
+import { Info, X } from 'lucide-react'
 
 function supportsHoverInput() {
   return (
@@ -94,7 +94,7 @@ export function TodayPriorityGuide() {
           : 'relative'
       }
     >
-      <aside className="flex h-11 items-center rounded-[8px] border border-border-subtle bg-[#eef2ff] px-3">
+      <aside className="flex min-h-11 items-center rounded-lg border border-border-subtle bg-[#eef2ff] px-3 py-1.5 sm:py-0">
         <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#4f46e5]">
           <Info
             className="size-3.5 text-white"
@@ -103,8 +103,9 @@ export function TodayPriorityGuide() {
           />
         </div>
 
-        <p className="ml-3 min-w-0 flex-1 truncate text-[12px] font-medium leading-[15px] text-[#17212b]">
-          Orden de Hoy: Vencidas → Para hoy → Próximas · Fecha define el orden · Empate: menor tiempo estimado.
+        <p className="ml-3 min-w-0 flex-1 text-[12px] font-medium leading-[16px] text-[#17212b]">
+          <span className="hidden sm:inline">Orden de Hoy: Vencidas → Para hoy → Próximas · Fecha define el orden · Empate: menor tiempo estimado.</span>
+          <span className="sm:hidden">Prioridad: Vencidas → Hoy → Próximas</span>
         </p>
 
         <div
@@ -112,7 +113,7 @@ export function TodayPriorityGuide() {
           onPointerLeave={handlePointerLeave}
           onFocusCapture={() => setIsFocused(true)}
           onBlurCapture={handleBlur}
-          className="relative ml-4 h-11 shrink-0"
+          className="relative ml-3 shrink-0 sm:ml-4"
         >
           <button
             type="button"
@@ -131,7 +132,7 @@ export function TodayPriorityGuide() {
             }
             aria-controls={ruleId}
             aria-haspopup="dialog"
-            className="flex h-11 items-center text-[12px] font-semibold text-[#3730a3] hover:text-[#312e81]"
+            className="flex h-11 items-center whitespace-nowrap text-[12px] font-semibold text-[#3730a3] hover:text-[#312e81]"
           >
             ¿Cómo funciona?
           </button>
@@ -143,33 +144,52 @@ export function TodayPriorityGuide() {
                 id={ruleId}
                 role="dialog"
                 aria-labelledby={ruleTitleId}
-                className="absolute right-0 top-[52px] z-10 w-[min(360px,calc(100vw-2rem))] overflow-visible rounded-lg border border-border-subtle bg-white px-[13px] pb-[13px] pt-4 shadow-[0_6px_18px_rgba(23,33,43,0.08)]"
+                className="absolute right-0 top-[48px] z-20 w-[min(380px,calc(100vw-2rem))] overflow-visible rounded-xl border border-border-subtle bg-white p-4 shadow-[0_10px_25px_rgba(23,33,43,0.12)]"
               >
-                <div className="absolute left-[-1px] right-[-1px] top-[-1px] h-[3px] rounded-t-[10px] bg-[#4f46e5]" />
+                {/* Barra superior de acento índigo con curvatura perfecta y degradado sutil */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-x-0 top-0 h-[3px] rounded-t-[11px] bg-gradient-to-r from-[#4338ca] via-[#4f46e5] to-[#6366f1]"
+                />
 
-                <div className="absolute -top-[7px] right-[22px] h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-border-subtle" />
+                {/* Flecha indicadora unificada en índigo, centrada bajo "¿Cómo funciona?" y sin cortes blancos */}
+                <div
+                  aria-hidden="true"
+                  className="absolute -top-[6px] right-[38px] h-0 w-0 border-x-[6px] border-b-[6px] border-x-transparent border-b-[#4f46e5]"
+                />
 
-                <div className="absolute -top-[5px] right-[22px] h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-white" />
+                <div className="flex items-center justify-between">
+                  <p
+                    id={ruleTitleId}
+                    className="text-[13px] font-semibold leading-[18px] text-[#17212b]"
+                  >
+                    Regla de prioridad
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setIsFocused(false)
+                      setIsTouchVisible(false)
+                      setIsHovered(false)
+                    }}
+                    aria-label="Cerrar regla de prioridad"
+                    className="rounded-md p-1 text-[#98a2b3] hover:bg-[#f2f4f7] hover:text-[#344054]"
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                  </button>
+                </div>
 
-                <p
-                  id={ruleTitleId}
-                  className="text-[12px] font-semibold leading-[15px] text-[#17212b]"
-                >
-                  Regla de prioridad
-                </p>
-
-                <div className="mt-2 text-[10.5px] leading-[15px] text-[#667085]">
+                <div className="mt-2.5 space-y-1.5 text-[13px] leading-[19px] text-[#475467]">
                   <p>
                     Las subtareas se agrupan en
-                    Vencidas, Para hoy y Próximas
-                    según su fecha objetivo.
+                    <strong className="font-semibold text-[#17212b]"> Vencidas</strong>,
+                    <strong className="font-semibold text-[#17212b]"> Para hoy</strong> y
+                    <strong className="font-semibold text-[#17212b]"> Próximas</strong> según su fecha objetivo.
                   </p>
 
-                  <p className="mt-1">
-                    Dentro de cada grupo se ordenan
-                    por fecha y, en caso de empate,
-                    se muestra primero la subtarea
-                    con menor tiempo estimado.
+                  <p>
+                    Dentro de cada grupo se ordenan por fecha y, en caso de empate, se muestra primero la subtarea con menor tiempo estimado.
                   </p>
                 </div>
               </div>

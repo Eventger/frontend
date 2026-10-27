@@ -1,3 +1,4 @@
+import { DateInput } from '@/components/DateInput'
 import { FilterSelect } from '@/components/FilterSelect'
 
 type TodayStateFilter =
@@ -15,11 +16,15 @@ type TodayFiltersProps = {
   events: EventOption[]
   selectedEventId: string
   selectedState: TodayStateFilter
+  selectedDate?: string
   onEventChange: (
     eventId: string,
   ) => void
   onStateChange: (
     state: TodayStateFilter,
+  ) => void
+  onDateChange?: (
+    date: string,
   ) => void
   onClear: () => void
 }
@@ -28,20 +33,23 @@ export function TodayFilters({
   events,
   selectedEventId,
   selectedState,
+  selectedDate = '',
   onEventChange,
   onStateChange,
+  onDateChange,
   onClear,
 }: TodayFiltersProps) {
   const hasActiveFilters =
     selectedEventId !== 'all' ||
-    selectedState !== 'all'
+    selectedState !== 'all' ||
+    Boolean(selectedDate)
 
   return (
-    <div className="flex min-h-[56px] flex-col gap-3 rounded-lg md:flex-row md:items-center md:gap-7">
+    <div className="flex min-h-[56px] flex-col gap-3 rounded-lg md:flex-row md:items-center md:gap-4 lg:gap-6">
       <div className="flex min-w-0 flex-col gap-3 md:flex-1 md:flex-row md:items-center md:gap-3">
         <label
           htmlFor="today-event-filter"
-          className="shrink-0 text-[12px] font-semibold text-[#17212b] md:w-[66px]"
+          className="type-label shrink-0 font-semibold text-[#17212b] md:w-[60px]"
         >
           Evento
         </label>
@@ -50,17 +58,18 @@ export function TodayFilters({
           id="today-event-filter"
           value={selectedEventId}
           onValueChange={onEventChange}
-          className="md:max-w-[360px] md:flex-1"
+          className="md:max-w-[320px] md:flex-1"
           options={[
             { value: 'all', label: 'Todos los eventos' },
             ...events.map(event => ({ value: String(event.id), label: event.name })),
           ]}
         />
       </div>
+
       <div className="flex min-w-0 flex-col gap-3 md:flex-1 md:flex-row md:items-center md:gap-3">
         <label
           htmlFor="today-state-filter"
-          className="shrink-0 text-[12px] font-semibold text-[#17212b] md:w-[76px]"
+          className="type-label shrink-0 font-semibold text-[#17212b] md:w-[60px]"
         >
           Estado
         </label>
@@ -73,7 +82,7 @@ export function TodayFilters({
               onStateChange(value)
             }
           }}
-          className="md:max-w-[310px] md:flex-1"
+          className="md:max-w-[240px] md:flex-1"
           options={[
             { value: 'all', label: 'Todos' },
             { value: 'today', label: 'Para hoy' },
@@ -82,11 +91,32 @@ export function TodayFilters({
           ]}
         />
       </div>
+
+      <div className="flex min-w-0 flex-col gap-3 md:flex-1 md:flex-row md:items-center md:gap-3">
+        <label
+          htmlFor="today-date-filter"
+          className="type-label shrink-0 font-semibold text-[#17212b] md:w-[60px]"
+        >
+          Fecha
+        </label>
+
+        <div className="min-w-0 md:max-w-[200px] md:flex-1">
+          <DateInput
+            id="today-date-filter"
+            value={selectedDate}
+            onValueChange={value => onDateChange?.(value)}
+            placeholder="dd/mm/aaaa"
+            calendarLabel="Filtrar por fecha en el calendario"
+            className="h-11! rounded-lg border-border-subtle bg-white px-[13px] text-[13px] text-[#17212b] placeholder:text-[#98a2b3] hover:border-[#c7d2fe] focus-visible:border-[#4f46e5] focus-visible:ring-[#4f46e5]/20"
+          />
+        </div>
+      </div>
+
       <button
         type="button"
         onClick={onClear}
         disabled={!hasActiveFilters}
-        className="min-h-11 shrink-0 rounded-[8px] px-2 text-left text-[12px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#eef2ff] hover:text-[#3730a3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#4f46e5] md:ml-auto md:w-[120px] md:text-center"
+        className="min-h-11 shrink-0 rounded-lg px-2 text-left text-[12px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#eef2ff] hover:text-[#3730a3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#4f46e5] md:ml-auto md:w-[110px] md:text-center"
       >
         Limpiar filtros
       </button>

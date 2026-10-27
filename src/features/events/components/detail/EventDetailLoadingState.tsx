@@ -7,12 +7,12 @@ export function EventDetailLoadingState() {
       aria-live="polite"
       aria-busy="true"
     >
-      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+      <div className="flex flex-col justify-between gap-5 sm:min-h-16 sm:flex-row sm:items-start">
         <div className="h-9 w-64 max-w-[55%] rounded bg-[#eaecf0]" />
 
-        <div className="flex gap-4">
-          <div className="h-11 w-[138px] rounded-lg bg-[#eaecf0]" />
-          <div className="h-11 w-[118px] rounded-lg bg-[#eaecf0]" />
+        <div className="flex shrink-0 items-center gap-3">
+          <div className="h-11 w-36 rounded-lg bg-[#eaecf0]" />
+          <div className="h-11 w-24 rounded-lg bg-[#eaecf0]" />
         </div>
       </div>
 

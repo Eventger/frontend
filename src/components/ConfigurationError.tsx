@@ -53,7 +53,7 @@ export function ConfigurationError({
             (variable) => (
               <li
                 key={variable}
-                className="break-all rounded-lg bg-[#f2f4f7] px-4 py-3 font-mono text-sm font-medium text-[#344054]"
+                className="break-all rounded-lg bg-[#f2f4f7] px-4 py-3 font-sans text-sm font-medium text-[#344054]"
               >
                 {variable}
               </li>

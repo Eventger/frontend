@@ -9,6 +9,7 @@ type LoadErrorStateProps = {
   iconLabel: string
   onRetry: () => void
   actionLabel?: string
+  isActionDisabled?: boolean
   variant?:
     | 'default'
     | 'events'
@@ -21,6 +22,7 @@ export function LoadErrorState({
   iconLabel,
   onRetry,
   actionLabel = 'Reintentar',
+  isActionDisabled = false,
   variant = 'default',
 }: LoadErrorStateProps) {
   const titleId = useId()
@@ -30,7 +32,7 @@ export function LoadErrorState({
 
   const state = (
     <section
-      className="flex min-h-[280px] w-full flex-col items-center rounded-xl border border-border-subtle bg-white px-6 pb-6 pt-[38px] text-center"
+      className="flex min-h-[280px] w-full flex-col items-center justify-center rounded-xl border border-border-subtle bg-white px-6 py-6 text-center"
       role="alert"
       aria-live="assertive"
       aria-atomic="true"
@@ -59,7 +61,8 @@ export function LoadErrorState({
       <Button
         type="button"
         onClick={onRetry}
-        className="mt-10 h-11 w-full max-w-[170px] rounded-lg bg-[#4f46e5] px-5 text-[13px] font-semibold text-white hover:bg-[#4338ca]"
+        disabled={isActionDisabled}
+        className="mt-8 h-11 w-full max-w-[170px] rounded-lg bg-[#4f46e5] px-5 text-[13px] font-semibold text-white hover:bg-[#4338ca] disabled:opacity-50"
       >
         {actionLabel}
       </Button>
@@ -71,7 +74,7 @@ export function LoadErrorState({
   }
 
   return (
-    <div className="mt-[74px] w-full max-w-[var(--app-content-max-width)]">
+    <div className="mt-[74px] w-full">
       {state}
     </div>
   )

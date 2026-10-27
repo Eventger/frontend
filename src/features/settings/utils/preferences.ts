@@ -8,11 +8,16 @@ export function isValidDailyLimit(value: number) {
 }
 
 export class DailyLimitConflictError extends Error {
+  readonly conflictDate: string
+  readonly conflictHours: number
+
   constructor(date: string, hours: number) {
     const dateLabel = formatCalendarDate(date, { day: 'numeric', month: 'long', year: 'numeric' })
     const hoursLabel = `${hours.toLocaleString('es-CO')} h`
     super(`Tienes ${hoursLabel} programadas para el ${dateLabel}. Usa al menos ${hoursLabel} o reprograma.`)
     this.name = 'DailyLimitConflictError'
+    this.conflictDate = date
+    this.conflictHours = hours
   }
 }
 
@@ -23,7 +28,15 @@ export function validateDailyLimitForTasks(hours: number, tasks: TodayData): voi
     if (!Number.isFinite(task.estimatedHours) || task.estimatedHours < 0) {
       throw new Error('No pudimos comprobar la carga de tus tareas.')
     }
-    const date = getCalendarDate(task.targetDate)
+    if (!task.targetDate || typeof task.targetDate !== 'string') {
+      throw new Error('No pudimos comprobar la carga de tus tareas.')
+    }
+    let date: string
+    try {
+      date = getCalendarDate(task.targetDate)
+    } catch {
+      throw new Error('No pudimos comprobar la carga de tus tareas.')
+    }
     // El contrato usa dos decimales. Sumar centésimas evita falsos conflictos por precisión numérica.
     dailyHours.set(date, (dailyHours.get(date) ?? 0) + Math.round(task.estimatedHours * 100))
   }

@@ -1,5 +1,6 @@
-import type {
-  ReactNode,
+import {
+  useRef,
+  type ReactNode,
 } from 'react'
 
 import {
@@ -26,8 +27,13 @@ export function PublicOnlyRoute({
     isLoaded,
     isSignedIn,
   } = useAuth()
+  const hasInitializedRef = useRef(false)
 
-  if (!isLoaded) {
+  if (isLoaded) {
+    hasInitializedRef.current = true
+  }
+
+  if (!isLoaded && !hasInitializedRef.current) {
     return <AuthLoadingState />
   }
 

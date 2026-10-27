@@ -1,5 +1,6 @@
-import { CalendarDays } from 'lucide-react'
+import { Clock, ListTodo } from 'lucide-react'
 import { getCalendarDay } from '@/lib/calendar'
+import { formatHoursDuration } from '@/lib/duration'
 
 import type { Subtask } from '@/features/events/types/subtask.types'
 
@@ -8,11 +9,8 @@ type EventProgressCardProps = {
   eventDate?: string
 }
 
-function getDailyLoad(
-  subtasks: Subtask[],
-  eventDate?: string,
-) {
-  const pendingHours = subtasks
+function getPendingHours(subtasks: Subtask[]) {
+  return subtasks
     .filter(
       (subtask) =>
         subtask.state !== 'completed' && subtask.state !== 'postponed',
@@ -22,6 +20,13 @@ function getDailyLoad(
         total + subtask.estimatedHours,
       0,
     )
+}
+
+function getDailyLoad(
+  subtasks: Subtask[],
+  eventDate?: string,
+) {
+  const pendingHours = getPendingHours(subtasks)
 
   if (
     pendingHours === 0 ||
@@ -43,13 +48,18 @@ function getDailyLoad(
   return pendingHours / daysRemaining
 }
 
-function formatHours(hours: number) {
-  return new Intl.NumberFormat(
-    'es-CO',
-    {
-      maximumFractionDigits: 1,
-    },
-  ).format(hours)
+function formatDailyLoad(hours: number): string {
+  if (hours <= 0) {
+    return '0 h / día'
+  }
+  return `${formatHoursDuration(hours)} / día`
+}
+
+function formatPendingHours(hours: number): string {
+  if (hours <= 0) {
+    return '0 h'
+  }
+  return formatHoursDuration(hours)
 }
 
 export function EventProgressCard({
@@ -73,6 +83,7 @@ export function EventProgressCard({
             100,
         )
 
+  const pendingHours = getPendingHours(subtasks)
   const dailyLoad = getDailyLoad(
     subtasks,
     eventDate,
@@ -82,15 +93,39 @@ export function EventProgressCard({
     <div
       id="event-progress"
       tabIndex={-1}
-      className="grid gap-6 outline-none md:grid-cols-[minmax(0,1fr)_1px_minmax(0,0.9fr)] md:items-stretch md:gap-9"
+      className="grid gap-6 outline-none md:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] md:items-stretch md:gap-8"
     >
-      <div>
-        <p className="text-[14px] font-medium text-[#667085]">
-          Progreso
-        </p>
+      {/* Columna Izquierda: Progreso del evento */}
+      <div className="flex flex-col justify-between gap-5">
+        <div className="flex items-center gap-3.5">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
+            <ListTodo
+              className="size-5"
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+          </div>
 
-        <div className="mt-2 flex items-center gap-5">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#eef1f6]">
+          <div>
+            <p className="text-[12px] sm:text-[13px] font-medium text-[#667085]">
+              Progreso del evento
+            </p>
+
+            <p className="mt-0.5 text-[18px] sm:text-[20px] font-bold leading-6 tracking-tight text-[#17212b]">
+              {progress}%
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <div
+            role="progressbar"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Progreso general del evento: ${progress}%`}
+            className="h-2 w-full overflow-hidden rounded-full bg-neutral-100"
+          >
             <div
               className="h-full rounded-full bg-[#4f46e5] transition-[width] duration-300"
               style={{
@@ -99,46 +134,54 @@ export function EventProgressCard({
             />
           </div>
 
-          <span className="min-w-[50px] text-right text-[32px] font-semibold leading-none tracking-[-0.03em] text-[#17212b]">
-            {progress}%
-          </span>
+          <p className="mt-2.5 text-[13px] text-[#667085]">
+            {totalSubtasks === 0
+              ? 'Aún no hay tareas creadas.'
+              : `${completedSubtasks} de ${totalSubtasks} tareas completadas.`}
+          </p>
         </div>
-
-        <p className="mt-3 text-[13px] text-[#667085]">
-          {totalSubtasks === 0
-            ? 'Aún no hay tareas creadas.'
-            : `${completedSubtasks} de ${totalSubtasks} tareas completadas.`}
-        </p>
       </div>
 
+      {/* Separador vertical para pantallas medianas/grandes */}
       <div
         className="hidden w-px bg-border-subtle md:block"
         aria-hidden="true"
       />
 
-      <div className="flex items-center gap-5 border-t border-border-subtle pt-6 md:border-0 md:pt-0">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
-          <CalendarDays
-            className="size-[18px]"
-            strokeWidth={2}
-            aria-hidden="true"
-          />
+      {/* Columna Derecha: Horas pendientes y carga diaria */}
+      <div className="flex flex-col justify-between gap-5 border-t border-border-subtle pt-6 md:border-0 md:pt-0">
+        <div className="flex items-center gap-3.5">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
+            <Clock
+              className="size-5"
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+          </div>
+
+          <div>
+            <p className="text-[12px] sm:text-[13px] font-medium text-[#667085]">
+              Horas pendientes
+            </p>
+
+            <p className="mt-0.5 text-[18px] sm:text-[20px] font-bold leading-6 tracking-tight text-[#17212b]">
+              {formatPendingHours(pendingHours)}
+            </p>
+          </div>
         </div>
 
         <div>
-          <p className="text-[13px] font-medium text-[#667085]">
-            Carga diaria
-          </p>
-
-          <p className="mt-1 text-[28px] font-semibold leading-none tracking-[-0.02em] text-[#17212b]">
-            {formatHours(dailyLoad)} h / día
-          </p>
-
-          <p className="mt-4 text-[13px] text-[#667085]">
-            {totalSubtasks === 0
-              ? 'Aún no hay tareas programadas.'
-              : 'Promedio pendiente hasta la fecha del evento.'}
-          </p>
+          {totalSubtasks === 0 ? (
+            <p className="text-[13px] text-[#667085]">
+              <span>0 h / día</span>
+              <span className="mx-1.5 text-border-subtle">·</span>
+              <span>Aún no hay tareas programadas.</span>
+            </p>
+          ) : (
+            <p className="text-[13px] text-[#667085]">
+              {formatDailyLoad(dailyLoad)} hasta la fecha del evento.
+            </p>
+          )}
         </div>
       </div>
     </div>

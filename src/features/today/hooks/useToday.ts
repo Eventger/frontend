@@ -3,6 +3,8 @@ import {
   useEffect,
   useRef,
   useState,
+  type Dispatch,
+  type SetStateAction,
 } from 'react'
 
 import {
@@ -17,7 +19,16 @@ import {
   useAuthenticatedApi,
 } from '@/features/auth/hooks/useAuthenticatedApi'
 
-export function useToday() {
+export type UseTodayResult = {
+  data: TodayData | null
+  setData?: Dispatch<SetStateAction<TodayData | null>>
+  isLoading: boolean
+  isRefetching?: boolean
+  error: string | null
+  retry: () => Promise<void>
+}
+
+export function useToday(date?: string): UseTodayResult {
   const {
     authenticatedRequest,
     isAuthLoaded,
@@ -29,10 +40,21 @@ export function useToday() {
       null,
     )
 
+  const dataRef = useRef<TodayData | null>(null)
+
+  useEffect(() => {
+    dataRef.current = data
+  }, [data])
+
   const [
     isLoading,
     setIsLoading,
   ] = useState(true)
+
+  const [
+    isRefetching,
+    setIsRefetching,
+  ] = useState(false)
 
   const [error, setError] =
     useState<string | null>(null)
@@ -44,15 +66,21 @@ export function useToday() {
       const version = ++requestVersion.current
 
       try {
-        setIsLoading(true)
+        if (dataRef.current === null) {
+          setIsLoading(true)
+        } else {
+          setIsRefetching(true)
+        }
         setError(null)
 
         const today =
           await getToday(
             authenticatedRequest,
+            date,
           )
 
         if (version === requestVersion.current) {
+          dataRef.current = today
           setData(today)
         }
       } catch {
@@ -64,9 +92,10 @@ export function useToday() {
       } finally {
         if (version === requestVersion.current) {
           setIsLoading(false)
+          setIsRefetching(false)
         }
       }
-    }, [authenticatedRequest])
+    }, [authenticatedRequest, date])
 
   useEffect(() => {
     if (!isAuthLoaded) {
@@ -95,10 +124,12 @@ export function useToday() {
 
   return {
     data,
+    setData,
     isLoading:
       isAuthLoaded && !isSignedIn
         ? false
         : isLoading,
+    isRefetching,
     error,
     retry: loadToday,
   }

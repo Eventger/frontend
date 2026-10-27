@@ -39,7 +39,7 @@ export function EventsPagination({ pagination, onPageChange }: EventsPaginationP
           <ChevronLeft aria-hidden="true" />
           <span className="sr-only sm:not-sr-only">Anterior</span>
         </Button>
-        <p className="rounded-[8px] bg-[#eef2ff] px-3 py-2 text-[12px] font-semibold leading-5 text-[#3730a3]" aria-current="page">
+        <p className="rounded-lg bg-[#eef2ff] px-3 py-2 text-[12px] font-semibold leading-5 text-[#3730a3]" aria-current="page">
           Página {page} de {totalPages}
         </p>
         <Button

@@ -17,7 +17,7 @@ export function PageHeader({
       <div className="min-w-0">
         <PageTitle>{title}</PageTitle>
 
-        <p className="mt-1 text-[14px] leading-5 text-[#667085] md:text-[15px]">
+        <p className="type-body mt-1 text-[#667085] md:text-[15px]">
           {description}
         </p>
       </div>

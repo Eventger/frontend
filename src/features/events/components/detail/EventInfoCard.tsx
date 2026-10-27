@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+import { Calendar, MapPin, User, Users } from 'lucide-react'
 import { EventProgressCard } from '@/features/events/components/detail/EventProgressCard'
 import { formatCalendarDate } from '@/lib/calendar'
 
@@ -23,25 +25,55 @@ function formatEventDate(
 }
 
 type EventInfoItemProps = {
+  icon: ReactNode
   label: string
   value: string
+  secondaryValue?: string
 }
 
 function EventInfoItem({
+  icon,
   label,
   value,
+  secondaryValue,
 }: EventInfoItemProps) {
   return (
-    <div className="min-w-0">
-      <p className="text-[13px] font-medium text-[#667085]">
-        {label}
-      </p>
+    <div className="flex items-center gap-3.5 rounded-xl border border-border-subtle/80 bg-white p-3.5 min-w-0 shadow-xs">
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#eef2ff] text-[#4f46e5]">
+        {icon}
+      </div>
 
-      <p className="mt-1.5 break-words text-[16px] font-semibold text-[#17212b]">
-        {value}
-      </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px] font-medium text-[#667085]">
+          {label}
+        </p>
+
+        <p className="mt-0.5 break-words text-[14px] sm:text-[15px] font-bold text-[#17212b]">
+          {value}
+        </p>
+
+        {secondaryValue && (
+          <p className="mt-0.5 break-words text-[13px] font-normal text-[#667085]">
+            {secondaryValue}
+          </p>
+        )}
+      </div>
     </div>
   )
+}
+
+function getContactDetails(contact: string) {
+  const normalizedContact = contact.trim()
+  const phoneMatch = normalizedContact.match(/^(.+?)\s+(\+?[\d(][\d\s().-]{5,}\d)$/)
+
+  if (!phoneMatch || phoneMatch[2].replace(/\D/g, '').length < 7) {
+    return { name: normalizedContact }
+  }
+
+  return {
+    name: phoneMatch[1].trim(),
+    phone: phoneMatch[2].trim(),
+  }
 }
 
 export function EventInfoCard({
@@ -52,22 +84,26 @@ export function EventInfoCard({
   eventTypeName,
   description,
 }: EventInfoCardProps) {
+  const contactDetails = getContactDetails(contact)
+
   return (
-    <section className="w-full rounded-xl border border-border-subtle bg-white px-5 py-[18px] sm:px-6">
-      <div className="flex items-start justify-between gap-4">
+    <section className="w-full rounded-2xl border border-border-subtle bg-white p-6 sm:p-7 shadow-xs">
+      <div className="flex items-center justify-between gap-4">
         <h2 className="text-[20px] font-semibold leading-6 text-[#17212b]">
           Información del evento
         </h2>
 
         {eventTypeName && (
-          <span className="min-w-[80px] shrink-0 rounded-full bg-[#eef2ff] px-3 py-1.5 text-center text-[12px] font-semibold leading-4 text-[#3730a3]">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-3.5 py-1.5 text-center text-[12px] font-semibold leading-4 text-[#4f46e5]">
+            <Users className="size-3.5 text-[#4f46e5]" aria-hidden="true" />
             {eventTypeName}
           </span>
         )}
       </div>
 
-      <div className="mt-4 grid gap-5 md:grid-cols-3 md:gap-10">
+      <div className="mt-5 grid gap-4 md:grid-cols-3">
         <EventInfoItem
+          icon={<Calendar className="size-5 text-[#4f46e5]" aria-hidden="true" />}
           label="Fecha"
           value={formatEventDate(
             eventDate,
@@ -75,13 +111,16 @@ export function EventInfoCard({
         />
 
         <EventInfoItem
+          icon={<MapPin className="size-5 text-[#4f46e5]" aria-hidden="true" />}
           label="Lugar"
           value={location}
         />
 
         <EventInfoItem
-          label="Contacto"
-          value={contact}
+          icon={<User className="size-5 text-[#4f46e5]" aria-hidden="true" />}
+          label="Contacto del cliente"
+          value={contactDetails.name}
+          secondaryValue={contactDetails.phone ?? 'Teléfono no registrado'}
         />
       </div>
 
@@ -97,7 +136,7 @@ export function EventInfoCard({
         </div>
       )}
 
-      <div className="mt-6 border-t border-border-subtle pt-5">
+      <div className="mt-6 border-t border-border-subtle pt-6">
         <EventProgressCard
           subtasks={subtasks}
           eventDate={eventDate}

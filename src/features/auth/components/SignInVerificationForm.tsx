@@ -143,7 +143,7 @@ export function SignInVerificationForm({ onVerified, onBack }: SignInVerificatio
         <>
           {methods.length > 1 && (
             <div className="mb-5">
-              <label htmlFor="login-verification-method" className="text-[12px] font-medium text-[#17212b]">Método de verificación</label>
+              <label htmlFor="login-verification-method" className="type-label text-[#17212b]">Método de verificación</label>
               <select id="login-verification-method" value={method} disabled={isLoading}
                 onChange={event => {
                   const next = event.target.value
@@ -164,7 +164,7 @@ export function SignInVerificationForm({ onVerified, onBack }: SignInVerificatio
               : method === 'phone_code' ? (codeSent ? 'Escribe el código enviado al teléfono de tu cuenta.' : 'Envía un código al teléfono de tu cuenta para continuar.')
                 : method === 'totp' ? 'Escribe el código de tu aplicación de autenticación.' : 'Escribe uno de tus códigos de respaldo.'}
           </p>
-          <label htmlFor="login-verification-code" className="text-[12px] font-medium text-[#17212b]">
+          <label htmlFor="login-verification-code" className="type-label text-[#17212b]">
             {method === 'backup_code' ? 'Código de respaldo' : 'Código de verificación'}
           </label>
           <Input ref={codeRef} id="login-verification-code" name="code" type="text"

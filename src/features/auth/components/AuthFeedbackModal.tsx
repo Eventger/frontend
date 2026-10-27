@@ -57,7 +57,7 @@ export function AuthFeedbackModal({
             ? 'dialog'
             : 'alertdialog'
         }
-        className="z-[101] flex min-h-[430px] w-full max-w-[calc(100%-2rem)] flex-col rounded-2xl border border-border-subtle bg-white px-6 pb-[66px] pt-[47px] sm:block sm:max-w-[760px] sm:p-0"
+        className="z-[101] flex min-h-[430px] w-full max-w-[calc(100%-2rem)] flex-col items-center justify-center rounded-2xl border border-border-subtle bg-white px-6 py-10 sm:max-w-[760px] sm:px-10 sm:py-12"
         overlayClassName="z-[100] bg-[#101828]/45 backdrop-blur-none"
         showCloseButton={false}
       >
@@ -67,24 +67,24 @@ export function AuthFeedbackModal({
               ? 'success'
               : 'error'
           }
-          className="mx-auto sm:absolute sm:left-1/2 sm:top-[47px] sm:-translate-x-1/2"
+          className="mx-auto"
         />
 
         <DialogTitle
-          className="mt-7 text-center text-[24px] font-bold leading-8 text-[#17212b] sm:absolute sm:left-[115px] sm:right-[115px] sm:top-[139px] sm:mt-0"
+          className="type-dialog-title mt-7 w-full max-w-[530px] text-center text-[#17212b]"
         >
           {title}
         </DialogTitle>
 
         <DialogDescription
-          className="mx-auto mt-8 max-w-[540px] text-center text-[15px] leading-[22px] text-[#667085] sm:absolute sm:left-[110px] sm:right-[110px] sm:top-[219px] sm:mt-0 sm:max-w-none"
+          className="mt-8 w-full max-w-[540px] text-center text-[15px] leading-[22px] text-[#667085] sm:mt-12"
         >
           {description}
         </DialogDescription>
 
         {(secondaryLabel ||
           primaryLabel) && (
-          <div className="mt-auto flex flex-col justify-center gap-3 pt-8 sm:absolute sm:left-0 sm:right-0 sm:top-[319px] sm:mt-0 sm:flex-row-reverse sm:gap-5 sm:pt-0">
+          <div className="mt-10 flex w-full max-w-[390px] flex-col justify-center gap-3 sm:mt-14 sm:max-w-none sm:flex-row-reverse sm:gap-5">
             {primaryLabel && (
               <Button
                 type="button"

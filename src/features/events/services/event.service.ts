@@ -22,10 +22,14 @@ type RequestFn = <T>(
 ) => Promise<T>
 
 export function mapEventResponse(event: EventApiData): Event {
+  if (!event || typeof event !== 'object' || typeof event.id !== 'number') {
+    throw new Error('Respuesta inválida de evento: datos incompletos')
+  }
+
   return {
     id: event.id,
     userId: event.user,
-    name: event.name,
+    name: event.name ?? '',
     typeId: event.type,
     eventDate: event.date,
     location: event.location,
@@ -35,9 +39,6 @@ export function mapEventResponse(event: EventApiData): Event {
     updatedAt: event.updated_at,
   }
 }
-
-// Alias por si alguna función antigua la llamaba por este nombre
-export const mapBackendEventToEvent = mapEventResponse
 
 export async function getEventTypes(): Promise<EventType[]> {
   const response = await apiRequest<EventTypesApiResponse>('/event-types/')
@@ -81,9 +82,12 @@ export async function getEvents(
   page: number = 1,
   requestFn: RequestFn = apiRequest,
   typeId: number | null = null,
+  search: string = '',
 ): Promise<EventsPageData> {
   const query = new URLSearchParams({ page: String(page) })
   if (typeId !== null) query.set('type', String(typeId))
+  const trimmedSearch = search.trim()
+  if (trimmedSearch) query.set('search', trimmedSearch)
   const response = await requestFn<EventsApiResponse>(`/events/?${query}`)
 
   if (response?.success !== true || !Array.isArray(response.data)) {
@@ -91,9 +95,13 @@ export async function getEvents(
   }
 
   if (response.pagination === undefined) {
-    const events = typeId === null
+    let events = typeId === null
       ? response.data
       : response.data.filter(event => event.type === typeId)
+    if (trimmedSearch) {
+      const lowerSearch = trimmedSearch.toLowerCase()
+      events = events.filter(event => (event.name ?? '').toLowerCase().includes(lowerSearch))
+    }
     const pageSize = 6
     const total = events.length
     const totalPages = Math.max(1, Math.ceil(total / pageSize))

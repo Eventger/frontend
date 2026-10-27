@@ -5,7 +5,15 @@ export type AddressSuggestion = {
   address: string
 }
 
-type SearchOptions = { signal?: AbortSignal }
+export type AddressSearchCoordinates = {
+  latitude: number
+  longitude: number
+}
+
+type SearchOptions = {
+  signal?: AbortSignal
+  coordinates?: AddressSearchCoordinates
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -29,12 +37,39 @@ function mapSuggestion(feature: unknown): AddressSuggestion | null {
   return { id: address, title, description: parts.slice(1).join(', '), address }
 }
 
-export async function searchAddresses(query: string, { signal }: SearchOptions = {}): Promise<AddressSuggestion[]> {
+function isValidCoordinates(coordinates: AddressSearchCoordinates | undefined): coordinates is AddressSearchCoordinates {
+  return Boolean(
+    coordinates
+    && Number.isFinite(coordinates.latitude)
+    && Number.isFinite(coordinates.longitude)
+    && Math.abs(coordinates.latitude) <= 90
+    && Math.abs(coordinates.longitude) <= 180,
+  )
+}
+
+function nearbyBoundingBox({ latitude, longitude }: AddressSearchCoordinates) {
+  const latitudeDelta = 0.2
+  const longitudeDelta = latitudeDelta / Math.max(Math.cos(latitude * Math.PI / 180), 0.1)
+  return [
+    longitude - longitudeDelta,
+    latitude - latitudeDelta,
+    longitude + longitudeDelta,
+    latitude + latitudeDelta,
+  ].join(',')
+}
+
+export async function searchAddresses(query: string, { signal, coordinates }: SearchOptions = {}): Promise<AddressSuggestion[]> {
   const search = query.trim()
   if (search.length < 3) return []
   const url = new URL('https://photon.komoot.io/api/')
   url.searchParams.set('q', search)
   url.searchParams.set('limit', '5')
+  if (isValidCoordinates(coordinates)) {
+    url.searchParams.set('lat', String(coordinates.latitude))
+    url.searchParams.set('lon', String(coordinates.longitude))
+    url.searchParams.set('zoom', '12')
+    url.searchParams.set('bbox', nearbyBoundingBox(coordinates))
+  }
 
   const controller = new AbortController()
   const abort = () => controller.abort()

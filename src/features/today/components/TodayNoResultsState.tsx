@@ -1,9 +1,10 @@
+import { Button } from '@/components/ui/button'
+
 type TodayNoResultsStateProps = {
   eventName?: string
   stateLabel?: string
   onClearFilters: () => void
 }
-
 export function TodayNoResultsState({
   eventName,
   stateLabel,
@@ -16,7 +17,7 @@ export function TodayNoResultsState({
 
   return (
     <section className="flex min-h-[250px] flex-col items-center justify-center rounded-xl border border-border-subtle bg-white px-6 text-center">
-      <h2 className="text-[24px] font-semibold text-[#17212b]">
+      <h2 className="type-dialog-title text-[#17212b]">
         No hay subtareas para estos filtros
       </h2>
 
@@ -24,15 +25,15 @@ export function TodayNoResultsState({
         {description}
       </p>
 
-      <button
+      <Button
         type="button"
         onClick={
           onClearFilters
         }
-        className="mt-6 h-11 w-[190px] rounded-[8px] bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca]"
+        className="mt-6 h-11 w-[190px] rounded-lg bg-[#4f46e5] text-[13px] font-semibold text-white hover:bg-[#4338ca]"
       >
         Limpiar filtros
-      </button>
+      </Button>
     </section>
   )
 }

@@ -2,11 +2,14 @@ import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router'
 
 import { LoadErrorState } from '@/components/LoadErrorState'
 import { PageTitle } from '@/components/layout/PageTitle'
+import { useDocumentTitle } from '@/components/layout/useDocumentTitle'
 
 export function RouteErrorPage({ notFound = false }: { notFound?: boolean }) {
   const error = useRouteError()
   const navigate = useNavigate()
   const isNotFound = notFound || (isRouteErrorResponse(error) && error.status === 404)
+
+  useDocumentTitle(isNotFound ? 'Página no encontrada · Eventger' : 'Error · Eventger')
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-[#f7f8fc] px-5 py-10">

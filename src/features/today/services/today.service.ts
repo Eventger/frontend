@@ -24,6 +24,8 @@ function mapTodayTask(
     estimatedHours: Number(
       task.estimated_hours,
     ),
+    state: task.state ?? task.status ?? 'pending',
+    details: task.details ?? task.note ?? '',
   }
 }
 
@@ -56,10 +58,12 @@ function sortByPriority(
 
 export async function getToday(
   requestFn: RequestFn = apiRequest,
+  date?: string,
 ): Promise<TodayData> {
+  const query = date ? `?date=${encodeURIComponent(date)}` : ''
   const todayResponse =
     await requestFn<TodayApiResponse>(
-      '/hoy/',
+      `/hoy/${query}`,
     )
 
   if (!todayResponse.success) {

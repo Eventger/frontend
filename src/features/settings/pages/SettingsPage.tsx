@@ -6,6 +6,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { InlineFeedback } from '@/components/feedback/InlineFeedback'
+import { Camera } from 'lucide-react'
 import { SettingsLoadingState } from '../components/SettingsLoadingState'
 import googleIcon from '@/assets/auth/google.svg'
 import { SettingsCard } from '../components/SettingsCard'
@@ -33,14 +34,23 @@ function AccountSettings({ user }: { user: UserResource }) {
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || 'U'
   return (
     <>
-      <SettingsCard title="Cuenta, perfil y seguridad" description="Estos datos se gestionan de forma segura con Clerk.">
+      <SettingsCard title="Cuenta, perfil y seguridad" description="Estos datos se gestionan de forma segura y privada.">
         <div className="flex flex-wrap items-center gap-4 pb-6 pt-6">
-          <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#4f46e5] text-base font-bold text-white">
-            {user.hasImage ? <img src={user.imageUrl} alt="" className="size-full object-cover" /> : initials}
-          </span>
+          <button
+            type="button"
+            onClick={() => { setSaved(''); setDialog('profile') }}
+            aria-label="Cambiar foto de perfil"
+            title="Cambiar foto de perfil"
+            className="group relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#4f46e5] text-base font-bold text-white shadow-xs transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4f46e5]"
+          >
+            {user.hasImage ? <img src={user.imageUrl} alt="" className="size-full object-cover transition-opacity group-hover:opacity-75" /> : initials}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true">
+              <Camera className="size-4 text-white" />
+            </span>
+          </button>
           <div className="min-w-0 flex-1">
             <h3 className="break-words text-sm font-semibold text-[#17212b]">{user.fullName || 'Usuario'}</h3>
-            <p className="mt-1 text-xs text-[#667085]">Perfil administrado por Clerk</p>
+            <p className="mt-1 text-xs text-[#667085]">Perfil de usuario verificado</p>
           </div>
           <Button type="button" className={`${settingsSecondaryButton} w-full sm:w-auto sm:min-w-[177px]`} onClick={() => { setSaved(''); setDialog('profile') }}>Actualizar perfil</Button>
         </div>
@@ -83,7 +93,7 @@ export function SettingsPage() {
   const { user, isLoaded } = useUser()
   return (
     <PageContainer breadcrumbs={[{ label: 'Hoy', to: '/hoy' }, { label: 'Configuración' }]}>
-      <PageHeader title="Configuración de cuenta" description="Gestiona tu cuenta de Clerk y las preferencias de Eventger desde un solo lugar." />
+      <PageHeader title="Configuración de cuenta" description="Gestiona tu cuenta personal y las preferencias de Eventger desde un solo lugar." />
       {!isLoaded ? <SettingsLoadingState /> : user && (
         <div className="mt-8 min-w-0 space-y-6">
           <AccountSettings key={user.id} user={user} />

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSession, useUser } from '@clerk/react'
 import type { SessionWithActivitiesResource, UserResource } from '@clerk/react/types'
-import { CircleCheck, KeyRound, Monitor, Smartphone, Trash2 } from 'lucide-react'
+import { CircleCheck, KeyRound, LogOut, Monitor, Smartphone, Trash2 } from 'lucide-react'
 import { Link } from 'react-router'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -16,7 +16,7 @@ import { useAccountSessions } from '../hooks/useAccountSessions'
 import { settingsSecondaryButton } from '../settings.styles'
 
 function activityDate(value: Date) {
-  return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(value)
+  return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(value)
 }
 
 function deviceDetails(session: SessionWithActivitiesResource) {
@@ -62,7 +62,7 @@ function SecuritySettings({ user, currentSessionId }: { user: UserResource; curr
                       {(session.latestActivity.ipAddress || details.location) && <p className="break-words">{[session.latestActivity.ipAddress, details.location].filter(Boolean).join(' · ')}</p>}
                       <p className="text-xs">{activityDate(session.lastActiveAt)}</p>
                     </div>
-                    {isCurrent ? <span className="flex items-center gap-2 text-xs font-medium text-[#027a48]"><CircleCheck size={15} aria-hidden="true" />Sesión actual</span> : <Button type="button" variant="ghost" className="min-h-11 h-auto whitespace-normal px-2 py-3 text-xs text-[#4f46e5] hover:bg-[#eef2ff]" disabled={Boolean(revokingId) || !currentSessionId} onClick={() => void revokeSession(session.id)} aria-label={`Cerrar sesión: ${details.device} · ${details.browser} · ${activityDate(session.lastActiveAt)}`}><CircleCheck size={15} aria-hidden="true" />{revokingId === session.id ? 'Cerrando…' : 'Cerrar sesión'}</Button>}
+                    {isCurrent ? <span className="flex items-center gap-2 text-xs font-medium text-[#027a48]"><CircleCheck size={15} aria-hidden="true" />Sesión actual</span> : <Button type="button" variant="ghost" className="min-h-11 h-auto whitespace-normal px-2 py-3 text-xs text-[#b42318] hover:bg-[#fef3f2]" disabled={Boolean(revokingId) || !currentSessionId} onClick={() => void revokeSession(session.id)} aria-label={`Cerrar sesión: ${details.device} · ${details.browser} · ${activityDate(session.lastActiveAt)}`}><LogOut size={15} aria-hidden="true" />{revokingId === session.id ? 'Cerrando…' : 'Cerrar sesión'}</Button>}
                   </li>
                 )
               })}
